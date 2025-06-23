@@ -8,8 +8,11 @@ export PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 # npm install 실행 (Puppeteer가 Chrome을 다운로드함)
 npm install
 
-# Puppeteer가 Chrome을 명시적으로 설치하도록 강제
-npx puppeteer browsers install chrome
+# Puppeteer bin 디렉토리 확인 (빌드 로그에서 실제 파일명 확인)
+ls -l ./node_modules/puppeteer/bin/
+
+# Puppeteer 브라우저 설치 (존재하는 파일명으로 교체)
+node ./node_modules/puppeteer/bin/puppeteer.cjs browsers install chrome
 
 # 설치된 Chrome 위치 확인
 echo "=== Chrome location after forced install ==="
@@ -46,4 +49,9 @@ echo "=== End of Chrome location check ==="
 echo "=== Checking Puppeteer cache directories ==="
 ls -la /opt/render/.cache/puppeteer/ 2>/dev/null || echo "No /opt/render/.cache/puppeteer/"
 ls -la ./.chrome-cache/ 2>/dev/null || echo "No ./.chrome-cache/"
-echo "=== End of cache directory check ===" 
+echo "=== End of cache directory check ==="
+
+# Puppeteer bin 디렉토리 확인
+echo "=== Checking Puppeteer bin directories ==="
+ls -l ./node_modules/puppeteer/bin/ 2>/dev/null || echo "No ./node_modules/puppeteer/bin/"
+echo "=== End of Puppeteer bin directory check ===" 
