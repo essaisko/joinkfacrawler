@@ -312,6 +312,29 @@ async function initializeServer() {
     }
   });
 }
+// GitHub Webhook 자동배포용 엔드포인트
+const { exec } = require('child_process');
+
+app.post('/deploy', (req, res) => {
+  const secret = 'breadbro'; // 보안용 토큰
+  const gitRepoPath = '/home/ubuntu'; // 실제 git 폴더 경로
+  const bodyToken = req.headers['x-deploy-token'];
+
+  if (bodyToken !== secret) {
+    return res.status(403).send('Invalid deploy token');
+  }
+
+  exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
+    if (err) {
+      console.error('❌ 자동배포 실패:', err);
+      return res.status(500).send('Deploy failed.');
+    }
+    console.log('✅ 자동배포 완료:\n', stdout);
+    res.send('✅ Deployed:\n' + stdout);
+  });
+});
+
+
 
 // 서버 초기화 실행
 initializeServer(); 
