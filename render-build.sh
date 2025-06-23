@@ -9,7 +9,5 @@ npm install
 # Render의 빌드 캐시는 /opt/render/.cache에 마운트됩니다.
 export PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 
-# Puppeteer가 browser를 설치하도록 합니다.
-# PUPPETEER_CACHE_DIR를 설정했기 때문에 여기에 설치됩니다.
-# 이 명령은 Chrome이 이미 캐시 디렉토리에 있는 경우 아무 작업도 수행하지 않으므로 실행해도 안전합니다.
-npx puppeteer browsers install chrome 
+# npx의 권한 문제를 피하기 위해 node를 사용하여 puppeteer cli 스크립트를 직접 실행합니다.
+node ./node_modules/puppeteer/bin/puppeteer.js browsers install chrome 
