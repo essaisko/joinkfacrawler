@@ -21,6 +21,10 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/crawler-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'crawler-dashboard.html'));
+});
+
 // CSV 파일 내용을 클라이언트로 전송 (Firebase 우선)
 app.get('/leagues-csv', async (req, res) => {
   try {
@@ -155,6 +159,70 @@ io.on('connection', (socket) => {
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
       socket.emit('process-ended', { processId, type: 'crawling' });
+    });
+  });
+
+  // 'start-crawling-version' 이벤트를 받으면 선택된 버전의 크롤러 실행
+  socket.on('start-crawling-version', (options) => {
+    const selectedVersion = options.version || 'meat.js';
+    console.log(`🚀 Crawling process started with version: ${selectedVersion}`, options);
+    socket.emit('log', `🚀 ${selectedVersion} 크롤링을 시작합니다...\n`);
+    socket.emit('log', `📋 필터 옵션: ${JSON.stringify({
+      year: options.year || '전체',
+      month: options.month || '전체', 
+      league: options.league || '전체'
+    })}\n`);
+    
+    // 옵션을 인자로 넘겨주기 위해 배열 생성
+    const args = [selectedVersion];
+    if (options.year) args.push(`--year=${options.year}`);
+    if (options.month) args.push(`--month=${options.month}`);
+    if (options.league) args.push(`--league=${options.league}`);
+
+    const crawler = spawn('node', args);
+    const processId = `crawling-version-${Date.now()}`;
+    
+    // 프로세스 추적에 추가
+    runningProcesses.set(processId, { 
+      process: crawler, 
+      type: 'crawling-version', 
+      version: selectedVersion,
+      socket: socket.id 
+    });
+    socket.runningProcesses.add(processId);
+    
+    // 클라이언트에 프로세스 ID 전송
+    socket.emit('process-started', { processId, type: 'crawling-version', version: selectedVersion });
+
+    crawler.stdout.on('data', (data) => {
+      const logMessage = data.toString();
+      console.log(logMessage);
+      socket.emit('log', logMessage);
+    });
+
+    crawler.stderr.on('data', (data) => {
+      const logMessage = `❌ ERROR: ${data.toString()}`;
+      console.error(logMessage);
+      socket.emit('log', logMessage);
+    });
+
+    crawler.on('close', (code) => {
+      const logMessage = `🏁 ${selectedVersion} 크롤링 프로세스가 종료되었습니다 (Code: ${code}).\n`;
+      console.log(logMessage);
+      socket.emit('log', logMessage);
+      
+      // 성공 여부에 따른 메시지
+      if (code === 0) {
+        socket.emit('log', `✅ 크롤링이 성공적으로 완료되었습니다! 🎉\n`);
+        socket.emit('log', `📁 결과 파일을 results/ 폴더에서 확인하세요.\n`);
+      } else {
+        socket.emit('log', `⚠️ 크롤링이 종료되었습니다. 에러 코드: ${code}\n`);
+      }
+      
+      // 프로세스 추적에서 제거
+      runningProcesses.delete(processId);
+      socket.runningProcesses.delete(processId);
+      socket.emit('process-ended', { processId, type: 'crawling-version', version: selectedVersion });
     });
   });
 

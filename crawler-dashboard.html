@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KFA 크롤러 버전 선택 대시보드</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab.active {
+            background: white;
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .version-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .version-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 5px 15px rgba(0,123,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .version-card.selected {
+            border-color: #007bff;
+            background: #f8f9ff;
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+        
+        .version-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .version-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .version-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .version-subtitle {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin: 5px 0 0 0;
+        }
+        
+        .version-badge {
+            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        
+        .badge-recommended { background: #d4edda; color: #155724; }
+        .badge-stable { background: #d1ecf1; color: #0c5460; }
+        .badge-fast { background: #fff3cd; color: #856404; }
+        .badge-turbo { background: #f8d7da; color: #721c24; }
+        
+        .version-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .version-features li {
+            padding: 5px 0;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+        }
+        
+        .version-features li::before {
+            content: '✓';
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .controls-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-input {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0056b3, #004085);
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #545b62);
+            color: white;
+        }
+        
+        .log-container {
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin: 20px 30px;
+            border-radius: 10px;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.running {
+            background: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-indicator.error {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .warning-banner {
+            margin: 20px 30px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .warning-banner.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .warning-banner.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 KFA 크롤러 버전 선택 대시보드</h1>
+        <p>최적의 크롤링 성능을 위해 적합한 버전을 선택하세요</p>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="crawling">
+                <span>🕷️ 크롤링 실행</span>
+            </div>
+            <div class="tab" data-tab="upload">
+                <span>☁️ Firebase 업로드</span>
+            </div>
+            <div class="tab" data-tab="settings">
+                <span>⚙️ 설정 관리</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 크롤링 탭 -->
+            <div id="crawling-tab" class="tab-content">
+                <h2>📊 크롤링 버전 선택</h2>
+                
+                <div class="warning-banner">
+                    <span>⚠️</span>
+                    <div>
+                        <strong>버전별 특성을 확인하고 선택하세요:</strong>
+                        meat-secure.js는 보안 회피 + 성능 향상으로 가장 추천됩니다.
+                    </div>
+                </div>
+
+                <div class="version-grid">
+                    <!-- 기존 버전 -->
+                    <div class="version-card" data-version="meat.js">
+                        <div class="version-header">
+                            <div class="version-icon">🐌</div>
+                            <div>
+                                <h3 class="version-title">기본 버전</h3>
+                                <p class="version-subtitle">meat.js</p>
+                            </div>
+                            <span class="version-badge badge-stable">안정</span>
+                        </div>
+                        <ul class="version-features">
+                            <li>검증된 안정성</li>
+                            <li>보안 회피 완벽</li>
+                            <li>순차 처리</li>
+                            <li>메모리 사용량 최소</li>
+                        </ul>
+                    </div>
+
+                    <!-- 보안 고려 버전 -->
+                    <div class="version-card selected" data-version="meat-secure.js">
+                        <div class="version-header">
+                            <div class="version-icon">🛡️</div>
+                            <div>
+                                <h3 class="version-title">보안 고려 버전</h3>
+                                <p class="version-subtitle">meat-secure.js</p>
+                            </div>
+                            <span class="version-badge badge-recommended">추천</span>
+                        </div>
+                        <ul class="version-features">
+                            <li>보안 회피 + 성능 향상</li>
+                            <li>2-3배 빠른 속도</li>
+                            <li>브라우저 지문 우회</li>
+                            <li>적절한 병렬 처리</li>
+                        </ul>
+                    </div>
+
+                    <!-- 최적화 버전 -->
+                    <div class="version-card" data-version="meat-optimized.js">
+                        <div class="version-header">
+                            <div class="version-icon">⚡</div>
+                            <div>
+                                <h3 class="version-title">최적화 버전</h3>
+                                <p class="version-subtitle">meat-optimized.js</p>
+                            </div>
+                            <span class="version-badge badge-fast">고성능</span>
+                        </div>
+                        <ul class="version-features">
+                            <li>3-5배 빠른 속도</li>
+                            <li>브라우저 재사용</li>
+                            <li>병렬 처리 최적화</li>
+                            <li>보안 차단 위험</li>
+                        </ul>
+                    </div>
+
+                    <!-- 터보 버전 -->
+                    <div class="version-card" data-version="meat-turbo.js">
+                        <div class="version-header">
+                            <div class="version-icon">🚀</div>
+                            <div>
+                                <h3 class="version-title">터보 버전</h3>
+                                <p class="version-subtitle">meat-turbo.js</p>
+                            </div>
+                            <span class="version-badge badge-turbo">위험</span>
+                        </div>
+                        <ul class="version-features">
+                            <li>5-10배 빠른 속도</li>
+                            <li>대량 병렬 처리</li>
+                            <li>최고 성능</li>
+                            <li>서버 차단 위험 높음</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h3>🔍 필터 설정</h3>
+                    <div class="filters-grid">
+                        <input type="text" class="filter-input" id="yearFilter" placeholder="년도 (예: 2025)">
+                        <input type="text" class="filter-input" id="monthFilter" placeholder="월 (예: 03)">
+                        <input type="text" class="filter-input" id="leagueFilter" placeholder="리그명 (예: K5)">
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="startCrawlingBtn">
+                            <span>🚀</span>
+                            크롤링 시작
+                        </button>
+                        <button class="btn btn-danger hidden" id="stopCrawlingBtn">
+                            <span>🛑</span>
+                            크롤링 중단
+                        </button>
+                        <button class="btn btn-secondary" id="clearFiltersBtn">
+                            <span>🧹</span>
+                            필터 초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 업로드 탭 -->
+            <div id="upload-tab" class="tab-content hidden">
+                <h2>☁️ Firebase 업로드</h2>
+                
+                <div class="filters-section">
+                    <h3>🔍 업로드 필터</h3>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">년도</label>
+                            <input type="text" class="filter-input" id="uploadYearFilter" placeholder="예: 2025">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">월</label>
+                            <input type="text" class="filter-input" id="uploadMonthFilter" placeholder="예: 03">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">리그명</label>
+                            <input type="text" class="filter-input" id="uploadLeagueFilter" placeholder="예: K5">
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="startUploadBtn">
+                            <span>☁️</span>
+                            업로드 시작
+                        </button>
+                        <button class="btn btn-danger hidden" id="stopUploadBtn">
+                            <span>🛑</span>
+                            업로드 중단
+                        </button>
+                        <button class="btn btn-secondary" id="copyFiltersBtn">
+                            <span>📋</span>
+                            크롤링 필터 복사
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 설정 탭 -->
+            <div id="settings-tab" class="tab-content hidden">
+                <h2>⚙️ 리그 설정 관리</h2>
+                
+                <div class="filters-section">
+                    <h3>📝 leagues.csv 편집</h3>
+                    <textarea id="csvEditor" style="width: 100%; height: 300px; font-family: monospace; padding: 15px; border: 2px solid #e9ecef; border-radius: 8px;" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
+                    
+                    <div class="action-buttons" style="margin-top: 15px;">
+                        <button class="btn btn-primary" id="saveCsvBtn">
+                            <span>💾</span>
+                            Firebase에 저장
+                        </button>
+                        <button class="btn btn-secondary" id="refreshCsvBtn">
+                            <span>🔄</span>
+                            새로고침
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 로그 컨테이너 -->
+            <div class="log-container" id="logContainer">
+                크롤링 로그가 여기에 표시됩니다...
+                
+🚀 다양한 버전을 테스트해보세요!
+🛡️ meat-secure.js가 가장 추천됩니다 (보안 + 성능)
+⚡ 속도가 중요하다면 meat-optimized.js를 시도해보세요
+🐌 안전을 우선한다면 기본 meat.js를 사용하세요
+            </div>
+        </div>
+
+        <!-- 상태 바 -->
+        <div class="status-bar">
+            <div style="display: flex; align-items: center;">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">대기 중</span>
+            </div>
+            <div>
+                <span>선택된 버전: </span>
+                <strong id="selectedVersion">meat-secure.js</strong>
+            </div>
+            <div>
+                <span>실행 시간: </span>
+                <strong id="executionTime">0초</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- 성능 통계 (로그 아래에 표시) -->
+    <div id="performanceStats" class="performance-stats hidden">
+        <div class="stat-card">
+            <div class="stat-value" id="totalRequests">0</div>
+            <div class="stat-label">총 요청 수</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="successRate">0%</div>
+            <div class="stat-label">성공률</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgSpeed">0</div>
+            <div class="stat-label">평균 속도 (req/min)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalMatches">0</div>
+            <div class="stat-label">총 경기 수</div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        // DOM 요소들
+        const versionCards = document.querySelectorAll('.version-card');
+        const startCrawlingBtn = document.getElementById('startCrawlingBtn');
+        const stopCrawlingBtn = document.getElementById('stopCrawlingBtn');
+        const startUploadBtn = document.getElementById('startUploadBtn');
+        const stopUploadBtn = document.getElementById('stopUploadBtn');
+        const logContainer = document.getElementById('logContainer');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const selectedVersionSpan = document.getElementById('selectedVersion');
+        const executionTime = document.getElementById('executionTime');
+        
+        // 필터 요소들
+        const yearFilter = document.getElementById('yearFilter');
+        const monthFilter = document.getElementById('monthFilter');
+        const leagueFilter = document.getElementById('leagueFilter');
+        const uploadYearFilter = document.getElementById('uploadYearFilter');
+        const uploadMonthFilter = document.getElementById('uploadMonthFilter');
+        const uploadLeagueFilter = document.getElementById('uploadLeagueFilter');
+        
+        // CSV 편집 요소들
+        const csvEditor = document.getElementById('csvEditor');
+        const saveCsvBtn = document.getElementById('saveCsvBtn');
+        const refreshCsvBtn = document.getElementById('refreshCsvBtn');
+        
+        // 탭 요소들
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // 상태 관리
+        let selectedVersion = 'meat-secure.js';
+        let currentProcess = null;
+        let startTime = null;
+        let timerInterval = null;
+        
+        // 버전 카드 선택 이벤트
+        versionCards.forEach(card => {
+            card.addEventListener('click', () => {
+                versionCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedVersion = card.dataset.version;
+                selectedVersionSpan.textContent = selectedVersion;
+                
+                showVersionWarning(selectedVersion);
+            });
+        });
+        
+        // 탭 전환 이벤트
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                document.getElementById(targetTab + '-tab').classList.remove('hidden');
+            });
+        });
+        
+        // 버전별 경고 표시
+        function showVersionWarning(version) {
+            const existingWarning = document.querySelector('.version-warning');
+            if (existingWarning) existingWarning.remove();
+            
+            let warningMessage = '';
+            let warningClass = 'warning-banner version-warning';
+            
+            switch(version) {
+                case 'meat.js':
+                    warningMessage = '🐌 기본 버전은 가장 안전하지만 속도가 느립니다.';
+                    break;
+                case 'meat-secure.js':
+                    warningMessage = '🛡️ 추천 버전입니다. 보안과 성능의 최적 균형을 제공합니다.';
+                    warningClass += ' success';
+                    break;
+                case 'meat-optimized.js':
+                    warningMessage = '⚡ 고성능 버전이지만 보안 차단 위험이 있습니다. 주의하세요.';
+                    break;
+                case 'meat-turbo.js':
+                    warningMessage = '🚀 최고 성능이지만 서버 차단 위험이 높습니다. 신중히 사용하세요.';
+                    warningClass += ' error';
+                    break;
+            }
+            
+            if (warningMessage) {
+                const warning = document.createElement('div');
+                warning.className = warningClass;
+                warning.innerHTML = `<span>ℹ️</span><div>${warningMessage}</div>`;
+                
+                const versionGrid = document.querySelector('.version-grid');
+                versionGrid.parentNode.insertBefore(warning, versionGrid.nextSibling);
+            }
+        }
+        
+        // 크롤링 시작
+        startCrawlingBtn.addEventListener('click', () => {
+            const options = {
+                version: selectedVersion,
+                year: yearFilter.value.trim(),
+                month: monthFilter.value.trim(),
+                league: leagueFilter.value.trim()
+            };
+            
+            logContainer.textContent = '';
+            startCrawlingBtn.disabled = true;
+            stopCrawlingBtn.classList.remove('hidden');
+            startCrawlingBtn.classList.add('hidden');
+            
+            updateStatus('running', `${selectedVersion} 실행 중...`);
+            startTimer();
+            
+            socket.emit('start-crawling-version', options);
+        });
+        
+        // 크롤링 중단
+        stopCrawlingBtn.addEventListener('click', () => {
+            if (currentProcess) {
+                socket.emit('stop-process', { processId: currentProcess });
+                showNotification('크롤링 중단 요청을 보냈습니다...');
+            }
+        });
+        
+        // 업로드 시작
+        startUploadBtn.addEventListener('click', () => {
+            const options = {
+                year: uploadYearFilter.value.trim(),
+                month: uploadMonthFilter.value.trim(),
+                league: uploadLeagueFilter.value.trim()
+            };
+            
+            startUploadBtn.disabled = true;
+            stopUploadBtn.classList.remove('hidden');
+            startUploadBtn.classList.add('hidden');
+            
+            updateStatus('running', 'Firebase 업로드 중...');
+            startTimer();
+            
+            socket.emit('start-uploading', options);
+        });
+        
+        // 필터 복사
+        document.getElementById('copyFiltersBtn').addEventListener('click', () => {
+            uploadYearFilter.value = yearFilter.value;
+            uploadMonthFilter.value = monthFilter.value;
+            uploadLeagueFilter.value = leagueFilter.value;
+            
+            showNotification('크롤링 필터가 복사되었습니다!');
+        });
+        
+        // 필터 초기화
+        document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+            yearFilter.value = '';
+            monthFilter.value = '';
+            leagueFilter.value = '';
+            
+            showNotification('필터가 초기화되었습니다!');
+        });
+        
+        // 상태 업데이트
+        function updateStatus(status, text) {
+            statusIndicator.className = 'status-indicator ' + status;
+            statusText.textContent = text;
+        }
+        
+        // 타이머 시작
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                executionTime.textContent = formatTime(elapsed);
+            }, 1000);
+        }
+        
+        // 타이머 중단
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+        
+        // 시간 포맷팅
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`;
+        }
+        
+        // 알림 표시
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'warning-banner success';
+            notification.innerHTML = `<span>📢</span><div>${message}</div>`;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '1000';
+            notification.style.maxWidth = '300px';
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // 소켓 이벤트 리스너들
+        socket.on('log', (data) => {
+            logContainer.textContent += data;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        });
+        
+        socket.on('process-started', (data) => {
+            currentProcess = data.processId;
+        });
+        
+        socket.on('process-ended', (data) => {
+            currentProcess = null;
+            stopTimer();
+            
+            startCrawlingBtn.disabled = false;
+            stopCrawlingBtn.classList.add('hidden');
+            startCrawlingBtn.classList.remove('hidden');
+            
+            startUploadBtn.disabled = false;
+            stopUploadBtn.classList.add('hidden');
+            startUploadBtn.classList.remove('hidden');
+            
+            updateStatus('', '완료');
+            showNotification('크롤링이 완료되었습니다! 🎉');
+        });
+        
+        socket.on('process-error', (data) => {
+            updateStatus('error', '오류 발생');
+            showNotification('크롤링 중 오류가 발생했습니다.');
+        });
+        
+        // CSV 관련 기능들
+        async function loadCsvContent() {
+            try {
+                const response = await fetch('/leagues-csv');
+                const csvContent = await response.text();
+                csvEditor.value = csvContent;
+            } catch (error) {
+                console.error('CSV 로드 실패:', error);
+                showNotification('CSV 파일 로드에 실패했습니다.');
+            }
+        }
+        
+        // CSV 저장
+        saveCsvBtn.addEventListener('click', async () => {
+            try {
+                saveCsvBtn.disabled = true;
+                const response = await fetch('/leagues-csv', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: csvEditor.value })
+                });
+                
+                if (response.ok) {
+                    showNotification('CSV 파일이 저장되었습니다!');
+                } else {
+                    throw new Error('저장 실패');
+                }
+            } catch (error) {
+                showNotification('CSV 파일 저장에 실패했습니다.');
+            } finally {
+                saveCsvBtn.disabled = false;
+            }
+        });
+        
+        // CSV 새로고침
+        refreshCsvBtn.addEventListener('click', loadCsvContent);
+        
+        // 초기 로드
+        showVersionWarning(selectedVersion);
+        loadCsvContent();
+        
+        // 페이지 로드 시 알림
+        showNotification('크롤러 대시보드에 오신 것을 환영합니다! 🚀');
+    </script>
+</body>
+</html> 
