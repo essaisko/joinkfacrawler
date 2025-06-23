@@ -17,7 +17,8 @@ const PORT = process.env.PORT || 3000;
 
 app.post('/deploy', (req, res) => {
   const secret = 'breadbro'; // 보안용 토큰
-  const gitRepoPath = '/home/ubuntu'; // 실제 git 폴더 경로
+  const gitRepoPath = '/home/ubuntu/joinkfacrawler';
+
   const bodyToken = req.headers['x-deploy-token'];
 
   if (bodyToken !== secret) {
