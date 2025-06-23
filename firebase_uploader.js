@@ -22,9 +22,12 @@ const { year: filterYear, month: filterMonth, league: filterLeague } = cliArgs;
 // 아래 'your-service-account-key.json' 부분을 실제 파일명으로 바꾸세요.
 
 // 2. Firebase 초기화
+const serviceAccount = require('./firebase-admin-sdk.json');
 admin.initializeApp({
-  credential: admin.credential.applicationDefault()
+  credential: admin.credential.cert(serviceAccount)
 });
+
+
 
 
 console.log('✅ Firebase Admin SDK가 성공적으로 초기화되었습니다.');
