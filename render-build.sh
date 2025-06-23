@@ -9,5 +9,6 @@ npm install
 # Render의 빌드 캐시는 /opt/render/.cache에 마운트됩니다.
 export PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 
-# npx의 권한 문제를 피하기 위해 node를 사용하여 puppeteer cli 스크립트를 직접 실행합니다.
-node ./node_modules/puppeteer/bin/puppeteer.js browsers install chrome 
+# Puppeteer의 설치 스크립트를 직접 실행하여 브라우저를 다운로드합니다.
+# 이것은 npm postinstall과 유사하게 작동하지만 명시적으로 실행됩니다.
+node ./node_modules/puppeteer/install.js 
