@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase } = require('./firebase_uploader');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,19 +21,46 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// CSV 파일 내용을 클라이언트로 전송
-app.get('/leagues-csv', (req, res) => {
+// CSV 파일 내용을 클라이언트로 전송 (Firebase 우선)
+app.get('/leagues-csv', async (req, res) => {
   try {
-    const csvData = fs.readFileSync(path.join(__dirname, 'leagues.csv'), 'utf-8');
-    res.type('text/plain').send(csvData);
+    console.log('📥 CSV 데이터 요청 받음');
+    
+    // 먼저 Firebase에서 시도
+    const firebaseContent = await downloadCsvFromFirebase();
+    
+    if (firebaseContent !== null) {
+      console.log('✅ Firebase에서 CSV 데이터 로드 성공');
+      res.type('text/plain').send(firebaseContent);
+      return;
+    }
+    
+    // Firebase에 데이터가 없으면 로컬 파일 사용
+    console.log('📄 로컬 CSV 파일에서 데이터 로드 시도');
+    const localPath = path.join(__dirname, 'leagues.csv');
+    
+    if (fs.existsSync(localPath)) {
+      const csvData = fs.readFileSync(localPath, 'utf-8');
+      console.log('✅ 로컬 CSV 파일 로드 성공');
+      
+      // 로컬 파일을 Firebase에 동기화
+      console.log('🔄 로컬 CSV를 Firebase에 동기화 중...');
+      await uploadCsvToFirebase(csvData);
+      
+      res.type('text/plain').send(csvData);
+    } else {
+      console.log('⚠️ 로컬 CSV 파일도 없음, 기본 템플릿 제공');
+      const defaultCsv = 'leagueTag,regionTag,year,leagueTitle,matchIdx\n';
+      res.type('text/plain').send(defaultCsv);
+    }
   } catch (error) {
-    console.error('Error reading leagues.csv:', error);
+    console.error('❌ CSV 로드 중 오류:', error);
     res.status(500).send('Error reading leagues.csv');
   }
 });
 
-// 클라이언트로부터 받은 내용으로 CSV 파일 저장
-app.post('/leagues-csv', (req, res) => {
+// 클라이언트로부터 받은 내용으로 CSV 파일 저장 (Firebase 우선)
+app.post('/leagues-csv', async (req, res) => {
   try {
     const { content } = req.body;
     console.log('📝 CSV 저장 요청 받음, 내용 길이:', content ? content.length : 'undefined');
@@ -42,15 +70,33 @@ app.post('/leagues-csv', (req, res) => {
       return res.status(400).send('Invalid content.');
     }
     
-    const filePath = path.join(__dirname, 'leagues.csv');
-    fs.writeFileSync(filePath, content, 'utf-8');
-    console.log('✅ CSV 파일 저장 완료:', filePath);
+    // Firebase에 저장
+    console.log('🔄 CSV 데이터를 Firebase에 저장 중...');
+    const firebaseSuccess = await uploadCsvToFirebase(content);
     
-    // 저장 후 파일 내용 확인
-    const savedContent = fs.readFileSync(filePath, 'utf-8');
-    console.log('📄 저장된 파일 내용 확인 (첫 100자):', savedContent.substring(0, 100));
+    if (firebaseSuccess) {
+      console.log('✅ Firebase에 CSV 저장 성공');
+      
+      // 로컬 파일도 백업으로 저장
+      try {
+        const filePath = path.join(__dirname, 'leagues.csv');
+        fs.writeFileSync(filePath, content, 'utf-8');
+        console.log('✅ 로컬 백업 파일도 저장 완료');
+      } catch (localError) {
+        console.warn('⚠️ 로컬 백업 저장 실패:', localError.message);
+      }
+      
+      res.status(200).send('CSV file saved successfully to Firebase.');
+    } else {
+      // Firebase 저장 실패시 로컬에만 저장
+      console.log('⚠️ Firebase 저장 실패, 로컬에만 저장');
+      const filePath = path.join(__dirname, 'leagues.csv');
+      fs.writeFileSync(filePath, content, 'utf-8');
+      console.log('✅ 로컬 CSV 파일 저장 완료');
+      
+      res.status(200).send('CSV file saved locally (Firebase failed).');
+    }
     
-    res.status(200).send('CSV file saved successfully.');
   } catch (error) {
     console.error('❌ Error saving leagues.csv:', error);
     res.status(500).send('Error saving leagues.csv');
@@ -198,17 +244,41 @@ io.on('connection', (socket) => {
           console.log(`🧹 연결 해제로 인한 프로세스 정리: ${processId}`);
           try {
             processInfo.process.kill('SIGTERM');
-            runningProcesses.delete(processId);
+            setTimeout(() => {
+              if (runningProcesses.has(processId)) {
+                processInfo.process.kill('SIGKILL');
+              }
+            }, 1000);
           } catch (error) {
             console.error(`❌ 프로세스 정리 실패: ${error.message}`);
           }
+          runningProcesses.delete(processId);
         }
       });
-      socket.runningProcesses.clear();
     }
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🌍 Web server running at http://localhost:${PORT}`);
-}); 
+// 서버 시작시 로컬 CSV를 Firebase에 동기화
+async function initializeServer() {
+  console.log('🚀 서버 초기화 중...');
+  
+  try {
+    // 로컬 CSV 파일이 있으면 Firebase에 동기화
+    const localCsvPath = path.join(__dirname, 'leagues.csv');
+    if (fs.existsSync(localCsvPath)) {
+      console.log('🔄 서버 시작시 로컬 CSV를 Firebase에 동기화...');
+      await syncCsvWithFirebase();
+    }
+  } catch (error) {
+    console.warn('⚠️ 서버 초기화 중 CSV 동기화 실패:', error.message);
+  }
+  
+  server.listen(PORT, () => {
+    console.log(`✅ Server is running on http://localhost:${PORT}`);
+    console.log('🔥 Firebase CSV 연동이 활성화되었습니다!');
+  });
+}
+
+// 서버 초기화 실행
+initializeServer(); 

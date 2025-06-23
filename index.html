@@ -120,11 +120,14 @@
         <h1>KFA 크롤러 대시보드</h1>
         
         <div class="section">
-            <h2>리그 목록 (leagues.csv)</h2>
+            <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
             <textarea id="csvEditor" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button id="saveCsvBtn">CSV 저장</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
+                <button id="saveCsvBtn">Firebase에 저장</button>
                 <button id="refreshCsvBtn" style="background-color: #17a2b8;">🔄 새로고침</button>
+                <div id="csvSyncStatus" style="font-size: 12px; color: #666; margin-left: 10px;">
+                    💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!
+                </div>
             </div>
         </div>
 
@@ -189,17 +192,40 @@
         async function refreshCsvContent() {
             try {
                 console.log('🔄 CSV 파일 새로고침 중...');
+                const firebaseStatus = document.getElementById('firebaseStatus');
+                const csvSyncStatus = document.getElementById('csvSyncStatus');
+                
+                firebaseStatus.textContent = '🔄 로딩 중...';
+                firebaseStatus.style.color = '#ffc107';
+                
                 const response = await fetch('/leagues-csv?' + new Date().getTime()); // 캐시 방지
                 if (response.ok) {
                     const content = await response.text();
                     csvEditor.value = content;
                     console.log('✅ CSV 파일 새로고침 완료');
                     console.log('📄 현재 CSV 내용:', content);
+                    
+                    // Firebase 연동 상태 업데이트
+                    firebaseStatus.textContent = '🔥 Firebase 연동';
+                    firebaseStatus.style.color = '#28a745';
+                    csvSyncStatus.textContent = '✅ Firebase에서 최신 데이터를 불러왔습니다!';
+                    csvSyncStatus.style.color = '#28a745';
+                    
+                    // 3초 후 기본 메시지로 복원
+                    setTimeout(() => {
+                        csvSyncStatus.textContent = '💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!';
+                        csvSyncStatus.style.color = '#666';
+                    }, 3000);
                 } else {
                     appendLog('❌ leagues.csv 파일을 불러오는 데 실패했습니다.');
+                    firebaseStatus.textContent = '❌ 연결 실패';
+                    firebaseStatus.style.color = '#dc3545';
                 }
             } catch (error) {
                 appendLog(`❌ CSV 로딩 중 오류 발생: ${error.message}`);
+                const firebaseStatus = document.getElementById('firebaseStatus');
+                firebaseStatus.textContent = '❌ 연결 실패';
+                firebaseStatus.style.color = '#dc3545';
             }
         }
 
@@ -210,7 +236,13 @@
         saveCsvBtn.addEventListener('click', async () => {
             try {
                 saveCsvBtn.disabled = true;
-                saveCsvBtn.textContent = '저장 중...';
+                saveCsvBtn.textContent = 'Firebase에 저장 중...';
+                
+                const firebaseStatus = document.getElementById('firebaseStatus');
+                const csvSyncStatus = document.getElementById('csvSyncStatus');
+                
+                firebaseStatus.textContent = '🔄 저장 중...';
+                firebaseStatus.style.color = '#ffc107';
                 
                 const content = csvEditor.value;
                 console.log('클라이언트에서 전송할 CSV 내용 길이:', content.length);
@@ -224,31 +256,43 @@
 
                 if (response.ok) {
                     const responseText = await response.text();
-                    appendLog('✅ CSV 파일이 성공적으로 저장되었습니다.');
+                    appendLog('✅ CSV 파일이 Firebase에 성공적으로 저장되었습니다.');
                     console.log('서버 응답:', responseText);
                     
-                    // 저장 성공 시 버튼 색상 변경
+                    // 저장 성공 시 상태 업데이트
+                    firebaseStatus.textContent = '🔥 Firebase 연동';
+                    firebaseStatus.style.color = '#28a745';
                     saveCsvBtn.style.backgroundColor = '#28a745';
-                    saveCsvBtn.textContent = '저장 완료!';
+                    saveCsvBtn.textContent = 'Firebase에 저장 완료!';
+                    csvSyncStatus.textContent = '✅ Firebase에 성공적으로 저장되었습니다!';
+                    csvSyncStatus.style.color = '#28a745';
                     
-                    // 저장 후 파일 내용 새로고침 (1초 후)
-                    setTimeout(async () => {
-                        await refreshCsvContent();
+                    // 3초 후 기본 상태로 복원
+                    setTimeout(() => {
                         saveCsvBtn.style.backgroundColor = '#6c757d';
-                        saveCsvBtn.textContent = 'CSV 저장';
-                    }, 1000);
+                        saveCsvBtn.textContent = 'Firebase에 저장';
+                        csvSyncStatus.textContent = '💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!';
+                        csvSyncStatus.style.color = '#666';
+                    }, 3000);
                 } else {
                     const errorText = await response.text();
                     appendLog(`❌ CSV 파일 저장에 실패했습니다: ${errorText}`);
                     console.error('서버 오류:', errorText);
+                    
+                    firebaseStatus.textContent = '❌ 저장 실패';
+                    firebaseStatus.style.color = '#dc3545';
                 }
             } catch (error) {
                 appendLog(`❌ CSV 저장 중 오류 발생: ${error.message}`);
                 console.error('CSV 저장 오류:', error);
+                
+                const firebaseStatus = document.getElementById('firebaseStatus');
+                firebaseStatus.textContent = '❌ 저장 실패';
+                firebaseStatus.style.color = '#dc3545';
             } finally {
-                if (saveCsvBtn.textContent === '저장 중...') {
+                if (saveCsvBtn.textContent.includes('저장 중')) {
                     saveCsvBtn.disabled = false;
-                    saveCsvBtn.textContent = 'CSV 저장';
+                    saveCsvBtn.textContent = 'Firebase에 저장';
                 }
             }
         });

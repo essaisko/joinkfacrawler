@@ -33,6 +33,81 @@ console.log('✅ Firebase Admin SDK가 성공적으로 초기화되었습니다.
 
 const db = admin.firestore();
 
+// CSV 관련 함수들
+async function uploadCsvToFirebase(csvContent) {
+  try {
+    console.log('📄 CSV 데이터를 Firebase에 업로드 중...');
+    
+    // CSV 내용을 파싱하여 배열로 변환
+    const lines = csvContent.trim().split('\n');
+    const headers = lines[0].split(',');
+    const leagues = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].trim()) {
+        const values = lines[i].split(',');
+        const league = {};
+        headers.forEach((header, index) => {
+          league[header.trim()] = values[index] ? values[index].trim() : '';
+        });
+        leagues.push(league);
+      }
+    }
+    
+    // Firestore에 저장
+    const docRef = db.collection('config').doc('leagues');
+    await docRef.set({
+      csvContent: csvContent,
+      leagues: leagues,
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    console.log('✅ CSV 데이터가 Firebase에 성공적으로 업로드되었습니다.');
+    return true;
+  } catch (error) {
+    console.error('❌ CSV 업로드 중 오류:', error);
+    return false;
+  }
+}
+
+async function downloadCsvFromFirebase() {
+  try {
+    console.log('📥 Firebase에서 CSV 데이터를 다운로드 중...');
+    
+    const docRef = db.collection('config').doc('leagues');
+    const doc = await docRef.get();
+    
+    if (doc.exists) {
+      const data = doc.data();
+      console.log('✅ Firebase에서 CSV 데이터를 성공적으로 다운로드했습니다.');
+      return data.csvContent || '';
+    } else {
+      console.log('📄 Firebase에 CSV 데이터가 없습니다. 로컬 파일을 사용합니다.');
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ CSV 다운로드 중 오류:', error);
+    return null;
+  }
+}
+
+async function syncCsvWithFirebase() {
+  try {
+    const localCsvPath = path.join(__dirname, 'leagues.csv');
+    
+    // 로컬 파일이 존재하는지 확인
+    if (fs.existsSync(localCsvPath)) {
+      const localContent = fs.readFileSync(localCsvPath, 'utf-8');
+      await uploadCsvToFirebase(localContent);
+      console.log('🔄 로컬 CSV 파일을 Firebase에 동기화했습니다.');
+    } else {
+      console.log('⚠️ 로컬 leagues.csv 파일이 없습니다.');
+    }
+  } catch (error) {
+    console.error('❌ CSV 동기화 중 오류:', error);
+  }
+}
+
 // --- 앞으로 이 아래에 업로드 코드를 추가합니다. ---
 
 // results 폴더 내의 모든 json 파일 경로를 재귀적으로 찾는 함수
@@ -186,5 +261,34 @@ async function uploadAllMatchesToFirestore() {
   }
 }
 
-// 업로드 함수 실행
-uploadAllMatchesToFirestore(); 
+// 명령줄 인자 확인하여 작업 결정
+const action = process.argv[2];
+
+if (action === 'sync-csv') {
+  syncCsvWithFirebase();
+} else if (action === 'upload-csv') {
+  const csvContent = process.argv[3];
+  if (csvContent) {
+    uploadCsvToFirebase(csvContent);
+  } else {
+    console.error('❌ CSV 내용이 제공되지 않았습니다.');
+  }
+} else if (action === 'download-csv') {
+  downloadCsvFromFirebase().then(content => {
+    if (content) {
+      console.log('📄 CSV 내용:');
+      console.log(content);
+    }
+  });
+} else {
+  // 기본 동작: 매치 데이터 업로드
+  uploadAllMatchesToFirestore();
+}
+
+// 모듈로 사용할 때를 위한 exports
+module.exports = {
+  uploadCsvToFirebase,
+  downloadCsvFromFirebase,
+  syncCsvWithFirebase,
+  db
+}; 
