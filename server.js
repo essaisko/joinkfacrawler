@@ -15,25 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 
 
-app.post('/deploy', (req, res) => {
-  const secret = 'breadbro'; // 보안용 토큰
-  const gitRepoPath = '/home/ubuntu/joinkfacrawler';
 
-  const bodyToken = req.headers['x-deploy-token'];
-
-  if (bodyToken !== secret) {
-    return res.status(403).send('Invalid deploy token');
-  }
-
-  exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
-    if (err) {
-      console.error('❌ 자동배포 실패:', err);
-      return res.status(500).send('Deploy failed.');
-    }
-    console.log('✅ 자동배포 완료:\n', stdout);
-    res.send('✅ Deployed:\n' + stdout);
-  });
-});
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
 // 정적 파일(index.html) 제공
@@ -88,6 +70,26 @@ app.get('/leagues-csv', async (req, res) => {
     console.error('❌ CSV 로드 중 오류:', error);
     res.status(500).send('Error reading leagues.csv');
   }
+});
+
+app.post('/deploy', (req, res) => {
+  const secret = 'breadbro'; // 보안용 토큰
+  const gitRepoPath = '/home/ubuntu/joinkfacrawler';
+
+  const bodyToken = req.headers['x-deploy-token'];
+
+  if (bodyToken !== secret) {
+    return res.status(403).send('Invalid deploy token');
+  }
+
+  exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
+    if (err) {
+      console.error('❌ 자동배포 실패:', err);
+      return res.status(500).send('Deploy failed.');
+    }
+    console.log('✅ 자동배포 완료:\n', stdout);
+    res.send('✅ Deployed:\n' + stdout);
+  });
 });
 
 // 클라이언트로부터 받은 내용으로 CSV 파일 저장 (Firebase 우선)
