@@ -2,7 +2,8 @@
 # exit on error
 set -o errexit
 
-# npm install을 먼저 실행하여 puppeteer를 포함한 모든 종속성을 설치합니다.
+# npm install을 실행하면 puppeteer가 .puppeteerrc.cjs 파일을 참조하여
+# 프로젝트 내부에 브라우저를 설치합니다.
 npm install
 
 # Puppeteer가 Chrome을 다운로드하고 압축을 풀 캐시 디렉토리를 지정하고 생성합니다.
