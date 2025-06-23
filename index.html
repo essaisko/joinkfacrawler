@@ -104,6 +104,9 @@
          #saveCsvBtn:hover:not(:disabled) {
             background-color: #5a6268;
         }
+        #copyFiltersBtn:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -126,8 +129,23 @@
             </div>
             <div class="buttons" style="margin-top: 15px;">
                 <button id="crawlBtn">1. 데이터 크롤링 시작</button>
-                <button id="uploadBtn">2. Firestore에 업로드</button>
             </div>
+        </div>
+
+        <div class="section">
+            <h2>Firebase 업로드</h2>
+            <div class="control-grid">
+                <input type="text" id="uploadYearFilter" placeholder="특정 년도 (e.g., 2025)">
+                <input type="text" id="uploadMonthFilter" placeholder="특정 월 (e.g., 05)">
+                <input type="text" id="uploadLeagueFilter" placeholder="리그명 일부 검색">
+            </div>
+            <div class="buttons" style="margin-top: 15px;">
+                <button id="uploadBtn">2. Firestore에 업로드</button>
+                <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
+            </div>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                💡 팁: 필터를 비워두면 모든 데이터를 업로드합니다. "크롤링 필터 복사" 버튼으로 위의 크롤링 조건을 쉽게 복사할 수 있습니다.
+            </p>
         </div>
         
         <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
@@ -145,6 +163,11 @@
         const yearFilter = document.getElementById('yearFilter');
         const monthFilter = document.getElementById('monthFilter');
         const leagueFilter = document.getElementById('leagueFilter');
+        
+        const uploadYearFilter = document.getElementById('uploadYearFilter');
+        const uploadMonthFilter = document.getElementById('uploadMonthFilter');
+        const uploadLeagueFilter = document.getElementById('uploadLeagueFilter');
+        const copyFiltersBtn = document.getElementById('copyFiltersBtn');
 
         // 페이지 로드 시 CSV 데이터 불러오기
         window.addEventListener('load', async () => {
@@ -228,7 +251,29 @@
         uploadBtn.addEventListener('click', () => {
             logContainer.innerHTML = '';
             disableButtons();
-            socket.emit('start-uploading');
+            
+            const uploadOptions = {
+                year: uploadYearFilter.value.trim(),
+                month: uploadMonthFilter.value.trim(),
+                league: uploadLeagueFilter.value.trim()
+            };
+
+            socket.emit('start-uploading', uploadOptions);
+        });
+
+        // 크롤링 필터 복사 버튼 이벤트
+        copyFiltersBtn.addEventListener('click', () => {
+            uploadYearFilter.value = yearFilter.value;
+            uploadMonthFilter.value = monthFilter.value;
+            uploadLeagueFilter.value = leagueFilter.value;
+            
+            // 시각적 피드백
+            copyFiltersBtn.textContent = '복사 완료!';
+            copyFiltersBtn.style.backgroundColor = '#28a745';
+            setTimeout(() => {
+                copyFiltersBtn.textContent = '크롤링 필터 복사';
+                copyFiltersBtn.style.backgroundColor = '#6c757d';
+            }, 1000);
         });
     </script>
 </body>

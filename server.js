@@ -83,10 +83,17 @@ io.on('connection', (socket) => {
   });
 
   // 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
-  socket.on('start-uploading', () => {
-    console.log('🚀 Uploading process started...');
-    socket.emit('log', '🚀 Firestore 업로드를 시작합니다...');
-    const uploader = spawn('node', ['firebase_uploader.js']);
+  socket.on('start-uploading', (options) => {
+    console.log('🚀 Uploading process started with options:', options);
+    socket.emit('log', `🚀 Firestore 업로드를 시작합니다... (옵션: ${JSON.stringify(options)})\n`);
+    
+    // 옵션을 인자로 넘겨주기 위해 배열 생성
+    const args = ['firebase_uploader.js'];
+    if (options.year) args.push(`--year=${options.year}`);
+    if (options.month) args.push(`--month=${options.month}`);
+    if (options.league) args.push(`--league=${options.league}`);
+
+    const uploader = spawn('node', args);
 
     uploader.stdout.on('data', (data) => {
       const logMessage = data.toString();
