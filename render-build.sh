@@ -5,6 +5,11 @@ set -o errexit
 # npm install을 먼저 실행하여 puppeteer를 포함한 모든 종속성을 설치합니다.
 npm install
 
+# 디버깅: puppeteer 디렉토리 내용 확인
+echo "--- Checking contents of node_modules/puppeteer ---"
+ls -la ./node_modules/puppeteer || echo "puppeteer directory not found"
+echo "------------------------------------------------"
+
 # Puppeteer가 Chrome을 다운로드하고 압축을 풀 캐시 디렉토리를 지정하고 생성합니다.
 # Render의 빌드 캐시는 /opt/render/.cache에 마운트됩니다.
 export PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
