@@ -21,8 +21,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/crawler-dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'crawler-dashboard.html'));
+// Health check 엔드포인트 (서버 활성 상태 유지용)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'alive', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // CSV 파일 내용을 클라이언트로 전송 (Firebase 우선)
@@ -162,69 +167,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // 'start-crawling-version' 이벤트를 받으면 선택된 버전의 크롤러 실행
-  socket.on('start-crawling-version', (options) => {
-    const selectedVersion = options.version || 'meat.js';
-    console.log(`🚀 Crawling process started with version: ${selectedVersion}`, options);
-    socket.emit('log', `🚀 ${selectedVersion} 크롤링을 시작합니다...\n`);
-    socket.emit('log', `📋 필터 옵션: ${JSON.stringify({
-      year: options.year || '전체',
-      month: options.month || '전체', 
-      league: options.league || '전체'
-    })}\n`);
-    
-    // 옵션을 인자로 넘겨주기 위해 배열 생성
-    const args = [selectedVersion];
-    if (options.year) args.push(`--year=${options.year}`);
-    if (options.month) args.push(`--month=${options.month}`);
-    if (options.league) args.push(`--league=${options.league}`);
 
-    const crawler = spawn('node', args);
-    const processId = `crawling-version-${Date.now()}`;
-    
-    // 프로세스 추적에 추가
-    runningProcesses.set(processId, { 
-      process: crawler, 
-      type: 'crawling-version', 
-      version: selectedVersion,
-      socket: socket.id 
-    });
-    socket.runningProcesses.add(processId);
-    
-    // 클라이언트에 프로세스 ID 전송
-    socket.emit('process-started', { processId, type: 'crawling-version', version: selectedVersion });
-
-    crawler.stdout.on('data', (data) => {
-      const logMessage = data.toString();
-      console.log(logMessage);
-      socket.emit('log', logMessage);
-    });
-
-    crawler.stderr.on('data', (data) => {
-      const logMessage = `❌ ERROR: ${data.toString()}`;
-      console.error(logMessage);
-      socket.emit('log', logMessage);
-    });
-
-    crawler.on('close', (code) => {
-      const logMessage = `🏁 ${selectedVersion} 크롤링 프로세스가 종료되었습니다 (Code: ${code}).\n`;
-      console.log(logMessage);
-      socket.emit('log', logMessage);
-      
-      // 성공 여부에 따른 메시지
-      if (code === 0) {
-        socket.emit('log', `✅ 크롤링이 성공적으로 완료되었습니다! 🎉\n`);
-        socket.emit('log', `📁 결과 파일을 results/ 폴더에서 확인하세요.\n`);
-      } else {
-        socket.emit('log', `⚠️ 크롤링이 종료되었습니다. 에러 코드: ${code}\n`);
-      }
-      
-      // 프로세스 추적에서 제거
-      runningProcesses.delete(processId);
-      socket.runningProcesses.delete(processId);
-      socket.emit('process-ended', { processId, type: 'crawling-version', version: selectedVersion });
-    });
-  });
 
   // 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
   socket.on('start-uploading', (options) => {
@@ -327,6 +270,19 @@ io.on('connection', (socket) => {
   });
 });
 
+// 자동 Keep-Alive 함수 (Render 서버 자동 종료 방지)
+const keepAlive = () => {
+  setInterval(() => {
+    // 5분마다 자신에게 요청을 보내 활성 상태 유지
+    if (process.env.NODE_ENV === 'production') {
+      const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+      fetch(`${url}/health`)
+        .then(res => console.log(`🏓 Keep-alive ping: ${res.status} at ${new Date().toISOString()}`))
+        .catch(err => console.log(`❌ Keep-alive failed: ${err.message}`));
+    }
+  }, 5 * 60 * 1000); // 5분마다
+};
+
 // 서버 시작시 로컬 CSV를 Firebase에 동기화
 async function initializeServer() {
   console.log('🚀 서버 초기화 중...');
@@ -342,9 +298,18 @@ async function initializeServer() {
     console.warn('⚠️ 서버 초기화 중 CSV 동기화 실패:', error.message);
   }
   
+  // Keep-Alive 시작 (프로덕션 환경에서만)
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🏓 Keep-Alive 시스템 시작 (Render 자동 종료 방지)');
+    keepAlive();
+  }
+  
   server.listen(PORT, () => {
     console.log(`✅ Server is running on http://localhost:${PORT}`);
     console.log('🔥 Firebase CSV 연동이 활성화되었습니다!');
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');
+    }
   });
 }
 

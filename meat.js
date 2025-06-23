@@ -130,7 +130,13 @@ async function fetchMatchData(league, ym) {
         '--no-default-browser-check',
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows'
+        '--disable-backgrounding-occluded-windows',
+        '--disable-web-security',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-images'
       ]
     };
     
@@ -146,7 +152,7 @@ async function fetchMatchData(league, ym) {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
     );
     const refererUrl = `https://www.joinkfa.com/service/match/matchSingle.jsp?matchIdx=${league.matchIdx}&mgctype=S`;
-    await page.goto(refererUrl, { waitUntil: 'networkidle2', timeout: 15000 });
+    await page.goto(refererUrl, { waitUntil: 'domcontentloaded', timeout: 8000 });
     const apiUrl = 'https://www.joinkfa.com/portal/mat/getMatchSingleList.do';
     const payload = {
       v_CURPAGENUM: '1',
@@ -231,7 +237,7 @@ async function fetchMatchData(league, ym) {
       } else {
         console.log(`${colorGray}─ 경기 없음${colorReset}`);
       }
-      await new Promise((r) => setTimeout(r, 100 + Math.random() * 100));
+      await new Promise((r) => setTimeout(r, 50 + Math.random() * 50));
     }
     const dir = path.join('results', league.leagueTag, league.regionTag);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

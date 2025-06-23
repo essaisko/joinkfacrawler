@@ -119,12 +119,6 @@
     <div class="container">
         <h1>KFA 크롤러 대시보드</h1>
         
-        <div style="text-align: center; margin-bottom: 20px;">
-            <a href="/crawler-dashboard" style="display: inline-block; padding: 12px 25px; background: linear-gradient(135deg, #007bff, #0056b3); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; transition: all 0.3s ease;">
-                🚀 새로운 크롤러 버전 선택 대시보드 (추천!)
-            </a>
-        </div>
-        
         <div class="section">
             <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
             <textarea id="csvEditor" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
@@ -138,11 +132,20 @@
         </div>
 
         <div class="section">
-            <h2>크롤링 실행</h2>
-            <div class="control-grid">
-                <input type="text" id="yearFilter" placeholder="특정 년도 (e.g., 2025)">
-                <input type="text" id="monthFilter" placeholder="특정 월 (e.g., 05)">
-                <input type="text" id="leagueFilter" placeholder="리그명 일부 검색">
+            <h2>크롤링 실행 (다중 선택 가능)</h2>
+            <div id="crawlingFilters">
+                <div class="filter-row">
+                    <div class="control-grid">
+                        <input type="text" placeholder="특정 년도 (e.g., 2025)" class="year-filter">
+                        <input type="text" placeholder="특정 월 (e.g., 05)" class="month-filter">
+                        <input type="text" placeholder="리그명 일부 검색" class="league-filter">
+                        <button class="remove-filter-btn" onclick="removeFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                    </div>
+                </div>
+            </div>
+            <div style="margin: 10px 0;">
+                <button id="addFilterBtn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">➕ 필터 추가</button>
+                <button id="clearAllFiltersBtn" style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; margin-left: 10px;">🧹 모든 필터 초기화</button>
             </div>
             <div class="buttons" style="margin-top: 15px;">
                 <button id="crawlBtn">1. 데이터 크롤링 시작</button>
@@ -151,17 +154,26 @@
         </div>
 
         <div class="section">
-            <h2>Firebase 업로드</h2>
-            <div class="control-grid">
-                <input type="text" id="uploadYearFilter" placeholder="특정 년도 (e.g., 2025)">
-                <input type="text" id="uploadMonthFilter" placeholder="특정 월 (e.g., 05)">
-                <input type="text" id="uploadLeagueFilter" placeholder="리그명 일부 검색">
+            <h2>Firebase 업로드 (다중 선택 가능)</h2>
+            <div id="uploadFilters">
+                <div class="filter-row">
+                    <div class="control-grid">
+                        <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter">
+                        <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter">
+                        <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter">
+                        <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                    </div>
+                </div>
             </div>
-                         <div class="buttons" style="margin-top: 15px;">
-                 <button id="uploadBtn">2. Firestore에 업로드</button>
-                 <button id="stopUploadBtn" style="background-color: #dc3545; display: none;">🛑 업로드 중단</button>
-                 <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
-             </div>
+            <div style="margin: 10px 0;">
+                <button id="addUploadFilterBtn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">➕ 업로드 필터 추가</button>
+                <button id="clearAllUploadFiltersBtn" style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; margin-left: 10px;">🧹 모든 업로드 필터 초기화</button>
+            </div>
+            <div class="buttons" style="margin-top: 15px;">
+                <button id="uploadBtn">2. Firestore에 업로드</button>
+                <button id="stopUploadBtn" style="background-color: #dc3545; display: none;">🛑 업로드 중단</button>
+                <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
+            </div>
             <p style="font-size: 12px; color: #666; margin-top: 10px;">
                 💡 팁: 필터를 비워두면 모든 데이터를 업로드합니다. "크롤링 필터 복사" 버튼으로 위의 크롤링 조건을 쉽게 복사할 수 있습니다.
             </p>
@@ -185,14 +197,124 @@
         // 실행 중인 프로세스 추적
         let currentProcesses = new Map();
 
-        const yearFilter = document.getElementById('yearFilter');
-        const monthFilter = document.getElementById('monthFilter');
-        const leagueFilter = document.getElementById('leagueFilter');
-        
-        const uploadYearFilter = document.getElementById('uploadYearFilter');
-        const uploadMonthFilter = document.getElementById('uploadMonthFilter');
-        const uploadLeagueFilter = document.getElementById('uploadLeagueFilter');
+        const addFilterBtn = document.getElementById('addFilterBtn');
+        const clearAllFiltersBtn = document.getElementById('clearAllFiltersBtn');
+        const addUploadFilterBtn = document.getElementById('addUploadFilterBtn');
+        const clearAllUploadFiltersBtn = document.getElementById('clearAllUploadFiltersBtn');
         const copyFiltersBtn = document.getElementById('copyFiltersBtn');
+
+        // 다중 필터 관리 함수들
+        function addFilterRow() {
+            const crawlingFilters = document.getElementById('crawlingFilters');
+            const newRow = document.createElement('div');
+            newRow.className = 'filter-row';
+            newRow.innerHTML = `
+                <div class="control-grid">
+                    <input type="text" placeholder="특정 년도 (e.g., 2025)" class="year-filter">
+                    <input type="text" placeholder="특정 월 (e.g., 05)" class="month-filter">
+                    <input type="text" placeholder="리그명 일부 검색" class="league-filter">
+                    <button class="remove-filter-btn" onclick="removeFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                </div>
+            `;
+            crawlingFilters.appendChild(newRow);
+        }
+
+        function removeFilterRow(btn) {
+            const filterRows = document.querySelectorAll('#crawlingFilters .filter-row');
+            if (filterRows.length > 1) {
+                btn.closest('.filter-row').remove();
+            } else {
+                alert('최소 하나의 필터는 유지되어야 합니다.');
+            }
+        }
+
+        function clearAllFilters() {
+            const filterRows = document.querySelectorAll('#crawlingFilters .filter-row');
+            filterRows.forEach((row, index) => {
+                if (index === 0) {
+                    // 첫 번째 행은 유지하고 값만 초기화
+                    row.querySelectorAll('input').forEach(input => input.value = '');
+                } else {
+                    // 나머지 행은 제거
+                    row.remove();
+                }
+            });
+        }
+
+        function addUploadFilterRow() {
+            const uploadFilters = document.getElementById('uploadFilters');
+            const newRow = document.createElement('div');
+            newRow.className = 'filter-row';
+            newRow.innerHTML = `
+                <div class="control-grid">
+                    <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter">
+                    <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter">
+                    <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter">
+                    <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                </div>
+            `;
+            uploadFilters.appendChild(newRow);
+        }
+
+        function removeUploadFilterRow(btn) {
+            const filterRows = document.querySelectorAll('#uploadFilters .filter-row');
+            if (filterRows.length > 1) {
+                btn.closest('.filter-row').remove();
+            } else {
+                alert('최소 하나의 업로드 필터는 유지되어야 합니다.');
+            }
+        }
+
+        function clearAllUploadFilters() {
+            const filterRows = document.querySelectorAll('#uploadFilters .filter-row');
+            filterRows.forEach((row, index) => {
+                if (index === 0) {
+                    // 첫 번째 행은 유지하고 값만 초기화
+                    row.querySelectorAll('input').forEach(input => input.value = '');
+                } else {
+                    // 나머지 행은 제거
+                    row.remove();
+                }
+            });
+        }
+
+        function getCrawlingFilters() {
+            const filters = [];
+            const filterRows = document.querySelectorAll('#crawlingFilters .filter-row');
+            filterRows.forEach(row => {
+                const year = row.querySelector('.year-filter').value.trim();
+                const month = row.querySelector('.month-filter').value.trim();
+                const league = row.querySelector('.league-filter').value.trim();
+                
+                // 빈 필터는 제외하고, 하나라도 값이 있으면 포함
+                if (year || month || league) {
+                    filters.push({ year, month, league });
+                }
+            });
+            return filters;
+        }
+
+        function getUploadFilters() {
+            const filters = [];
+            const filterRows = document.querySelectorAll('#uploadFilters .filter-row');
+            filterRows.forEach(row => {
+                const year = row.querySelector('.upload-year-filter').value.trim();
+                const month = row.querySelector('.upload-month-filter').value.trim();
+                const league = row.querySelector('.upload-league-filter').value.trim();
+                
+                // 빈 필터는 제외하고, 하나라도 값이 있으면 포함
+                if (year || month || league) {
+                    filters.push({ year, month, league });
+                }
+            });
+            return filters;
+        }
+
+        // 이벤트 리스너 추가
+        addFilterBtn.addEventListener('click', addFilterRow);
+        clearAllFiltersBtn.addEventListener('click', clearAllFilters);
+        addUploadFilterBtn.addEventListener('click', addUploadFilterRow);
+        clearAllUploadFiltersBtn.addEventListener('click', clearAllUploadFilters);
 
         // CSV 파일을 새로고침하는 함수
         async function refreshCsvContent() {
@@ -384,42 +506,153 @@
             logContainer.innerHTML = '';
             disableButtons();
             
-            const options = {
-                year: yearFilter.value.trim(),
-                month: monthFilter.value.trim(),
-                league: leagueFilter.value.trim()
-            };
-
-            socket.emit('start-crawling', options);
+            const filters = getCrawlingFilters();
+            
+            if (filters.length === 0) {
+                // 필터가 없으면 전체 크롤링
+                const options = { year: '', month: '', league: '' };
+                appendLog('📋 전체 크롤링을 시작합니다...\n');
+                socket.emit('start-crawling', options);
+            } else {
+                // 다중 필터로 순차 실행
+                appendLog(`📋 ${filters.length}개의 필터 조건으로 크롤링을 시작합니다...\n`);
+                filters.forEach((filter, index) => {
+                    appendLog(`  ${index + 1}. 년도: ${filter.year || '전체'}, 월: ${filter.month || '전체'}, 리그: ${filter.league || '전체'}\n`);
+                });
+                appendLog('\n');
+                
+                let currentFilterIndex = 0;
+                
+                function runNextCrawling() {
+                    if (currentFilterIndex < filters.length) {
+                        const options = filters[currentFilterIndex];
+                        appendLog(`🚀 [${currentFilterIndex + 1}/${filters.length}] 크롤링 실행 중...\n`);
+                        socket.emit('start-crawling', options);
+                        currentFilterIndex++;
+                    }
+                }
+                
+                // 프로세스 종료 시 다음 크롤링 실행을 위한 임시 핸들러
+                const multiCrawlingEndHandler = (data) => {
+                    if (data.type === 'crawling') {
+                        setTimeout(() => {
+                            if (currentFilterIndex < filters.length) {
+                                runNextCrawling();
+                            } else {
+                                // 모든 크롤링 완료
+                                appendLog(`\n🎉 모든 크롤링이 완료되었습니다! (총 ${filters.length}개 조건)\n`);
+                                enableButtons();
+                                socket.off('process-ended', multiCrawlingEndHandler);
+                            }
+                        }, 1000);
+                    }
+                };
+                
+                socket.on('process-ended', multiCrawlingEndHandler);
+                
+                // 첫 번째 크롤링 시작
+                runNextCrawling();
+            }
         });
 
         uploadBtn.addEventListener('click', () => {
             logContainer.innerHTML = '';
             disableButtons();
             
-            const uploadOptions = {
-                year: uploadYearFilter.value.trim(),
-                month: uploadMonthFilter.value.trim(),
-                league: uploadLeagueFilter.value.trim()
-            };
-
-            socket.emit('start-uploading', uploadOptions);
+            const filters = getUploadFilters();
+            
+            if (filters.length === 0) {
+                // 필터가 없으면 전체 업로드
+                const uploadOptions = { year: '', month: '', league: '' };
+                appendLog('📋 전체 데이터를 업로드합니다...\n');
+                socket.emit('start-uploading', uploadOptions);
+            } else {
+                // 다중 필터로 순차 실행
+                appendLog(`📋 ${filters.length}개의 필터 조건으로 업로드를 시작합니다...\n`);
+                filters.forEach((filter, index) => {
+                    appendLog(`  ${index + 1}. 년도: ${filter.year || '전체'}, 월: ${filter.month || '전체'}, 리그: ${filter.league || '전체'}\n`);
+                });
+                appendLog('\n');
+                
+                let currentFilterIndex = 0;
+                
+                function runNextUpload() {
+                    if (currentFilterIndex < filters.length) {
+                        const uploadOptions = filters[currentFilterIndex];
+                        appendLog(`☁️ [${currentFilterIndex + 1}/${filters.length}] 업로드 실행 중...\n`);
+                        socket.emit('start-uploading', uploadOptions);
+                        currentFilterIndex++;
+                    }
+                }
+                
+                // 프로세스 종료 시 다음 업로드 실행을 위한 임시 핸들러
+                const multiUploadEndHandler = (data) => {
+                    if (data.type === 'uploading') {
+                        setTimeout(() => {
+                            if (currentFilterIndex < filters.length) {
+                                runNextUpload();
+                            } else {
+                                // 모든 업로드 완료
+                                appendLog(`\n🎉 모든 업로드가 완료되었습니다! (총 ${filters.length}개 조건)\n`);
+                                enableButtons();
+                                socket.off('process-ended', multiUploadEndHandler);
+                            }
+                        }, 1000);
+                    }
+                };
+                
+                socket.on('process-ended', multiUploadEndHandler);
+                
+                // 첫 번째 업로드 시작
+                runNextUpload();
+            }
         });
 
         // 크롤링 필터 복사 버튼 이벤트
         copyFiltersBtn.addEventListener('click', () => {
-            uploadYearFilter.value = yearFilter.value;
-            uploadMonthFilter.value = monthFilter.value;
-            uploadLeagueFilter.value = leagueFilter.value;
+            const crawlingFilters = getCrawlingFilters();
+            const uploadFiltersContainer = document.getElementById('uploadFilters');
+            
+            // 기존 업로드 필터 모두 제거
+            uploadFiltersContainer.innerHTML = '';
+            
+            if (crawlingFilters.length === 0) {
+                // 크롤링 필터가 없으면 빈 업로드 필터 하나 생성
+                uploadFiltersContainer.innerHTML = `
+                    <div class="filter-row">
+                        <div class="control-grid">
+                            <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter">
+                            <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter">
+                            <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter">
+                            <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 크롤링 필터를 업로드 필터로 복사
+                crawlingFilters.forEach(filter => {
+                    const newRow = document.createElement('div');
+                    newRow.className = 'filter-row';
+                    newRow.innerHTML = `
+                        <div class="control-grid">
+                            <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter" value="${filter.year || ''}">
+                            <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter" value="${filter.month || ''}">
+                            <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter" value="${filter.league || ''}">
+                            <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                        </div>
+                    `;
+                    uploadFiltersContainer.appendChild(newRow);
+                });
+            }
             
             // 시각적 피드백
             copyFiltersBtn.textContent = '복사 완료!';
             copyFiltersBtn.style.backgroundColor = '#28a745';
             setTimeout(() => {
                 copyFiltersBtn.textContent = '크롤링 필터 복사';
-                                 copyFiltersBtn.style.backgroundColor = '#6c757d';
-             }, 1000);
-         });
+                copyFiltersBtn.style.backgroundColor = '#6c757d';
+            }, 1000);
+        });
 
          // 크롤링 중단 버튼 이벤트
          stopBtn.addEventListener('click', () => {
