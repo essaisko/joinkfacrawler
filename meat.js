@@ -3,7 +3,68 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
-const { parse } = require('csv-parse/sync'); // ← 이 줄로 고쳐야 함
+const { parse } = require('csv-parse/sync');
+
+// Chrome 설정을 가져오는 함수
+function getChromeConfig() {
+  try {
+    const configPath = path.join(__dirname, 'chrome-config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      console.log(`🎯 Using Chrome from config: ${config.executablePath}`);
+      return config;
+    }
+  } catch (error) {
+    console.log('⚠️ Chrome config file not found or invalid');
+  }
+
+  // 설정 파일이 없으면 Chrome을 찾아보기
+  const possiblePaths = [
+    path.join(__dirname, 'chrome'),
+    path.join(__dirname, 'chrome-bin'),
+    '/opt/render/.cache/puppeteer'
+  ];
+
+  for (const basePath of possiblePaths) {
+    const chromePath = findChromeInDirectory(basePath);
+    if (chromePath) {
+      console.log(`🔍 Found Chrome at: ${chromePath}`);
+      return { executablePath: chromePath };
+    }
+  }
+
+  console.log('🌐 Using system Chrome (if available)');
+  return null;
+}
+
+// 디렉토리에서 Chrome 실행 파일을 재귀적으로 찾는 함수
+function findChromeInDirectory(dir) {
+  if (!fs.existsSync(dir)) return null;
+  
+  try {
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory()) {
+        const result = findChromeInDirectory(fullPath);
+        if (result) return result;
+      } else if (item.name === 'chrome') {
+        try {
+          const stats = fs.statSync(fullPath);
+          if (stats.mode & parseInt('111', 8)) { // 실행 가능한 파일인지 확인
+            return fullPath;
+          }
+        } catch (e) {
+          // 파일 접근 실패 시 무시
+        }
+      }
+    }
+  } catch (error) {
+    // 디렉토리 읽기 실패 시 무시
+  }
+  
+  return null;
+}
 
 // 인자 파싱을 위한 간단한 함수
 function parseArgs() {
@@ -55,39 +116,27 @@ function safeFilename(str) {
 async function fetchMatchData(league, ym) {
   let browser, page;
   try {
-    // Chrome 실행 파일 경로 찾기
-    const fs = require('fs');
-    const path = require('path');
-    
-    let executablePath;
-    const chromeBinDir = path.join(__dirname, 'chrome-bin');
-    
-    if (fs.existsSync(chromeBinDir)) {
-      // 프로젝트 디렉토리의 Chrome 사용 (Render 환경)
-      const findChrome = (dir) => {
-        const files = fs.readdirSync(dir, { withFileTypes: true });
-        for (const file of files) {
-          const fullPath = path.join(dir, file.name);
-          if (file.isDirectory()) {
-            const result = findChrome(fullPath);
-            if (result) return result;
-          } else if (file.name === 'chrome' && fs.statSync(fullPath).mode & parseInt('111', 8)) {
-            return fullPath;
-          }
-        }
-        return null;
-      };
-      executablePath = findChrome(chromeBinDir);
-    }
+    // Chrome 설정 가져오기
+    const chromeConfig = getChromeConfig();
     
     const launchOptions = {
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows'
+      ]
     };
     
-    if (executablePath) {
-      launchOptions.executablePath = executablePath;
-      console.log(`Using Chrome at: ${executablePath}`);
+    // Chrome 설정이 있으면 적용
+    if (chromeConfig && chromeConfig.executablePath) {
+      launchOptions.executablePath = chromeConfig.executablePath;
     }
     
     browser = await puppeteer.launch(launchOptions);

@@ -1,104 +1,135 @@
-# JoinKFA Crawler System
+# Korean Football Association Crawler
 
-## 🏗️ Architecture Overview
+한국축구협회(KFA) 경기 데이터를 크롤링하고 Firebase에 업로드하는 웹 애플리케이션입니다.
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Flutter App   │    │  Firebase DB    │    │  Node.js Server │
-│                 │◄───┤                 │◄───┤   (Puppeteer)   │
-│  - Records Tab  │    │ - Match Data    │    │  - Web Scraping │
-│  - Real-time UI │    │ - Sync Status   │    │  - Anti-bot      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+## 주요 기능
 
-## 🎯 Key Features
+- 🏈 KFA 경기 데이터 실시간 크롤링
+- 🔥 Firebase Firestore 자동 업로드
+- 🌐 웹 인터페이스를 통한 크롤링 제어
+- 📊 실시간 진행 상황 모니터링
+- 📋 CSV 기반 리그 설정 관리
 
-### Server (Node.js + Puppeteer)
-- **Real Browser Automation**: Chrome browser with full session management
-- **Anti-bot Bypass**: Cookie/header/payload exact replication
-- **Incremental Sync**: Smart data synchronization with error recovery
-- **Firebase Integration**: Real-time data storage and updates
+## 기술 스택
 
-### Flutter Client
-- **Real-time Updates**: Live data sync from Firebase
-- **Offline Support**: Local caching for match records
-- **Clean Architecture**: Repository pattern with dependency injection
+- **Backend**: Node.js, Express.js
+- **Frontend**: HTML, CSS, JavaScript
+- **Scraping**: Puppeteer
+- **Database**: Firebase Firestore
+- **Real-time**: Socket.IO
+- **Deployment**: Render.com
 
-### Infrastructure
-- **Docker Support**: Containerized deployment
-- **Cloud Run Ready**: Google Cloud Platform integration
-- **Monitoring**: Comprehensive logging and error tracking
+## 설치 및 실행
 
-## 🚀 Quick Start
+### 로컬 환경
 
-### Server Setup
 ```bash
-cd server
+# 저장소 클론
+git clone <repository-url>
+cd joinkfacrawler
+
+# 의존성 설치 (Chrome 자동 설치 포함)
 npm install
-npm run dev
+
+# 서버 실행
+npm start
 ```
 
-### Flutter Setup
-```bash
-cd flutter
-flutter pub get
-flutter run
-```
+### Render.com 배포
 
-### Deploy to Cloud
-```bash
-npm run deploy
-```
+1. **Render 설정**:
+   - Build Command: `./render-build.sh`
+   - Start Command: `npm start`
 
-## 📁 Project Structure
+2. **환경 변수**: 필요 시 Firebase 관련 환경 변수 설정
+
+3. **Chrome 설치**: 
+   - `npm install` 실행 시 postinstall 스크립트가 자동으로 Chrome을 설치합니다
+   - Chrome 경로는 `chrome-config.json`에 저장됩니다
+
+## 파일 구조
 
 ```
 joinkfacrawler/
-├── server/                 # Node.js Puppeteer Crawler
-│   ├── src/
-│   │   ├── crawlers/      # Web scraping logic
-│   │   ├── services/      # Business logic
-│   │   ├── models/        # Data models
-│   │   └── utils/         # Helper functions
-│   ├── config/            # Configuration files
-│   └── deploy/            # Deployment scripts
-├── flutter/               # Flutter Mobile App
-│   ├── lib/
-│   │   ├── features/      # Feature modules
-│   │   ├── core/          # Core utilities
-│   │   └── shared/        # Shared components
-└── docs/                  # Documentation
+├── server.js              # Express 서버 + Socket.IO
+├── meat.js                # 메인 크롤링 로직
+├── firebase_uploader.js   # Firebase 업로드 로직
+├── index.html            # 웹 인터페이스
+├── leagues.csv           # 리그 설정 파일
+├── scripts/
+│   └── install-chrome.js  # Chrome 설치 스크립트
+├── render-build.sh       # Render 빌드 스크립트
+└── results/              # 크롤링 결과 저장
 ```
 
-## 🔧 Configuration
+## 사용 방법
 
-### Environment Variables
-```env
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_PRIVATE_KEY=your-private-key
-JOINKFA_BASE_URL=https://joinkfa.com
-CRAWLER_INTERVAL=300000  # 5 minutes
+1. **웹 인터페이스 접속**: `http://localhost:3000`
+2. **리그 설정**: CSV 에디터에서 크롤링할 리그 설정
+3. **크롤링 시작**: 옵션 선택 후 "크롤링 시작" 버튼 클릭
+4. **결과 확인**: 실시간 로그 모니터링 및 결과 파일 확인
+5. **Firebase 업로드**: "Firestore 업로드" 버튼으로 데이터 업로드
+
+## Chrome 설치 문제 해결
+
+### Render.com 배포 시 Chrome 관련 오류
+
+이 프로젝트는 Render.com의 환경 제약을 고려하여 Chrome 설치를 자동화합니다:
+
+1. **자동 설치**: `npm install` 시 Chrome이 자동으로 설치됩니다
+2. **동적 경로 찾기**: 여러 위치에서 Chrome을 찾아 사용합니다
+3. **설정 파일**: Chrome 경로를 `chrome-config.json`에 저장합니다
+
+### 수동 Chrome 설치 (필요 시)
+
+```bash
+# Chrome 설치 스크립트 실행
+node scripts/install-chrome.js
 ```
 
-## 📊 Data Flow
+### Chrome 경로 확인
 
-1. **Browser Automation**: Puppeteer opens Chrome, navigates to JoinKFA
-2. **Session Acquisition**: Extract cookies, headers, and authentication tokens
-3. **API Replication**: Execute identical POST requests to fetch match data
-4. **Data Processing**: Parse and normalize K5/K6/K7 match records
-5. **Firebase Sync**: Store data with incremental updates
-6. **Flutter Updates**: Real-time UI refresh via Firebase listeners
+```bash
+# 설치된 Chrome 위치 확인
+find . -name "chrome" -type f -executable
+```
 
-## 🛡️ Anti-bot Strategy
+## 환경 변수
 
-- **User Agent Rotation**: Dynamic browser fingerprinting
-- **Request Timing**: Human-like interaction patterns
-- **Session Persistence**: Long-lived browser sessions
-- **Error Recovery**: Automatic retry with backoff strategy
+- `PORT`: 서버 포트 (기본값: 3000)
+- `PUPPETEER_CACHE_DIR`: Chrome 설치 디렉토리 (선택사항)
 
-## 🚢 Deployment Options
+## 개발 및 디버깅
 
-- **Google Cloud Run**: Serverless container deployment
-- **Docker**: Self-hosted container solution
-- **PM2**: Process management for Node.js
-- **GitHub Actions**: CI/CD pipeline automation 
+### 로그 확인
+- 웹 인터페이스에서 실시간 로그 확인
+- 서버 콘솔에서 상세 로그 확인
+
+### Chrome 설치 상태 확인
+```bash
+# Chrome 설정 파일 확인
+cat chrome-config.json
+
+# Chrome 실행 테스트
+node -e "const puppeteer = require('puppeteer'); puppeteer.launch().then(b => { console.log('Chrome OK'); b.close(); })"
+```
+
+## 문제 해결
+
+### 일반적인 문제들
+
+1. **Chrome not found 오류**:
+   - `npm install` 재실행
+   - `node scripts/install-chrome.js` 수동 실행
+
+2. **Permission denied 오류**:
+   - `chmod +x render-build.sh` 실행
+   - 파일 권한 확인
+
+3. **Firebase 연결 오류**:
+   - `firebase-adminsdk.json` 파일 확인
+   - Firebase 프로젝트 설정 확인
+
+## 라이선스
+
+MIT License 
