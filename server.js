@@ -5,6 +5,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase } = require('./firebase_uploader');
+const { exec } = require('child_process');
 
 const app = express();
 const server = http.createServer(app);
@@ -12,6 +13,26 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
+
+
+app.post('/deploy', (req, res) => {
+  const secret = 'breadbro'; // 보안용 토큰
+  const gitRepoPath = '/home/ubuntu'; // 실제 git 폴더 경로
+  const bodyToken = req.headers['x-deploy-token'];
+
+  if (bodyToken !== secret) {
+    return res.status(403).send('Invalid deploy token');
+  }
+
+  exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
+    if (err) {
+      console.error('❌ 자동배포 실패:', err);
+      return res.status(500).send('Deploy failed.');
+    }
+    console.log('✅ 자동배포 완료:\n', stdout);
+    res.send('✅ Deployed:\n' + stdout);
+  });
+});
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
 // 정적 파일(index.html) 제공
@@ -312,27 +333,9 @@ async function initializeServer() {
     }
   });
 }
-// GitHub Webhook 자동배포용 엔드포인트
-const { exec } = require('child_process');
 
-app.post('/deploy', (req, res) => {
-  const secret = 'breadbro'; // 보안용 토큰
-  const gitRepoPath = '/home/ubuntu'; // 실제 git 폴더 경로
-  const bodyToken = req.headers['x-deploy-token'];
 
-  if (bodyToken !== secret) {
-    return res.status(403).send('Invalid deploy token');
-  }
 
-  exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
-    if (err) {
-      console.error('❌ 자동배포 실패:', err);
-      return res.status(500).send('Deploy failed.');
-    }
-    console.log('✅ 자동배포 완료:\n', stdout);
-    res.send('✅ Deployed:\n' + stdout);
-  });
-});
 
 
 
