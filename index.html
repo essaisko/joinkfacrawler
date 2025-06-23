@@ -264,6 +264,7 @@
                     firebaseStatus.style.color = '#28a745';
                     saveCsvBtn.style.backgroundColor = '#28a745';
                     saveCsvBtn.textContent = 'Firebase에 저장 완료!';
+                    saveCsvBtn.disabled = false; // 즉시 버튼 활성화
                     csvSyncStatus.textContent = '✅ Firebase에 성공적으로 저장되었습니다!';
                     csvSyncStatus.style.color = '#28a745';
                     
@@ -271,6 +272,7 @@
                     setTimeout(() => {
                         saveCsvBtn.style.backgroundColor = '#6c757d';
                         saveCsvBtn.textContent = 'Firebase에 저장';
+                        saveCsvBtn.disabled = false; // 버튼 활성화 보장
                         csvSyncStatus.textContent = '💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!';
                         csvSyncStatus.style.color = '#666';
                     }, 3000);
@@ -281,6 +283,11 @@
                     
                     firebaseStatus.textContent = '❌ 저장 실패';
                     firebaseStatus.style.color = '#dc3545';
+                    
+                    // 오류 시에도 버튼 활성화
+                    saveCsvBtn.disabled = false;
+                    saveCsvBtn.textContent = 'Firebase에 저장';
+                    saveCsvBtn.style.backgroundColor = '#6c757d';
                 }
             } catch (error) {
                 appendLog(`❌ CSV 저장 중 오류 발생: ${error.message}`);
@@ -289,10 +296,17 @@
                 const firebaseStatus = document.getElementById('firebaseStatus');
                 firebaseStatus.textContent = '❌ 저장 실패';
                 firebaseStatus.style.color = '#dc3545';
+                
+                // 예외 발생 시에도 버튼 활성화
+                saveCsvBtn.disabled = false;
+                saveCsvBtn.textContent = 'Firebase에 저장';
+                saveCsvBtn.style.backgroundColor = '#6c757d';
             } finally {
+                // finally 블록에서 확실히 버튼 활성화
                 if (saveCsvBtn.textContent.includes('저장 중')) {
                     saveCsvBtn.disabled = false;
                     saveCsvBtn.textContent = 'Firebase에 저장';
+                    saveCsvBtn.style.backgroundColor = '#6c757d';
                 }
             }
         });
