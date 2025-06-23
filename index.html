@@ -52,6 +52,11 @@
         #crawlBtn:hover:not(:disabled) { background-color: #36a420; }
         #uploadBtn { background-color: #1877f2; }
         #uploadBtn:hover:not(:disabled) { background-color: #166fe5; }
+        #stopBtn { 
+            background-color: #dc3545; 
+            display: none;
+        }
+        #stopBtn:hover:not(:disabled) { background-color: #c82333; }
         
         #logContainer {
             background-color: #000;
@@ -129,6 +134,7 @@
             </div>
             <div class="buttons" style="margin-top: 15px;">
                 <button id="crawlBtn">1. 데이터 크롤링 시작</button>
+                <button id="stopBtn">🛑 크롤링 중단</button>
             </div>
         </div>
 
@@ -139,10 +145,11 @@
                 <input type="text" id="uploadMonthFilter" placeholder="특정 월 (e.g., 05)">
                 <input type="text" id="uploadLeagueFilter" placeholder="리그명 일부 검색">
             </div>
-            <div class="buttons" style="margin-top: 15px;">
-                <button id="uploadBtn">2. Firestore에 업로드</button>
-                <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
-            </div>
+                         <div class="buttons" style="margin-top: 15px;">
+                 <button id="uploadBtn">2. Firestore에 업로드</button>
+                 <button id="stopUploadBtn" style="background-color: #dc3545; display: none;">🛑 업로드 중단</button>
+                 <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
+             </div>
             <p style="font-size: 12px; color: #666; margin-top: 10px;">
                 💡 팁: 필터를 비워두면 모든 데이터를 업로드합니다. "크롤링 필터 복사" 버튼으로 위의 크롤링 조건을 쉽게 복사할 수 있습니다.
             </p>
@@ -156,9 +163,14 @@
         const socket = io();
         const crawlBtn = document.getElementById('crawlBtn');
         const uploadBtn = document.getElementById('uploadBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const stopUploadBtn = document.getElementById('stopUploadBtn');
         const logContainer = document.getElementById('logContainer');
         const csvEditor = document.getElementById('csvEditor');
         const saveCsvBtn = document.getElementById('saveCsvBtn');
+        
+        // 실행 중인 프로세스 추적
+        let currentProcesses = new Map();
 
         const yearFilter = document.getElementById('yearFilter');
         const monthFilter = document.getElementById('monthFilter');
@@ -188,22 +200,42 @@
             try {
                 saveCsvBtn.disabled = true;
                 saveCsvBtn.textContent = '저장 중...';
+                
+                const content = csvEditor.value;
+                console.log('클라이언트에서 전송할 CSV 내용 길이:', content.length);
+                console.log('CSV 내용 미리보기:', content.substring(0, 100));
+                
                 const response = await fetch('/leagues-csv', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: csvEditor.value })
+                    body: JSON.stringify({ content: content })
                 });
 
                 if (response.ok) {
+                    const responseText = await response.text();
                     appendLog('✅ CSV 파일이 성공적으로 저장되었습니다.');
+                    console.log('서버 응답:', responseText);
+                    
+                    // 저장 성공 시 버튼 색상 변경
+                    saveCsvBtn.style.backgroundColor = '#28a745';
+                    saveCsvBtn.textContent = '저장 완료!';
+                    setTimeout(() => {
+                        saveCsvBtn.style.backgroundColor = '#6c757d';
+                        saveCsvBtn.textContent = 'CSV 저장';
+                    }, 2000);
                 } else {
-                    appendLog('❌ CSV 파일 저장에 실패했습니다.');
+                    const errorText = await response.text();
+                    appendLog(`❌ CSV 파일 저장에 실패했습니다: ${errorText}`);
+                    console.error('서버 오류:', errorText);
                 }
             } catch (error) {
                 appendLog(`❌ CSV 저장 중 오류 발생: ${error.message}`);
+                console.error('CSV 저장 오류:', error);
             } finally {
-                saveCsvBtn.disabled = false;
-                saveCsvBtn.textContent = 'CSV 저장';
+                if (saveCsvBtn.textContent === '저장 중...') {
+                    saveCsvBtn.disabled = false;
+                    saveCsvBtn.textContent = 'CSV 저장';
+                }
             }
         });
 
@@ -215,6 +247,24 @@
         function enableButtons() {
             crawlBtn.disabled = false;
             uploadBtn.disabled = false;
+            stopBtn.style.display = 'none';
+            stopUploadBtn.style.display = 'none';
+        }
+
+        function showStopButton(processType) {
+            if (processType === 'crawling') {
+                stopBtn.style.display = 'inline-block';
+            } else if (processType === 'uploading') {
+                stopUploadBtn.style.display = 'inline-block';
+            }
+        }
+
+        function hideStopButton(processType) {
+            if (processType === 'crawling') {
+                stopBtn.style.display = 'none';
+            } else if (processType === 'uploading') {
+                stopUploadBtn.style.display = 'none';
+            }
         }
 
         function appendLog(message) {
@@ -233,6 +283,23 @@
                 enableButtons();
             }
             appendLog(message);
+        });
+
+        // 프로세스 시작 이벤트
+        socket.on('process-started', (data) => {
+            const { processId, type } = data;
+            currentProcesses.set(processId, type);
+            showStopButton(type);
+            console.log(`프로세스 시작: ${processId} (${type})`);
+        });
+
+        // 프로세스 종료 이벤트
+        socket.on('process-ended', (data) => {
+            const { processId, type } = data;
+            currentProcesses.delete(processId);
+            hideStopButton(type);
+            enableButtons();
+            console.log(`프로세스 종료: ${processId} (${type})`);
         });
 
         crawlBtn.addEventListener('click', () => {
@@ -272,9 +339,43 @@
             copyFiltersBtn.style.backgroundColor = '#28a745';
             setTimeout(() => {
                 copyFiltersBtn.textContent = '크롤링 필터 복사';
-                copyFiltersBtn.style.backgroundColor = '#6c757d';
-            }, 1000);
-        });
+                                 copyFiltersBtn.style.backgroundColor = '#6c757d';
+             }, 1000);
+         });
+
+         // 크롤링 중단 버튼 이벤트
+         stopBtn.addEventListener('click', () => {
+             const crawlingProcess = Array.from(currentProcesses.entries()).find(([id, type]) => type === 'crawling');
+             if (crawlingProcess) {
+                 const [processId] = crawlingProcess;
+                 socket.emit('stop-process', { processId });
+                 stopBtn.disabled = true;
+                 stopBtn.textContent = '중단 중...';
+                 
+                 // 5초 후 버튼 복원 (안전장치)
+                 setTimeout(() => {
+                     stopBtn.disabled = false;
+                     stopBtn.textContent = '🛑 크롤링 중단';
+                 }, 5000);
+             }
+         });
+
+         // 업로드 중단 버튼 이벤트
+         stopUploadBtn.addEventListener('click', () => {
+             const uploadingProcess = Array.from(currentProcesses.entries()).find(([id, type]) => type === 'uploading');
+             if (uploadingProcess) {
+                 const [processId] = uploadingProcess;
+                 socket.emit('stop-process', { processId });
+                 stopUploadBtn.disabled = true;
+                 stopUploadBtn.textContent = '중단 중...';
+                 
+                 // 5초 후 버튼 복원 (안전장치)
+                 setTimeout(() => {
+                     stopUploadBtn.disabled = false;
+                     stopUploadBtn.textContent = '🛑 업로드 중단';
+                 }, 5000);
+             }
+         });
     </script>
 </body>
 </html> 

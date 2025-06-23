@@ -231,7 +231,7 @@ async function fetchMatchData(league, ym) {
       } else {
         console.log(`${colorGray}─ 경기 없음${colorReset}`);
       }
-      await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+      await new Promise((r) => setTimeout(r, 100 + Math.random() * 100));
     }
     const dir = path.join('results', league.leagueTag, league.regionTag);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
