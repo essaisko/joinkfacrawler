@@ -55,10 +55,42 @@ function safeFilename(str) {
 async function fetchMatchData(league, ym) {
   let browser, page;
   try {
-    browser = await puppeteer.launch({
+    // Chrome 실행 파일 경로 찾기
+    const fs = require('fs');
+    const path = require('path');
+    
+    let executablePath;
+    const chromeBinDir = path.join(__dirname, 'chrome-bin');
+    
+    if (fs.existsSync(chromeBinDir)) {
+      // 프로젝트 디렉토리의 Chrome 사용 (Render 환경)
+      const findChrome = (dir) => {
+        const files = fs.readdirSync(dir, { withFileTypes: true });
+        for (const file of files) {
+          const fullPath = path.join(dir, file.name);
+          if (file.isDirectory()) {
+            const result = findChrome(fullPath);
+            if (result) return result;
+          } else if (file.name === 'chrome' && fs.statSync(fullPath).mode & parseInt('111', 8)) {
+            return fullPath;
+          }
+        }
+        return null;
+      };
+      executablePath = findChrome(chromeBinDir);
+    }
+    
+    const launchOptions = {
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    };
+    
+    if (executablePath) {
+      launchOptions.executablePath = executablePath;
+      console.log(`Using Chrome at: ${executablePath}`);
+    }
+    
+    browser = await puppeteer.launch(launchOptions);
     
     page = await browser.newPage();
     await page.setUserAgent(
