@@ -20,14 +20,12 @@ const { year: filterYear, month: filterMonth, league: filterLeague } = cliArgs;
 // 1. Firebase 서비스 계정 키 파일 경로
 // Firebase 콘솔에서 다운로드한 JSON 파일을 프로젝트 루트에 복사하고,
 // 아래 'your-service-account-key.json' 부분을 실제 파일명으로 바꾸세요.
-const serviceAccount = require('./firebase-adminsdk.json');
 
 // 2. Firebase 초기화
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-  // Firestore 데이터베이스 URL이 필요하다면 여기에 추가하세요.
-  // databaseURL: "https://<DATABASE_NAME>.firebaseio.com"
+  credential: admin.credential.applicationDefault()
 });
+
 
 console.log('✅ Firebase Admin SDK가 성공적으로 초기화되었습니다.');
 
