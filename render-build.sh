@@ -8,6 +8,15 @@ export PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 # npm install 실행 (Puppeteer가 Chrome을 다운로드함)
 npm install
 
+# Puppeteer가 Chrome을 명시적으로 설치하도록 강제
+npx puppeteer browsers install chrome
+
+# 설치된 Chrome 위치 확인
+echo "=== Chrome location after forced install ==="
+find /opt/render -name "chrome" -type f 2>/dev/null || echo "No chrome executable found in /opt/render"
+find . -name "chrome" -type f 2>/dev/null || echo "No chrome executable found in current directory"
+echo "=== End of Chrome location check ==="
+
 # Chrome을 프로젝트 디렉토리로 복사하여 런타임에서 사용할 수 있도록 함
 echo "=== Copying Chrome to project directory ==="
 mkdir -p ./chrome-bin
