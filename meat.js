@@ -57,8 +57,7 @@ async function fetchMatchData(league, ym) {
   try {
     browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      executablePath: '/opt/render/.cache/puppeteer/chrome/linux-137.0.7151.119/chrome-linux64/chrome'
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     
     page = await browser.newPage();
