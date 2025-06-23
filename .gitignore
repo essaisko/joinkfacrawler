@@ -1,6 +1,6 @@
 # Firebase service account keys
 firebase-adminsdk*.json
-fireabase-admin-sdk.json
+firebase-admin-sdk.json
 
 # Node.js
 node_modules/

@@ -21,6 +21,9 @@ const { year: filterYear, month: filterMonth, league: filterLeague } = cliArgs;
 // Firebase 콘솔에서 다운로드한 JSON 파일을 프로젝트 루트에 복사하고,
 // 아래 'your-service-account-key.json' 부분을 실제 파일명으로 바꾸세요.
 
+
+
+
 // 2. Firebase 초기화
 const serviceAccount = require('./firebase-admin-sdk.json');
 admin.initializeApp({
