@@ -304,8 +304,8 @@ async function initializeServer() {
     keepAlive();
   }
   
-  server.listen(PORT, () => {
-    console.log(`✅ Server is running on http://localhost:${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server is running on http://0.0.0.0:${PORT}`);
     console.log('🔥 Firebase CSV 연동이 활성화되었습니다!');
     if (process.env.NODE_ENV === 'production') {
       console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');

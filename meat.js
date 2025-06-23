@@ -168,9 +168,9 @@ async function fetchMatchData(league, ym, retryCount = 0) {
     
     const refererUrl = `https://www.joinkfa.com/service/match/matchSingle.jsp?matchIdx=${league.matchIdx}&mgctype=S`;
     
-    // 최소한의 로딩만 대기 (3-5초면 충분)
-    const timeout = 5000 + (retryCount * 2000); // 5초, 7초, 9초
-    await page.goto(refererUrl, { waitUntil: 'networkidle0', timeout });
+    // Render 서버 환경에 맞는 충분한 대기 시간
+    const timeout = 15000 + (retryCount * 5000); // 15초, 20초, 25초
+    await page.goto(refererUrl, { waitUntil: 'domcontentloaded', timeout });
     
     // 페이지 로딩 완료 후 즉시 API 호출 (대기 시간 제거)
     const apiUrl = 'https://www.joinkfa.com/portal/mat/getMatchSingleList.do';
@@ -213,25 +213,38 @@ async function fetchMatchData(league, ym, retryCount = 0) {
   } catch (err) {
     console.error(`[ERROR] ${league.leagueTitle} ${ym} 크롤 실패 (시도 ${retryCount + 1}/${maxRetries + 1}): ${err.message}`);
     
-    // 재시도 로직
+    // 재시도 로직 (서버 안정성 고려)
     if (retryCount < maxRetries && (err.message.includes('timeout') || err.message.includes('Navigation'))) {
-      console.log(`🔄 [RETRY] ${league.leagueTitle} ${ym} - ${retryCount + 1}번째 재시도 (${(retryCount + 1) * 2}초 대기)`);
-      await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000)); // 2초, 4초 대기
+      const waitTime = (retryCount + 1) * 5; // 5초, 10초 대기
+      console.log(`🔄 [RETRY] ${league.leagueTitle} ${ym} - ${retryCount + 1}번째 재시도 (${waitTime}초 대기)`);
+      await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
       return await fetchMatchData(league, ym, retryCount + 1);
     }
     
     return [];
   } finally {
-    if (browser) await browser.close();
+    // 메모리 누수 방지를 위한 철저한 정리
+    try {
+      if (page) {
+        await page.removeAllListeners();
+        await page.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch (cleanupError) {
+      console.warn(`⚠️ 정리 중 오류 (무시됨): ${cleanupError.message}`);
+    }
   }
 }
 
 (async () => {
-  console.log('🚀 초고속 크롤링 시스템 시작!');
-  console.log('✨ 개선사항: 리소스 차단, 최소 로딩, 스마트 재시도');
-  console.log('⏱️ 타임아웃: 5초 → 7초 → 9초 (실제 브라우저 수준)');
-  console.log('🔄 최대 3번 시도, 재시도 간격 2-4초');
-  console.log('🚫 이미지/CSS/폰트 차단으로 속도 3-5배 향상');
+  console.log('🚀 안정화된 고성능 크롤링 시스템 시작!');
+  console.log('✨ 개선사항: 리소스 차단, 안정적 재시도, 메모리 최적화');
+  console.log('⏱️ 타임아웃: 15초 → 20초 → 25초 (Render 서버 최적화)');
+  console.log('🔄 최대 3번 시도, 재시도 간격 5-10초');
+  console.log('🚫 이미지/CSS/폰트 차단으로 네트워크 효율성 향상');
+  console.log('🛡️ 메모리 누수 방지 및 서버 안정성 강화');
   console.log('');
   
   for (const league of LEAGUE_LIST) {
@@ -275,8 +288,8 @@ async function fetchMatchData(league, ym, retryCount = 0) {
       } else {
         console.log(`${colorGray}─ 경기 없음${colorReset}`);
       }
-      // 네트워크 상태에 따른 동적 대기 시간
-      const baseDelay = monthData.length > 0 ? 50 : 100; // 데이터가 있으면 짧게, 없으면 길게
+      // 서버 안정성을 위한 충분한 대기 시간
+      const baseDelay = monthData.length > 0 ? 100 : 200; // 데이터가 있으면 0.1초, 없으면 0.2초
       const randomDelay = Math.random() * 100;
       await new Promise((r) => setTimeout(r, baseDelay + randomDelay));
     }
