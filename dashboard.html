@@ -447,6 +447,463 @@
             color: white;
         }
 
+        /* 강화된 뉴스피드 스타일 */
+        .stat-card-enhanced {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* 다가오는 경기 강화 스타일 */
+        .upcoming-matches-enhanced {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .upcoming-match-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .upcoming-match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .match-time-badge {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .match-date {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .match-teams-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .team-logo-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .team-name-preview {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+        }
+
+        .vs-preview {
+            font-weight: bold;
+            color: var(--text-muted);
+            margin: 0 1rem;
+        }
+
+        .match-league-preview {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* 하이라이트 경기 강화 스타일 */
+        .highlight-match-enhanced {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 16px;
+            padding: 2rem;
+            color: white;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .highlight-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-date {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .highlight-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight-team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .highlight-team-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 1rem;
+        }
+
+        .highlight-team-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .highlight-score {
+            text-align: center;
+            flex: 1;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        .total-goals {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .highlight-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* 순위표 미리보기 스타일 */
+        .standings-preview-enhanced {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .standings-preview-header {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+            color: white;
+            padding: 1rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .standings-preview-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid #f1f3f4;
+            transition: all 0.2s ease;
+        }
+
+        .standings-preview-item:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .standings-preview-item.top-position {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), transparent);
+        }
+
+        .standings-preview-item.good-position {
+            background: linear-gradient(90deg, rgba(52, 152, 219, 0.1), transparent);
+        }
+
+        .position-num {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            min-width: 30px;
+        }
+
+        .team-info-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .team-logo-small {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .team-details {
+            flex: 1;
+        }
+
+        .team-name-small {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            margin-bottom: 2px;
+        }
+
+        .team-stats-small {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* 팀 필터 버튼 강화 스타일 */
+        .team-btn-content {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            text-align: left;
+        }
+
+        .team-btn-league {
+            min-width: 40px;
+        }
+
+        .league-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .league-badge.k5 {
+            background: #e74c3c;
+        }
+
+        .league-badge.k6 {
+            background: #f39c12;
+        }
+
+        .league-badge.k7 {
+            background: #27ae60;
+        }
+
+        .league-badge.other {
+            background: #95a5a6;
+        }
+
+        .team-btn-logo-space {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .team-btn-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .team-btn-info {
+            flex: 1;
+        }
+
+        .team-btn-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            margin-bottom: 2px;
+        }
+
+        .team-btn-region {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .region-tag {
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .region-tag.minor {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .team-filter-btn.level-5 {
+            border-left: 3px solid #e74c3c;
+        }
+
+        .team-filter-btn.level-6 {
+            border-left: 3px solid #f39c12;
+        }
+
+        .team-filter-btn.level-7 {
+            border-left: 3px solid #27ae60;
+        }
+
+        /* 빈 상태 스타일 */
+        .upcoming-matches-empty,
+        .highlight-empty,
+        .standings-empty {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .upcoming-matches-empty i,
+        .highlight-empty i,
+        .standings-empty i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* 강화된 뉴스피드 섹션 스타일 */
+        .newsfeed-section {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f1f3f4;
+            transition: all 0.3s ease;
+        }
+
+        .newsfeed-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .section-title-enhanced {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .loading-spinner-enhanced {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        /* 추가 통계 섹션 */
+        .additional-stats-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card-modern {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-card-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon-large {
+            font-size: 2.5rem;
+            min-width: 60px;
+        }
+
+        .stat-content {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value-large {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label-modern {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
         .month-content {
             max-height: 0;
             overflow: hidden;
@@ -1110,37 +1567,103 @@
                     </div>
                 </div>
 
-                <!-- 이주의 하이라이트 -->
-                <div id="highlightSection"></div>
-
-                <div class="container">
+                <!-- 메인 컨텐츠 영역 -->
+                <div class="container-fluid">
                     <div class="row">
-                        <!-- 최근 경기 결과 -->
-                        <div class="col-lg-6">
-                            <h2 class="section-title">
-                                <i class="fas fa-history"></i>최근 경기 결과
-                            </h2>
-                            <div id="recentMatchesContainer">
-                                <div class="text-center">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                        <!-- 좌측: 다가오는 최근 일정 -->
+                        <div class="col-lg-4">
+                            <div class="newsfeed-section">
+                                <h2 class="section-title-enhanced">
+                                    🗓️ 다가오는 경기
+                                </h2>
+                                <div id="upcomingMatchesSection">
+                                    <div class="loading-spinner-enhanced">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-3">예정된 경기를 불러오는 중...</p>
                                     </div>
-                                    <p class="mt-3">최근 경기 결과를 불러오는 중...</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 예정된 경기 -->
-                        <div class="col-lg-6">
-                            <h2 class="section-title">
-                                <i class="fas fa-calendar-plus"></i>예정된 경기
-                            </h2>
-                            <div id="upcomingMatchesContainer">
-                                <div class="text-center">
-                                    <div class="spinner-border text-warning" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                        <!-- 중앙: 하이라이트 경기 -->
+                        <div class="col-lg-4">
+                            <div class="newsfeed-section">
+                                <h2 class="section-title-enhanced">
+                                    ⭐ 주목할 경기
+                                </h2>
+                                <div id="highlightSection">
+                                    <div class="loading-spinner-enhanced">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-3">하이라이트 경기를 불러오는 중...</p>
                                     </div>
-                                    <p class="mt-3">예정된 경기를 불러오는 중...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 우측: 순위표 미리보기 -->
+                        <div class="col-lg-4">
+                            <div class="newsfeed-section">
+                                <h2 class="section-title-enhanced">
+                                    🏆 리그 순위
+                                </h2>
+                                <div id="standingsPreview">
+                                    <div class="loading-spinner-enhanced">
+                                        <div class="spinner-border text-success" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-3">순위표를 불러오는 중...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 추가 섹션들 -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="additional-stats-section">
+                                <h3 class="section-title-enhanced">📊 실시간 통계</h3>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="stat-card-modern">
+                                            <div class="stat-icon-large">⚽</div>
+                                            <div class="stat-content">
+                                                <div class="stat-value-large" id="todayMatches">0</div>
+                                                <div class="stat-label-modern">오늘의 경기</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-card-modern">
+                                            <div class="stat-icon-large">🔥</div>
+                                            <div class="stat-content">
+                                                <div class="stat-value-large" id="hotMatchups">0</div>
+                                                <div class="stat-label-modern">주목할 대결</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-card-modern">
+                                            <div class="stat-icon-large">⚡</div>
+                                            <div class="stat-content">
+                                                <div class="stat-value-large" id="liveMatches">0</div>
+                                                <div class="stat-label-modern">진행 중인 경기</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-card-modern">
+                                            <div class="stat-icon-large">🎯</div>
+                                            <div class="stat-content">
+                                                <div class="stat-value-large" id="totalGoalsToday">0</div>
+                                                <div class="stat-label-modern">오늘 총 득점</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1155,7 +1678,7 @@
                         <span class="filter-label">
                             <i class="fas fa-map-marker-alt me-2"></i>지역 선택
                         </span>
-                        <div class="filter-buttons" id="regionFilterButtons">
+                        <div class="filter-buttons" id="standingRegionFilterButtons">
                             <button class="filter-btn active" data-value="">모든 지역</button>
                         </div>
                     </div>
@@ -1164,7 +1687,7 @@
                         <span class="filter-label">
                             <i class="fas fa-trophy me-2"></i>리그 선택
                         </span>
-                        <div class="filter-buttons" id="leagueFilterButtons">
+                        <div class="filter-buttons" id="standingLeagueFilterButtons">
                             <button class="filter-btn active" data-value="">모든 리그</button>
                         </div>
                     </div>
@@ -1383,6 +1906,45 @@
         let allTeams = [];
         let filteredTeams = [];
 
+        // 날짜와 요일을 포맷하는 함수
+        function formatDateWithWeekday(dateString) {
+            if (!dateString) return '날짜 미정';
+            
+            const date = new Date(dateString);
+            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+            const weekday = weekdays[date.getDay()];
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day} (${weekday})`;
+        }
+
+        // 팀 정렬 함수 (K5/K6/K7 순, 팀명 오름차순)
+        function sortTeams(teams) {
+            return teams.sort((a, b) => {
+                // 리그 레벨 순으로 정렬 (K5 > K6 > K7)
+                const getLeagueLevel = (leagueTitle) => {
+                    if (!leagueTitle) return 999;
+                    if (leagueTitle.includes('K5')) return 5;
+                    if (leagueTitle.includes('K6')) return 6;
+                    if (leagueTitle.includes('K7')) return 7;
+                    return 999;
+                };
+                
+                const levelA = getLeagueLevel(a.leagueTitle);
+                const levelB = getLeagueLevel(b.leagueTitle);
+                
+                if (levelA !== levelB) {
+                    return levelA - levelB;
+                }
+                
+                // 같은 레벨이면 팀명으로 오름차순
+                return (a.teamName || '').localeCompare(b.teamName || '', 'ko');
+            });
+        }
+
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             loadInitialData();
@@ -1401,187 +1963,361 @@
                     loadStats()
                 ]);
                 
-                // 리그 필터 버튼 초기화 (지역 선택 없이도 모든 리그 표시)
-                await updateLeagueFilterButtons();
-                await updateMatchLeagueFilterButtons();
+                // 모든 리그 기본 표시 (지역 선택 없이도)
+                await updateLeagueFilterButtons(true);
+                await updateMatchLeagueFilterButtons(true);
+                
+                // 필터 버튼 이벤트 리스너 설정
+                setupFilterButtons();
             } catch (error) {
                 console.error('초기 데이터 로드 실패:', error);
             }
         }
 
-        // 뉴스 피드 로드
+        // 뉴스 피드 로드 (화려하고 역동적인 스포츠 스타일로 개선)
         async function loadNewsFeed() {
             try {
                 const response = await fetch('/api/newsfeed');
                 const data = await response.json();
                 
-                // 통계 업데이트
-                document.getElementById('totalMatchesStat').textContent = data.stats.totalMatches;
-                document.getElementById('completedMatchesStat').textContent = data.stats.completedMatches;
-                document.getElementById('activeLeaguesStat').textContent = data.stats.activeLeagues;
-                document.getElementById('activeTeamsStat').textContent = data.stats.activeTeams;
+                // 통계 업데이트 (더 시각적으로 강화)
+                updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
+                updateStatCard('completedMatchesStat', data.stats.completedMatches, '✅', 'success');
+                updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
+                updateStatCard('activeTeamsStat', data.stats.activeTeams, '👥', 'info');
                 
-                // 하이라이트 표시
-                displayHighlight(data.highlight);
-                
-                // 최근 경기 결과 표시
-                displayRecentMatches(data.recentMatches);
-                
-                // 예정된 경기 표시
-                displayUpcomingMatches(data.upcomingMatches);
+                // 메인 뉴스피드 섹션을 화려하게 구성
+                displayEnhancedNewsFeed(data);
                 
             } catch (error) {
                 console.error('뉴스 피드 로드 실패:', error);
             }
         }
 
-        // 하이라이트 경기 표시
-        function displayHighlight(highlight) {
+        // 통계 카드 업데이트 함수
+        function updateStatCard(elementId, value, icon, color) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <div class="stat-card-enhanced">
+                        <span class="stat-icon text-${color}">${icon}</span>
+                        <span class="stat-value">${value}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 강화된 뉴스피드 표시
+        function displayEnhancedNewsFeed(data) {
+            // 좌측: 다가오는 최근 일정
+            displayUpcomingMatchesEnhanced(data.upcomingMatches);
+            
+            // 우측: 순위표
+            displayStandingsPreview(data.standings);
+            
+            // 중앙: 하이라이트 경기
+            displayHighlightEnhanced(data.highlight);
+        }
+
+        // 강화된 다가오는 경기 표시
+        function displayUpcomingMatchesEnhanced(matches) {
+            const container = document.getElementById('upcomingMatchesSection');
+            
+            if (!matches || matches.length === 0) {
+                container.innerHTML = `
+                    <div class="upcoming-matches-empty">
+                        <i class="fas fa-calendar-plus"></i>
+                        <p>예정된 경기가 없습니다</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="upcoming-matches-enhanced">';
+            
+            matches.slice(0, 5).forEach(match => {
+                const formattedDate = formatDateWithWeekday(match.MATCH_DATE);
+                
+                html += `
+                    <div class="upcoming-match-card">
+                        <div class="match-time-badge">
+                            <div class="match-date">${formattedDate}</div>
+                            <div class="match-time">${match.MATCH_TIME_FORMATTED || match.TIME || '시간 미정'}</div>
+                        </div>
+                        <div class="match-teams-preview">
+                            <div class="team-preview">
+                                <div class="team-logo-preview">${(match.HOME_TEAM_NAME || '홈').charAt(0)}</div>
+                                <div class="team-name-preview">${match.HOME_TEAM_NAME || '홈팀'}</div>
+                            </div>
+                            <div class="vs-preview">VS</div>
+                            <div class="team-preview">
+                                <div class="team-logo-preview">${(match.AWAY_TEAM_NAME || '어').charAt(0)}</div>
+                                <div class="team-name-preview">${match.AWAY_TEAM_NAME || '어웨이팀'}</div>
+                            </div>
+                        </div>
+                        <div class="match-league-preview">${match.leagueTitle || '리그 정보 없음'}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // 강화된 하이라이트 경기 표시
+        function displayHighlightEnhanced(highlight) {
             const container = document.getElementById('highlightSection');
             
             if (!highlight) {
-                container.innerHTML = '';
+                container.innerHTML = `
+                    <div class="highlight-empty">
+                        <i class="fas fa-star"></i>
+                        <p>주목할 만한 경기가 없습니다</p>
+                    </div>
+                `;
                 return;
             }
             
             const totalGoals = (highlight.homeScore || 0) + (highlight.awayScore || 0);
+            const formattedDate = formatDateWithWeekday(highlight.matchDate);
             
             container.innerHTML = `
-                <div class="container">
-                    <div class="highlight-match">
-                        <div class="highlight-content">
-                            <div class="highlight-badge">🔥 이주의 하이라이트</div>
-                            <h3>최고 득점 경기 - 총 ${totalGoals}골!</h3>
-                            <div class="row align-items-center mt-3">
-                                <div class="col-4 text-center">
-                                    <div class="team-logo-small mx-auto mb-2">${highlight.homeTeam.teamName.charAt(0)}</div>
-                                    <h5>${highlight.homeTeam.teamName}</h5>
-                                    <small>${highlight.homeTeam.majorRegion || ''} ${highlight.homeTeam.minorRegion || ''}</small>
-                                </div>
-                                <div class="col-4 text-center">
-                                    <h2 style="font-size: 3rem; margin: 0;">${highlight.homeScore} - ${highlight.awayScore}</h2>
-                                </div>
-                                <div class="col-4 text-center">
-                                    <div class="team-logo-small mx-auto mb-2">${highlight.awayTeam.teamName.charAt(0)}</div>
-                                    <h5>${highlight.awayTeam.teamName}</h5>
-                                    <small>${highlight.awayTeam.majorRegion || ''} ${highlight.awayTeam.minorRegion || ''}</small>
-                                </div>
-                            </div>
-                            <div class="text-center mt-3">
-                                <small>📅 ${highlight.MATCH_DATE || '날짜 미정'} | 📍 ${highlight.stadium}</small>
-                            </div>
+                <div class="highlight-match-enhanced">
+                    <div class="highlight-header">
+                        <div class="highlight-badge">⭐ 주목할 경기</div>
+                        <div class="highlight-date">${formattedDate}</div>
+                    </div>
+                    <div class="highlight-content">
+                        <div class="highlight-team">
+                            <div class="highlight-team-logo">${(highlight.homeTeam || '홈').charAt(0)}</div>
+                            <div class="highlight-team-name">${highlight.homeTeam || '홈팀'}</div>
                         </div>
+                        <div class="highlight-score">
+                            <div class="score-display">${highlight.homeScore || 0} - ${highlight.awayScore || 0}</div>
+                            <div class="total-goals">${totalGoals} 골</div>
+                        </div>
+                        <div class="highlight-team">
+                            <div class="highlight-team-logo">${(highlight.awayTeam || '어').charAt(0)}</div>
+                            <div class="highlight-team-name">${highlight.awayTeam || '어웨이팀'}</div>
+                        </div>
+                    </div>
+                    <div class="highlight-footer">
+                        <div class="highlight-league">${highlight.leagueTitle || '리그 정보 없음'}</div>
                     </div>
                 </div>
             `;
         }
 
-        // 최근 경기 결과 표시
-        function displayRecentMatches(matches) {
-            const container = document.getElementById('recentMatchesContainer');
+        // 순위표 미리보기 표시
+        function displayStandingsPreview(standings) {
+            const container = document.getElementById('standingsPreview');
             
-            if (matches.length === 0) {
+            if (!standings || standings.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                        <p>최근 완료된 경기가 없습니다.</p>
+                    <div class="standings-empty">
+                        <i class="fas fa-trophy"></i>
+                        <p>순위표 정보가 없습니다</p>
                     </div>
                 `;
                 return;
             }
             
-            let html = '';
-            matches.forEach(match => {
+            let html = '<div class="standings-preview-enhanced">';
+            html += '<div class="standings-preview-header">🏆 리그 순위</div>';
+            
+            standings.slice(0, 6).forEach((team, index) => {
+                const position = index + 1;
+                let positionClass = '';
+                
+                if (position <= 3) positionClass = 'top-position';
+                else if (position <= 6) positionClass = 'good-position';
+                
                 html += `
-                    <div class="match-card completed">
-                        <div class="match-header">
-                            <span class="league-badge">${match.leagueTitle || '리그 미정'}</span>
-                            <span class="match-date">${match.MATCH_DATE || '날짜 미정'}</span>
-                        </div>
-                        <div class="match-teams">
-                            <div class="team-info">
-                                <div class="team-logo-small">${match.homeTeam.teamName.charAt(0)}</div>
-                                <div>
-                                    <div class="team-name">${match.homeTeam.teamName}</div>
-                                    <div class="team-region">${match.homeTeam.majorRegion || ''} ${match.homeTeam.minorRegion || ''}</div>
-                                </div>
-                            </div>
-                            <div class="match-score">${match.homeScore} - ${match.awayScore}</div>
-                            <div class="team-info justify-content-end text-end">
-                                <div>
-                                    <div class="team-name">${match.awayTeam.teamName}</div>
-                                    <div class="team-region">${match.awayTeam.majorRegion || ''} ${match.awayTeam.minorRegion || ''}</div>
-                                </div>
-                                <div class="team-logo-small">${match.awayTeam.teamName.charAt(0)}</div>
-                            </div>
-                        </div>
-                        <div class="match-details">
-                            <div class="match-time">
-                                <i class="fas fa-clock"></i>${match.formattedTime || '시간 미정'}
-                            </div>
-                            <div class="match-stadium">
-                                <i class="fas fa-map-marker-alt"></i>${match.stadium}
+                    <div class="standings-preview-item ${positionClass}">
+                        <div class="position-num">${position}</div>
+                        <div class="team-info-preview">
+                            <div class="team-logo-small">${(team.teamName || '팀').charAt(0)}</div>
+                            <div class="team-details">
+                                <div class="team-name-small">${team.teamName || '팀명 없음'}</div>
+                                <div class="team-stats-small">${team.played || 0}경기 ${team.points || 0}점</div>
                             </div>
                         </div>
                     </div>
                 `;
             });
             
+            html += '</div>';
             container.innerHTML = html;
         }
 
-        // 예정된 경기 표시
-        function displayUpcomingMatches(matches) {
-            const container = document.getElementById('upcomingMatchesContainer');
-            
-            if (matches.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-calendar-plus fa-3x mb-3"></i>
-                        <p>예정된 경기가 없습니다.</p>
-                    </div>
-                `;
-                return;
+        // 팀 목록 로드 (정렬 적용)
+        async function loadTeams() {
+            try {
+                const response = await fetch('/api/teams');
+                const teams = await response.json();
+                
+                // 팀 정렬 적용
+                allTeams = sortTeams(teams);
+                filteredTeams = [...allTeams];
+                
+                updateTeamFilterButtons();
+                
+                // 팀 검색 입력 필드 이벤트 리스너 추가
+                const teamSearchInput = document.getElementById('teamSearchInput');
+                if (teamSearchInput) {
+                    teamSearchInput.addEventListener('input', filterTeamsBySearch);
+                }
+            } catch (error) {
+                console.error('팀 목록 로드 실패:', error);
             }
+        }
+
+        // 팀 필터 버튼 업데이트 (로고 공간 추가)
+        function updateTeamFilterButtons() {
+            const container = document.getElementById('teamFilterButtons');
+            const countElement = document.getElementById('teamCount');
             
-            let html = '';
-            matches.forEach(match => {
+            countElement.textContent = filteredTeams.length;
+            
+            let html = '<button class="team-filter-btn active" data-value="">모든 팀</button>';
+            
+            filteredTeams.forEach(team => {
+                const leagueLevel = getLeagueLevel(team.leagueTitle);
+                const levelClass = `level-${leagueLevel}`;
+                
                 html += `
-                    <div class="match-card upcoming">
-                        <div class="match-header">
-                            <span class="league-badge">${match.leagueTitle || '리그 미정'}</span>
-                            <span class="match-date">${match.MATCH_DATE || '날짜 미정'}</span>
-                        </div>
-                        <div class="match-teams">
-                            <div class="team-info">
-                                <div class="team-logo-small">${match.homeTeam.teamName.charAt(0)}</div>
-                                <div>
-                                    <div class="team-name">${match.homeTeam.teamName}</div>
-                                    <div class="team-region">${match.homeTeam.majorRegion || ''} ${match.homeTeam.minorRegion || ''}</div>
+                    <button class="team-filter-btn ${levelClass}" data-value="${team.teamName}">
+                        <div class="team-btn-content">
+                            <div class="team-btn-league">${getLeagueBadge(leagueLevel)}</div>
+                            <div class="team-btn-logo-space">
+                                <div class="team-btn-logo">${(team.teamName || '팀').charAt(0)}</div>
+                            </div>
+                            <div class="team-btn-info">
+                                <div class="team-btn-name">${team.teamName || '팀명 없음'}</div>
+                                <div class="team-btn-region">
+                                    ${team.majorRegion ? `<span class="region-tag">${team.majorRegion}</span>` : ''}
+                                    ${team.minorRegion ? `<span class="region-tag minor">${team.minorRegion}</span>` : ''}
                                 </div>
                             </div>
-                            <div class="match-vs">VS</div>
-                            <div class="team-info justify-content-end text-end">
-                                <div>
-                                    <div class="team-name">${match.awayTeam.teamName}</div>
-                                    <div class="team-region">${match.awayTeam.majorRegion || ''} ${match.awayTeam.minorRegion || ''}</div>
-                                </div>
-                                <div class="team-logo-small">${match.awayTeam.teamName.charAt(0)}</div>
-                            </div>
                         </div>
-                        <div class="match-details">
-                            <div class="match-time">
-                                <i class="fas fa-clock"></i>${match.formattedTime || '시간 미정'}
-                            </div>
-                            <div class="match-stadium">
-                                <i class="fas fa-map-marker-alt"></i>${match.stadium}
-                            </div>
-                        </div>
-                    </div>
+                    </button>
                 `;
             });
             
             container.innerHTML = html;
+            
+            // 이벤트 리스너 재설정
+            container.addEventListener('click', function(e) {
+                if (e.target.classList.contains('team-filter-btn') || e.target.closest('.team-filter-btn')) {
+                    const btn = e.target.classList.contains('team-filter-btn') ? e.target : e.target.closest('.team-filter-btn');
+                    
+                    container.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // 리그 레벨 추출 함수
+        function getLeagueLevel(leagueTitle) {
+            if (!leagueTitle) return 999;
+            if (leagueTitle.includes('K5')) return 5;
+            if (leagueTitle.includes('K6')) return 6;
+            if (leagueTitle.includes('K7')) return 7;
+            return 999;
+        }
+
+        // 리그 배지 생성 함수
+        function getLeagueBadge(level) {
+            switch(level) {
+                case 5: return '<span class="league-badge k5">K5</span>';
+                case 6: return '<span class="league-badge k6">K6</span>';
+                case 7: return '<span class="league-badge k7">K7</span>';
+                default: return '<span class="league-badge other">기타</span>';
+            }
+        }
+
+        // 리그 필터 버튼 업데이트 (모든 리그 기본 표시)
+        async function updateLeagueFilterButtons(showAll = false) {
+            const container = document.getElementById('standingLeagueFilterButtons');
+            
+            try {
+                const response = await fetch('/api/leagues');
+                const allLeagues = await response.json();
+                
+                let html = '<button class="filter-btn active" data-value="">모든 리그</button>';
+                
+                // 모든 리그를 기본적으로 표시 (지역 선택과 무관)
+                if (showAll || !regions.length) {
+                    allLeagues.forEach(league => {
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                    });
+                } else {
+                    // 기존 로직 유지
+                    const selectedRegion = getSelectedFilterValue('standingRegionFilterButtons');
+                    const filteredLeagues = selectedRegion ? 
+                        allLeagues.filter(l => l.regionTag === selectedRegion) : 
+                        allLeagues;
+                    
+                    filteredLeagues.forEach(league => {
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                    });
+                }
+                
+                container.innerHTML = html;
+                
+                // 이벤트 리스너 재설정
+                container.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('filter-btn')) {
+                        container.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('리그 필터 업데이트 실패:', error);
+            }
+        }
+
+        // 경기 리그 필터 버튼 업데이트 (모든 리그 기본 표시)
+        async function updateMatchLeagueFilterButtons(showAll = false) {
+            const container = document.getElementById('matchLeagueFilterButtons');
+            
+            try {
+                const response = await fetch('/api/leagues');
+                const allLeagues = await response.json();
+                
+                let html = '<button class="filter-btn active" data-value="">모든 리그</button>';
+                
+                // 모든 리그를 기본적으로 표시 (지역 선택과 무관)
+                if (showAll || !regions.length) {
+                    allLeagues.forEach(league => {
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                    });
+                } else {
+                    // 기존 로직 유지
+                    const selectedRegion = getSelectedFilterValue('matchRegionFilterButtons');
+                    const filteredLeagues = selectedRegion ? 
+                        allLeagues.filter(l => l.regionTag === selectedRegion) : 
+                        allLeagues;
+                    
+                    filteredLeagues.forEach(league => {
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                    });
+                }
+                
+                container.innerHTML = html;
+                
+                // 이벤트 리스너 재설정
+                container.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('filter-btn')) {
+                        container.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('경기 리그 필터 업데이트 실패:', error);
+            }
         }
 
         // 지역 목록 로드 (버튼형 필터)
@@ -1614,17 +2350,17 @@
         // 필터 버튼 이벤트 설정
         function setupFilterButtons() {
             // 순위표 탭 필터
-            document.getElementById('regionFilterButtons').addEventListener('click', (e) => {
+            document.getElementById('standingRegionFilterButtons').addEventListener('click', (e) => {
                 if (e.target.classList.contains('filter-btn')) {
-                    setActiveButton(e.target, 'regionFilterButtons');
+                    setActiveButton(e.target, 'standingRegionFilterButtons');
                     updateLeagueFilterButtons();
                     loadStandings();
                 }
             });
             
-            document.getElementById('leagueFilterButtons').addEventListener('click', (e) => {
+            document.getElementById('standingLeagueFilterButtons').addEventListener('click', (e) => {
                 if (e.target.classList.contains('filter-btn')) {
-                    setActiveButton(e.target, 'leagueFilterButtons');
+                    setActiveButton(e.target, 'standingLeagueFilterButtons');
                     loadStandings();
                 }
             });
@@ -1689,24 +2425,6 @@
             return activeBtn ? activeBtn.dataset.value : '';
         }
 
-        // 팀 목록 로드 (K5~K7별, 지역별 정렬 + 검색 기능)
-        async function loadTeams() {
-            try {
-                const response = await fetch('/api/teams');
-                allTeams = await response.json();
-                filteredTeams = [...allTeams];
-                
-                // 팀 검색 입력 필드 이벤트 리스너 추가
-                const teamSearchInput = document.getElementById('teamSearchInput');
-                teamSearchInput.addEventListener('input', filterTeamsBySearch);
-                
-                // 초기 팀 필터 버튼 생성
-                updateTeamFilterButtons();
-            } catch (error) {
-                console.error('팀 목록 로드 실패:', error);
-            }
-        }
-
         // 팀 검색 필터링
         function filterTeamsBySearch() {
             const searchTerm = document.getElementById('teamSearchInput').value.toLowerCase();
@@ -1722,130 +2440,6 @@
             }
             
             updateTeamFilterButtons();
-        }
-
-        // 팀 필터 버튼 업데이트
-        function updateTeamFilterButtons() {
-            const teamFilterButtons = document.getElementById('teamFilterButtons');
-            teamFilterButtons.innerHTML = '<button class="team-filter-btn active" data-value="">모든 팀</button>';
-            
-            // K5~K7별로 그룹화
-            const teamsByCategory = {
-                K5: [],
-                K6: [],
-                K7: [],
-                기타: []
-            };
-            
-            filteredTeams.forEach(team => {
-                if (team.leagueTitle.includes('K5')) {
-                    teamsByCategory.K5.push(team);
-                } else if (team.leagueTitle.includes('K6')) {
-                    teamsByCategory.K6.push(team);
-                } else if (team.leagueTitle.includes('K7')) {
-                    teamsByCategory.K7.push(team);
-                } else {
-                    teamsByCategory.기타.push(team);
-                }
-            });
-            
-            // 카테고리별로 팀 버튼 생성
-            Object.keys(teamsByCategory).forEach(category => {
-                if (teamsByCategory[category].length > 0) {
-                    teamsByCategory[category].forEach(team => {
-                        const stripeClass = getLeagueStripeClass(team.leagueTitle);
-                        const regionLabel = team.majorRegion ? 
-                            `<span class="region-badge major-region">${team.majorRegion}</span>` : '';
-                        const minorRegionLabel = team.minorRegion ? 
-                            `<span class="region-badge minor-region">${team.minorRegion}</span>` : '';
-                        
-                        teamFilterButtons.innerHTML += `
-                            <button class="team-filter-btn" data-value="${team.teamName}" title="${team.fullName}">
-                                <div class="league-stripe ${stripeClass}">${category}</div>
-                                <div class="team-button-content">
-                                    <div class="team-name">${team.teamName}</div>
-                                    <div class="team-regions">${regionLabel}${minorRegionLabel}</div>
-                                </div>
-                            </button>
-                        `;
-                    });
-                }
-            });
-            
-            // 팀 개수 업데이트
-            const teamCount = document.getElementById('teamCount');
-            if (teamCount) {
-                teamCount.textContent = filteredTeams.length;
-            }
-        }
-
-        // 순위표 탭 리그 필터 버튼 업데이트 (K5~K7 분류 포함)
-        async function updateLeagueFilterButtons() {
-            const selectedRegion = getSelectedFilterValue('regionFilterButtons');
-            const leagueFilterButtons = document.getElementById('leagueFilterButtons');
-            
-            leagueFilterButtons.innerHTML = '<button class="filter-btn active" data-value="">모든 리그</button>';
-            
-            try {
-                if (selectedRegion) {
-                    // 특정 지역의 리그만 가져오기
-                    const response = await fetch(`/api/leagues/${selectedRegion}`);
-                    const regionLeagues = await response.json();
-                    regionLeagues.forEach(league => {
-                        const categoryClass = getLeagueCategoryClass(league);
-                        leagueFilterButtons.innerHTML += `
-                            <button class="filter-btn" data-value="${league}">
-                                <span class="league-category-label ${categoryClass}">${getLeagueCategory(league)}</span>
-                                ${league}
-                            </button>
-                        `;
-                    });
-                } else {
-                    // 모든 리그를 K5~K7별로 분류하여 표시
-                    const response = await fetch('/api/leagues/all');
-                    allLeaguesByCategory = await response.json();
-                    
-                    Object.keys(allLeaguesByCategory).forEach(category => {
-                        if (allLeaguesByCategory[category].length > 0) {
-                            allLeaguesByCategory[category].forEach(league => {
-                                const categoryClass = getLeagueCategoryClass(league);
-                                leagueFilterButtons.innerHTML += `
-                                    <button class="filter-btn" data-value="${league}">
-                                        <span class="league-category-label ${categoryClass}">${category}</span>
-                                        ${league}
-                                    </button>
-                                `;
-                            });
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('리그 목록 로드 실패:', error);
-            }
-        }
-
-        // 리그 카테고리 클래스 반환
-        function getLeagueCategoryClass(league) {
-            if (league.includes('K5')) return 'league-k5';
-            if (league.includes('K6')) return 'league-k6';
-            if (league.includes('K7')) return 'league-k7';
-            return 'league-other';
-        }
-
-        // 리그 카테고리 텍스트 반환
-        function getLeagueCategory(league) {
-            if (league.includes('K5')) return 'K5';
-            if (league.includes('K6')) return 'K6';
-            if (league.includes('K7')) return 'K7';
-            return '기타';
-        }
-
-        // 리그 스트라이프 클래스 반환
-        function getLeagueStripeClass(league) {
-            if (league.includes('K5')) return 'k5-stripe';
-            if (league.includes('K6')) return 'k6-stripe';
-            if (league.includes('K7')) return 'k7-stripe';
-            return 'other-stripe';
         }
 
         // 팀 필터 토글
@@ -1866,53 +2460,6 @@
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
                 toggle.innerHTML = `<i class="fas fa-chevron-up"></i>팀 목록 숨기기 (<span id="teamCount">${filteredTeams.length}</span>개 팀)`;
-            }
-        }
-
-        // 경기 기록 탭 리그 필터 버튼 업데이트 (K5~K7 분류 포함)
-        async function updateMatchLeagueFilterButtons() {
-            const selectedRegion = getSelectedFilterValue('matchRegionFilterButtons');
-            const matchLeagueFilterButtons = document.getElementById('matchLeagueFilterButtons');
-            
-            matchLeagueFilterButtons.innerHTML = '<button class="filter-btn active" data-value="">모든 리그</button>';
-            
-            try {
-                if (selectedRegion) {
-                    // 특정 지역의 리그만 가져오기
-                    const response = await fetch(`/api/leagues/${selectedRegion}`);
-                    const regionLeagues = await response.json();
-                    regionLeagues.forEach(league => {
-                        const categoryClass = getLeagueCategoryClass(league);
-                        matchLeagueFilterButtons.innerHTML += `
-                            <button class="filter-btn" data-value="${league}">
-                                <span class="league-category-label ${categoryClass}">${getLeagueCategory(league)}</span>
-                                ${league}
-                            </button>
-                        `;
-                    });
-                } else {
-                    // 모든 리그를 K5~K7별로 분류하여 표시
-                    if (Object.keys(allLeaguesByCategory).length === 0) {
-                        const response = await fetch('/api/leagues/all');
-                        allLeaguesByCategory = await response.json();
-                    }
-                    
-                    Object.keys(allLeaguesByCategory).forEach(category => {
-                        if (allLeaguesByCategory[category].length > 0) {
-                            allLeaguesByCategory[category].forEach(league => {
-                                const categoryClass = getLeagueCategoryClass(league);
-                                matchLeagueFilterButtons.innerHTML += `
-                                    <button class="filter-btn" data-value="${league}">
-                                        <span class="league-category-label ${categoryClass}">${category}</span>
-                                        ${league}
-                                    </button>
-                                `;
-                            });
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('리그 목록 로드 실패:', error);
             }
         }
 
@@ -1947,8 +2494,8 @@
         // 순위표 표시
         function displayStandings(standings) {
             const container = document.getElementById('standingsContainer');
-            const selectedRegion = getSelectedFilterValue('regionFilterButtons');
-            const selectedLeague = getSelectedFilterValue('leagueFilterButtons');
+            const selectedRegion = getSelectedFilterValue('standingRegionFilterButtons');
+            const selectedLeague = getSelectedFilterValue('standingLeagueFilterButtons');
 
             // 필터링
             let filteredStandings = standings;
@@ -2172,14 +2719,14 @@
                     const homeTeamInitial = (match.HOME_TEAM_NAME || '홈').charAt(0).toUpperCase();
                     const awayTeamInitial = (match.AWAY_TEAM_NAME || '어').charAt(0).toUpperCase();
                     
-                    html += `
-                        <div class="epl-match-card">
-                            <div class="epl-match-header">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span>${match.leagueTitle || '리그 정보 없음'}</span>
-                                    <span>${match.MATCH_DATE || '날짜 미정'}</span>
-                                </div>
+                                    html += `
+                    <div class="epl-match-card">
+                        <div class="epl-match-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>${match.leagueTitle || '리그 정보 없음'}</span>
+                                <span>${formatDateWithWeekday(match.MATCH_DATE)}</span>
                             </div>
+                        </div>
                             <div class="epl-match-content">
                                 <div class="epl-team-section">
                                     <div class="epl-team-logo">${homeTeamInitial}</div>
