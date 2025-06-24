@@ -303,47 +303,50 @@
             transform: scale(1.05);
         }
 
-        /* EPL 스타일 경기 기록 */
+        /* EPL 스타일 경기 기록 (중앙 정렬 개선) */
         .epl-match-card {
             background: white;
-            border-radius: 8px;
-            margin: 0.5rem 0;
+            border-radius: 12px;
+            margin: 0.75rem 0;
             padding: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             overflow: hidden;
         }
 
         .epl-match-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
 
         .epl-match-header {
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
             color: var(--text-muted);
             border-bottom: 1px solid var(--border-color);
         }
 
         .epl-match-content {
-            padding: 1rem;
+            padding: 2rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 2rem;
         }
 
         .epl-team-section {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            text-align: center;
+            min-width: 180px;
             flex: 1;
-            min-width: 0;
         }
 
         .epl-team-logo {
-            width: 48px;
-            height: 48px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex;
@@ -351,46 +354,48 @@
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 18px;
-            margin-right: 1rem;
+            font-size: 24px;
+            margin-bottom: 1rem;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .epl-team-info {
-            flex: 1;
-            min-width: 0;
+            width: 100%;
         }
 
         .epl-team-name {
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--primary-color);
-            margin-bottom: 0.25rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
         }
 
         .epl-score-section {
-            font-size: 2.5rem;
-            font-weight: bold;
+            font-size: 3rem;
+            font-weight: 900;
             color: var(--primary-color);
-            margin: 0 2rem;
             text-align: center;
-            min-width: 120px;
+            min-width: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         .epl-vs-text {
-            font-size: 1.5rem;
+            font-size: 2rem;
             color: var(--text-muted);
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .epl-match-info {
             text-align: center;
             color: var(--text-muted);
-            font-size: 0.9rem;
-            min-width: 150px;
+            font-size: 0.95rem;
+            min-width: 120px;
+            flex-shrink: 0;
         }
 
         .epl-status-badge {
@@ -449,6 +454,148 @@
 
         .month-content.show {
             max-height: 3000px;
+        }
+
+        /* 리그 분류 라벨 */
+        .league-category-label {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .league-k5 {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .league-k6 {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .league-k7 {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .league-other {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        /* 팀 검색 필드 */
+        .team-search-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .team-search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .team-search-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .team-search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        /* 팀 필터 버튼 균등 크기 */
+        .team-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .team-filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #495057;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .team-filter-btn:hover {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .team-filter-btn.active {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        /* 순위표 1등/꼴찌 색상 */
+        .standings-table tbody tr:first-child {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7) !important;
+            border-left: 4px solid #f39c12;
+        }
+
+        .standings-table tbody tr:last-child {
+            background: linear-gradient(135deg, #f8d7da, #fab1a0) !important;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .standings-table tbody tr:first-child:hover {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e) !important;
+        }
+
+        .standings-table tbody tr:last-child:hover {
+            background: linear-gradient(135deg, #fab1a0, #e17055) !important;
+        }
+
+        /* 메달 아이콘 제거 */
+        .medal-icon {
+            display: none;
+        }
+
+        /* 팀 버튼 내용 스타일 */
+        .team-button-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .team-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .team-regions {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .match-status {
@@ -703,8 +850,15 @@
                         <span class="filter-label">
                             <i class="fas fa-users me-2"></i>팀 선택
                         </span>
-                        <div class="filter-buttons" id="teamFilterButtons">
-                            <button class="filter-btn active" data-value="">모든 팀</button>
+                        <!-- 팀 검색 필드 -->
+                        <div class="team-search-container">
+                            <i class="fas fa-search team-search-icon"></i>
+                            <input type="text" id="teamSearchInput" class="team-search-input" 
+                                   placeholder="팀명을 입력하여 검색하세요..." />
+                        </div>
+                        <!-- 팀 필터 버튼들 (그리드 형태) -->
+                        <div class="team-filter-grid" id="teamFilterButtons">
+                            <button class="team-filter-btn active" data-value="">모든 팀</button>
                         </div>
                     </div>
                     
@@ -848,6 +1002,9 @@
         let allMatches = [];
         let regions = [];
         let leagues = [];
+        let allLeaguesByCategory = {};
+        let allTeams = [];
+        let filteredTeams = [];
 
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -865,6 +1022,10 @@
                     loadAnalytics(),
                     loadStats()
                 ]);
+                
+                // 리그 필터 버튼 초기화 (지역 선택 없이도 모든 리그 표시)
+                await updateLeagueFilterButtons();
+                await updateMatchLeagueFilterButtons();
             } catch (error) {
                 console.error('초기 데이터 로드 실패:', error);
             }
@@ -939,8 +1100,9 @@
             });
             
             document.getElementById('teamFilterButtons').addEventListener('click', (e) => {
-                if (e.target.classList.contains('filter-btn')) {
-                    setActiveButton(e.target, 'teamFilterButtons');
+                const targetBtn = e.target.closest('.team-filter-btn');
+                if (targetBtn) {
+                    setActiveTeamButton(targetBtn);
                     loadMatches();
                 }
             });
@@ -953,6 +1115,13 @@
             clickedButton.classList.add('active');
         }
 
+        // 팀 필터 버튼 활성화 설정
+        function setActiveTeamButton(clickedButton) {
+            const container = document.getElementById('teamFilterButtons');
+            container.querySelectorAll('.team-filter-btn').forEach(btn => btn.classList.remove('active'));
+            clickedButton.classList.add('active');
+        }
+
         // 선택된 필터 값 가져오기
         function getSelectedFilterValue(containerId) {
             const container = document.getElementById(containerId);
@@ -960,60 +1129,202 @@
             return activeBtn ? activeBtn.dataset.value : '';
         }
 
-        // 팀 목록 로드
+        // 선택된 팀 필터 값 가져오기
+        function getSelectedTeamFilterValue() {
+            const container = document.getElementById('teamFilterButtons');
+            const activeBtn = container.querySelector('.team-filter-btn.active');
+            return activeBtn ? activeBtn.dataset.value : '';
+        }
+
+        // 팀 목록 로드 (K5~K7별, 지역별 정렬 + 검색 기능)
         async function loadTeams() {
             try {
                 const response = await fetch('/api/teams');
-                const teams = await response.json();
+                allTeams = await response.json();
+                filteredTeams = [...allTeams];
                 
-                // 팀 필터 버튼 생성
-                const teamFilterButtons = document.getElementById('teamFilterButtons');
-                teamFilterButtons.innerHTML = '<button class="filter-btn active" data-value="">모든 팀</button>';
-                teams.forEach(team => {
-                    teamFilterButtons.innerHTML += `<button class="filter-btn" data-value="${team.teamName}">${team.teamName}</button>`;
-                });
+                // 팀 검색 입력 필드 이벤트 리스너 추가
+                const teamSearchInput = document.getElementById('teamSearchInput');
+                teamSearchInput.addEventListener('input', filterTeamsBySearch);
+                
+                // 초기 팀 필터 버튼 생성
+                updateTeamFilterButtons();
             } catch (error) {
                 console.error('팀 목록 로드 실패:', error);
             }
         }
 
-        // 순위표 탭 리그 필터 버튼 업데이트
+        // 팀 검색 필터링
+        function filterTeamsBySearch() {
+            const searchTerm = document.getElementById('teamSearchInput').value.toLowerCase();
+            
+            if (searchTerm.trim() === '') {
+                filteredTeams = [...allTeams];
+            } else {
+                filteredTeams = allTeams.filter(team => 
+                    team.teamName.toLowerCase().includes(searchTerm) ||
+                    (team.majorRegion && team.majorRegion.toLowerCase().includes(searchTerm)) ||
+                    (team.minorRegion && team.minorRegion.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            updateTeamFilterButtons();
+        }
+
+        // 팀 필터 버튼 업데이트
+        function updateTeamFilterButtons() {
+            const teamFilterButtons = document.getElementById('teamFilterButtons');
+            teamFilterButtons.innerHTML = '<button class="team-filter-btn active" data-value="">모든 팀</button>';
+            
+            // K5~K7별로 그룹화
+            const teamsByCategory = {
+                K5: [],
+                K6: [],
+                K7: [],
+                기타: []
+            };
+            
+            filteredTeams.forEach(team => {
+                if (team.leagueTitle.includes('K5')) {
+                    teamsByCategory.K5.push(team);
+                } else if (team.leagueTitle.includes('K6')) {
+                    teamsByCategory.K6.push(team);
+                } else if (team.leagueTitle.includes('K7')) {
+                    teamsByCategory.K7.push(team);
+                } else {
+                    teamsByCategory.기타.push(team);
+                }
+            });
+            
+            // 카테고리별로 팀 버튼 생성
+            Object.keys(teamsByCategory).forEach(category => {
+                if (teamsByCategory[category].length > 0) {
+                    teamsByCategory[category].forEach(team => {
+                        const categoryClass = getLeagueCategoryClass(team.leagueTitle);
+                        const regionLabel = team.majorRegion ? 
+                            `<span class="region-badge major-region">${team.majorRegion}</span>` : '';
+                        const minorRegionLabel = team.minorRegion ? 
+                            `<span class="region-badge minor-region">${team.minorRegion}</span>` : '';
+                        
+                        teamFilterButtons.innerHTML += `
+                            <button class="team-filter-btn" data-value="${team.teamName}" title="${team.fullName}">
+                                <span class="league-category-label ${categoryClass}">${category}</span>
+                                <div class="team-button-content">
+                                    <div class="team-name">${team.teamName}</div>
+                                    <div class="team-regions">${regionLabel}${minorRegionLabel}</div>
+                                </div>
+                            </button>
+                        `;
+                    });
+                }
+            });
+        }
+
+        // 순위표 탭 리그 필터 버튼 업데이트 (K5~K7 분류 포함)
         async function updateLeagueFilterButtons() {
             const selectedRegion = getSelectedFilterValue('regionFilterButtons');
             const leagueFilterButtons = document.getElementById('leagueFilterButtons');
             
             leagueFilterButtons.innerHTML = '<button class="filter-btn active" data-value="">모든 리그</button>';
             
-            if (selectedRegion) {
-                try {
+            try {
+                if (selectedRegion) {
+                    // 특정 지역의 리그만 가져오기
                     const response = await fetch(`/api/leagues/${selectedRegion}`);
                     const regionLeagues = await response.json();
                     regionLeagues.forEach(league => {
-                        leagueFilterButtons.innerHTML += `<button class="filter-btn" data-value="${league}">${league}</button>`;
+                        const categoryClass = getLeagueCategoryClass(league);
+                        leagueFilterButtons.innerHTML += `
+                            <button class="filter-btn" data-value="${league}">
+                                <span class="league-category-label ${categoryClass}">${getLeagueCategory(league)}</span>
+                                ${league}
+                            </button>
+                        `;
                     });
-                } catch (error) {
-                    console.error('리그 목록 로드 실패:', error);
+                } else {
+                    // 모든 리그를 K5~K7별로 분류하여 표시
+                    const response = await fetch('/api/leagues/all');
+                    allLeaguesByCategory = await response.json();
+                    
+                    Object.keys(allLeaguesByCategory).forEach(category => {
+                        if (allLeaguesByCategory[category].length > 0) {
+                            allLeaguesByCategory[category].forEach(league => {
+                                const categoryClass = getLeagueCategoryClass(league);
+                                leagueFilterButtons.innerHTML += `
+                                    <button class="filter-btn" data-value="${league}">
+                                        <span class="league-category-label ${categoryClass}">${category}</span>
+                                        ${league}
+                                    </button>
+                                `;
+                            });
+                        }
+                    });
                 }
+            } catch (error) {
+                console.error('리그 목록 로드 실패:', error);
             }
         }
 
-        // 경기 기록 탭 리그 필터 버튼 업데이트
+        // 리그 카테고리 클래스 반환
+        function getLeagueCategoryClass(league) {
+            if (league.includes('K5')) return 'league-k5';
+            if (league.includes('K6')) return 'league-k6';
+            if (league.includes('K7')) return 'league-k7';
+            return 'league-other';
+        }
+
+        // 리그 카테고리 텍스트 반환
+        function getLeagueCategory(league) {
+            if (league.includes('K5')) return 'K5';
+            if (league.includes('K6')) return 'K6';
+            if (league.includes('K7')) return 'K7';
+            return '기타';
+        }
+
+        // 경기 기록 탭 리그 필터 버튼 업데이트 (K5~K7 분류 포함)
         async function updateMatchLeagueFilterButtons() {
             const selectedRegion = getSelectedFilterValue('matchRegionFilterButtons');
             const matchLeagueFilterButtons = document.getElementById('matchLeagueFilterButtons');
             
             matchLeagueFilterButtons.innerHTML = '<button class="filter-btn active" data-value="">모든 리그</button>';
             
-            if (selectedRegion) {
-                try {
+            try {
+                if (selectedRegion) {
+                    // 특정 지역의 리그만 가져오기
                     const response = await fetch(`/api/leagues/${selectedRegion}`);
                     const regionLeagues = await response.json();
                     regionLeagues.forEach(league => {
-                        matchLeagueFilterButtons.innerHTML += `<button class="filter-btn" data-value="${league}">${league}</button>`;
+                        const categoryClass = getLeagueCategoryClass(league);
+                        matchLeagueFilterButtons.innerHTML += `
+                            <button class="filter-btn" data-value="${league}">
+                                <span class="league-category-label ${categoryClass}">${getLeagueCategory(league)}</span>
+                                ${league}
+                            </button>
+                        `;
                     });
-                } catch (error) {
-                    console.error('리그 목록 로드 실패:', error);
+                } else {
+                    // 모든 리그를 K5~K7별로 분류하여 표시
+                    if (Object.keys(allLeaguesByCategory).length === 0) {
+                        const response = await fetch('/api/leagues/all');
+                        allLeaguesByCategory = await response.json();
+                    }
+                    
+                    Object.keys(allLeaguesByCategory).forEach(category => {
+                        if (allLeaguesByCategory[category].length > 0) {
+                            allLeaguesByCategory[category].forEach(league => {
+                                const categoryClass = getLeagueCategoryClass(league);
+                                matchLeagueFilterButtons.innerHTML += `
+                                    <button class="filter-btn" data-value="${league}">
+                                        <span class="league-category-label ${categoryClass}">${category}</span>
+                                        ${league}
+                                    </button>
+                                `;
+                            });
+                        }
+                    });
                 }
+            } catch (error) {
+                console.error('리그 목록 로드 실패:', error);
             }
         }
 
@@ -1191,7 +1502,7 @@
             const selectedRegion = getSelectedFilterValue('matchRegionFilterButtons');
             const selectedLeague = getSelectedFilterValue('matchLeagueFilterButtons');
             const selectedStatus = getSelectedFilterValue('matchStatusFilterButtons');
-            const selectedTeam = getSelectedFilterValue('teamFilterButtons');
+            const selectedTeam = getSelectedTeamFilterValue();
 
             // 필터링
             let filteredMatches = matches;

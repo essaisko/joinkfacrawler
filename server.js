@@ -812,6 +812,47 @@ app.delete('/api/matches/:id', async (req, res) => {
   }
 });
 
+// 전체 리그 목록 조회 (K5~K7 분류 포함)
+app.get('/api/leagues/all', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const leaguesByCategory = {
+      K5: [],
+      K6: [],
+      K7: [],
+      기타: []
+    };
+    
+    const leagueSet = new Set();
+    matches.forEach(match => {
+      if (match.leagueTitle && !leagueSet.has(match.leagueTitle)) {
+        leagueSet.add(match.leagueTitle);
+        
+        if (match.leagueTitle.includes('K5')) {
+          leaguesByCategory.K5.push(match.leagueTitle);
+        } else if (match.leagueTitle.includes('K6')) {
+          leaguesByCategory.K6.push(match.leagueTitle);
+        } else if (match.leagueTitle.includes('K7')) {
+          leaguesByCategory.K7.push(match.leagueTitle);
+        } else {
+          leaguesByCategory.기타.push(match.leagueTitle);
+        }
+      }
+    });
+    
+    // 각 카테고리 내에서 정렬
+    Object.keys(leaguesByCategory).forEach(category => {
+      leaguesByCategory[category].sort((a, b) => a.localeCompare(b));
+    });
+    
+    res.json(leaguesByCategory);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 리그 목록 조회
 app.get('/api/leagues', async (req, res) => {
   try {
@@ -840,7 +881,7 @@ app.get('/api/leagues', async (req, res) => {
   }
 });
 
-// 팀 목록 조회
+// 팀 목록 조회 (K5~K7별, 지역별 정렬)
 app.get('/api/teams', async (req, res) => {
   try {
     const snapshot = await db.collection('matches').get();
@@ -854,7 +895,8 @@ app.get('/api/teams', async (req, res) => {
           fullName: match.TEAM_HOME,
           teamName: homeParsed.teamName,
           majorRegion: homeParsed.majorRegion,
-          minorRegion: homeParsed.minorRegion
+          minorRegion: homeParsed.minorRegion,
+          leagueTitle: match.leagueTitle || ''
         }));
       }
       if (match.TEAM_AWAY) {
@@ -863,13 +905,42 @@ app.get('/api/teams', async (req, res) => {
           fullName: match.TEAM_AWAY,
           teamName: awayParsed.teamName,
           majorRegion: awayParsed.majorRegion,
-          minorRegion: awayParsed.minorRegion
+          minorRegion: awayParsed.minorRegion,
+          leagueTitle: match.leagueTitle || ''
         }));
       }
     });
     
     const teamList = Array.from(teams).map(team => JSON.parse(team));
-    teamList.sort((a, b) => a.teamName.localeCompare(b.teamName));
+    
+    // K5~K7별, 지역별, 팀명순으로 정렬
+    teamList.sort((a, b) => {
+      // 1. K5, K6, K7 순서로 정렬
+      const getLeagueOrder = (league) => {
+        if (league.includes('K5')) return 1;
+        if (league.includes('K6')) return 2;
+        if (league.includes('K7')) return 3;
+        return 4;
+      };
+      
+      const orderA = getLeagueOrder(a.leagueTitle);
+      const orderB = getLeagueOrder(b.leagueTitle);
+      
+      if (orderA !== orderB) return orderA - orderB;
+      
+      // 2. 대분류 지역별 정렬
+      if (a.majorRegion !== b.majorRegion) {
+        return (a.majorRegion || '').localeCompare(b.majorRegion || '');
+      }
+      
+      // 3. 소분류 지역별 정렬
+      if (a.minorRegion !== b.minorRegion) {
+        return (a.minorRegion || '').localeCompare(b.minorRegion || '');
+      }
+      
+      // 4. 팀명순 정렬
+      return a.teamName.localeCompare(b.teamName);
+    });
     
     res.json(teamList);
   } catch (error) {
