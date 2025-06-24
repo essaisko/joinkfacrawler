@@ -20,7 +20,7 @@
 - **Scraping**: Puppeteer
 - **Database**: Firebase Firestore
 - **Real-time**: Socket.IO
-- **Deployment**: Render.com
+- **Deployment**: Oracle Cloud Infrastructure (OCI)
 
 ## 설치 및 실행
 
@@ -38,17 +38,27 @@ npm install
 npm start
 ```
 
-### Render.com 배포
+### Oracle Cloud Infrastructure (OCI) 배포
 
-1. **Render 설정**:
-   - Build Command: `./render-build.sh`
-   - Start Command: `npm start`
+1. **서버 환경**:
+   - **도메인**: `ssurpass.com`
+   - **서버**: Ubuntu 22.04 LTS (Oracle Cloud)
+   - **웹서버**: nginx (프록시 서버)
+   - **프로세스 관리**: PM2
 
-2. **환경 변수**: 필요 시 Firebase 관련 환경 변수 설정
+2. **배포 설정**:
+   - **자동 배포**: GitHub Webhook을 통한 자동 배포 지원
+   - **배포 엔드포인트**: `POST /deploy` (토큰 인증)
+   - **포트**: 3000 (내부), 80/443 (외부)
 
 3. **Chrome 설치**: 
    - `npm install` 실행 시 postinstall 스크립트가 자동으로 Chrome을 설치합니다
    - Chrome 경로는 `chrome-config.json`에 저장됩니다
+
+4. **현재 상태**: 
+   - ⚠️ **502 Bad Gateway 오류 해결 중**
+   - 서버 구축 완료, nginx 설정 완료
+   - Node.js 애플리케이션 실행 상태 점검 중
 
 ## 파일 구조
 
@@ -62,7 +72,8 @@ joinkfacrawler/
 ├── firebase-adminsdk.json # Firebase 서비스 계정 키
 ├── scripts/
 │   └── install-chrome.js  # Chrome 설치 스크립트
-├── render-build.sh       # Render 빌드 스크립트
+├── render-build.sh       # 빌드 스크립트 (Render/Oracle Cloud 호환)
+├── debug-server.sh       # 서버 디버깅 스크립트
 └── results/              # 크롤링 결과 저장
 ```
 
@@ -94,7 +105,7 @@ joinkfacrawler/
 
 1. **기본 웹 인터페이스 접속**: 
    - 로컬: `http://localhost:3000`
-   - 배포된 서버: 배포된 URL 접속
+   - 배포된 서버: `http://ssurpass.com` (현재 502 오류 해결 중)
    
 2. **리그 설정 편집**: 
    - 웹 페이지의 CSV 에디터에서 직접 편집
@@ -124,11 +135,29 @@ joinkfacrawler/
 - ✅ **실시간 상태 표시**: Firebase 연동 상태 실시간 확인
 - ✅ **자동 백업**: Firebase 저장 시 로컬 파일도 자동 백업
 
-## Chrome 설치 문제 해결
+## 배포 및 서버 관리
 
-### Render.com 배포 시 Chrome 관련 오류
+### Oracle Cloud 배포 상태
 
-이 프로젝트는 Render.com의 환경 제약을 고려하여 Chrome 설치를 자동화합니다:
+**현재 상황** (2025년 기준):
+- ✅ **서버 구축 완료**: Oracle Cloud Infrastructure에 Ubuntu 22.04 서버 구축
+- ✅ **도메인 연결 완료**: `ssurpass.com` 도메인 연결
+- ✅ **nginx 설정 완료**: 리버스 프록시 설정
+- ⚠️ **502 Bad Gateway 오류**: Node.js 애플리케이션 실행 상태 점검 중
+- 🔧 **디버깅 진행 중**: `debug-server.sh` 스크립트로 문제 진단
+
+### 자동 배포 시스템
+
+```bash
+# GitHub에서 자동 배포 트리거
+curl -X POST http://ssurpass.com/deploy -H "x-deploy-token: breadbro"
+```
+
+### Chrome 설치 문제 해결
+
+### Oracle Cloud 환경에서의 Chrome 관련 오류
+
+이 프로젝트는 Oracle Cloud의 환경 제약을 고려하여 Chrome 설치를 자동화합니다:
 
 1. **자동 설치**: `npm install` 시 Chrome이 자동으로 설치됩니다
 2. **동적 경로 찾기**: 여러 위치에서 Chrome을 찾아 사용합니다
@@ -170,6 +199,42 @@ node -e "const puppeteer = require('puppeteer'); puppeteer.launch().then(b => { 
 
 ## 문제 해결
 
+### 서버 배포 관련 문제들
+
+1. **502 Bad Gateway 오류** (현재 해결 중):
+   ```bash
+   # 서버 상태 진단
+   ./debug-server.sh
+   
+   # PM2 프로세스 재시작
+   pm2 restart all
+   
+   # Node.js 애플리케이션 수동 실행 테스트
+   cd /home/ubuntu/joinkfacrawler
+   node server.js
+   ```
+
+2. **자동 배포 실패**:
+   ```bash
+   # 수동 배포
+   cd /home/ubuntu/joinkfacrawler
+   git pull
+   npm install
+   pm2 restart all
+   ```
+
+3. **nginx 관련 문제**:
+   ```bash
+   # nginx 상태 확인
+   sudo systemctl status nginx
+   
+   # nginx 설정 테스트
+   sudo nginx -t
+   
+   # nginx 재시작
+   sudo systemctl restart nginx
+   ```
+
 ### 일반적인 문제들
 
 1. **Chrome not found 오류**:
@@ -201,6 +266,34 @@ node firebase_uploader.js download-csv
 # CSV 내용을 Firebase에 업로드
 node firebase_uploader.js upload-csv "CSV내용"
 ```
+
+## 프로젝트 현황 및 로드맵
+
+### 완료된 작업 ✅
+- KFA 데이터 크롤링 시스템 구축
+- Firebase 연동 및 실시간 업로드
+- 웹 인터페이스 개발 (다중 필터링 지원)
+- Oracle Cloud Infrastructure 서버 구축
+- 도메인 연결 및 nginx 설정
+- 자동 배포 시스템 구축
+- Chrome 자동 설치 시스템
+
+### 진행 중인 작업 🔧
+- **502 Bad Gateway 오류 해결**: Node.js 애플리케이션 실행 상태 점검
+- 서버 안정성 최적화
+- 모니터링 시스템 구축
+
+### 향후 계획 📋
+- SSL 인증서 설정 (HTTPS 지원)
+- 로그 모니터링 시스템
+- 성능 최적화 (캐싱, CDN)
+- 백업 및 복구 시스템
+
+## 기술 지원
+
+- **GitHub Repository**: [joinkfacrawler](https://github.com/essaisko/joinkfacrawler)
+- **서버 도메인**: `ssurpass.com`
+- **이슈 리포트**: GitHub Issues 활용
 
 ## 라이선스
 

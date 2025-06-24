@@ -4,7 +4,8 @@ const { Server } = require('socket.io');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase } = require('./firebase_uploader');
+const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase, db } = require('./firebase_uploader');
+const admin = require('firebase-admin');
 const { exec } = require('child_process');
 
 const app = express();
@@ -23,6 +24,10 @@ app.use(express.static(path.join(__dirname)));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
 // Health check 엔드포인트 (서버 활성 상태 유지용)
@@ -139,12 +144,33 @@ app.post('/leagues-csv', async (req, res) => {
 // 실행 중인 프로세스를 추적하기 위한 Map
 const runningProcesses = new Map();
 
+// 전역 로그 스토리지 (메모리에 최근 로그 저장)
+const logHistory = [];
+const MAX_LOG_HISTORY = 1000; // 최대 1000개의 로그 항목 유지
+
+function addToLogHistory(message) {
+  logHistory.push({
+    timestamp: new Date().toISOString(),
+    message: message
+  });
+  
+  // 로그 히스토리 크기 제한
+  if (logHistory.length > MAX_LOG_HISTORY) {
+    logHistory.shift();
+  }
+}
+
 // 클라이언트로부터의 연결 처리
 io.on('connection', (socket) => {
   console.log('✅ A user connected');
   
   // 클라이언트별 프로세스 추적
   socket.runningProcesses = new Set();
+  
+  // 새로 연결된 클라이언트에게 기존 로그 히스토리 전송
+  if (logHistory.length > 0) {
+    socket.emit('log-history', logHistory);
+  }
 
   // 'start-crawling' 이벤트를 받으면 meat.js 실행
   socket.on('start-crawling', (options) => {
@@ -170,24 +196,27 @@ io.on('connection', (socket) => {
     crawler.stdout.on('data', (data) => {
       const logMessage = data.toString();
       console.log(logMessage);
-      socket.emit('log', logMessage);
+      addToLogHistory(logMessage);
+      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
     });
 
     crawler.stderr.on('data', (data) => {
       const logMessage = `❌ ERROR: ${data.toString()}`;
       console.error(logMessage);
-      socket.emit('log', logMessage);
+      addToLogHistory(logMessage);
+      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
     });
 
     crawler.on('close', (code) => {
       const logMessage = `🏁 크롤링 프로세스가 종료되었습니다 (Code: ${code}).`;
       console.log(logMessage);
-      socket.emit('log', logMessage);
+      addToLogHistory(logMessage);
+      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
       
       // 프로세스 추적에서 제거
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
-      socket.emit('process-ended', { processId, type: 'crawling' });
+      io.emit('process-ended', { processId, type: 'crawling' });
     });
   });
 
@@ -217,24 +246,27 @@ io.on('connection', (socket) => {
     uploader.stdout.on('data', (data) => {
       const logMessage = data.toString();
       console.log(logMessage);
-      socket.emit('log', logMessage);
+      addToLogHistory(logMessage);
+      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
     });
 
     uploader.stderr.on('data', (data) => {
       const logMessage = `❌ ERROR: ${data.toString()}`;
       console.error(logMessage);
-      socket.emit('log', logMessage);
+      addToLogHistory(logMessage);
+      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
     });
 
     uploader.on('close', (code) => {
       const logMessage = `🏁 업로드 프로세스가 종료되었습니다 (Code: ${code}).`;
       console.log(logMessage);
-      socket.emit('log', logMessage);
+      addToLogHistory(logMessage);
+      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
       
       // 프로세스 추적에서 제거
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
-      socket.emit('process-ended', { processId, type: 'uploading' });
+      io.emit('process-ended', { processId, type: 'uploading' });
     });
   });
 
@@ -341,6 +373,129 @@ async function initializeServer() {
 
 
 
+
+// Firebase API 엔드포인트들
+// 경기 통계 조회
+app.get('/api/matches/stats', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const stats = {
+      total: matches.length,
+      completed: matches.filter(m => m.matchStatus === '완료').length,
+      upcoming: matches.filter(m => m.matchStatus === '예정').length,
+      leagues: [...new Set(matches.map(m => m.leagueTitle))].length
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 모든 경기 조회
+app.get('/api/matches', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').limit(1000).get();
+    const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(matches);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 특정 경기 수정
+app.put('/api/matches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    await db.collection('matches').doc(id).update(updateData);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 특정 경기 삭제
+app.delete('/api/matches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection('matches').doc(id).delete();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 리그 목록 조회
+app.get('/api/leagues', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const leagueMap = new Map();
+    matches.forEach(match => {
+      const key = `${match.leagueTitle}-${match.year}-${match.regionTag}`;
+      if (!leagueMap.has(key)) {
+        leagueMap.set(key, {
+          leagueTitle: match.leagueTitle,
+          regionTag: match.regionTag,
+          year: match.year,
+          leagueTag: match.leagueTag,
+          matchIdx: match.matchIdx,
+          matchCount: 0
+        });
+      }
+      leagueMap.get(key).matchCount++;
+    });
+    
+    res.json(Array.from(leagueMap.values()));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 분석 데이터 조회
+app.get('/api/analytics', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    const completedMatches = matches.filter(m => m.matchStatus === '완료' && m.TH_SCORE_FINAL && m.TA_SCORE_FINAL);
+    
+    let totalGoals = 0;
+    let maxScore = 0;
+    const leagueActivity = new Map();
+    
+    completedMatches.forEach(match => {
+      const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
+      const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
+      const totalMatchGoals = homeScore + awayScore;
+      
+      totalGoals += totalMatchGoals;
+      maxScore = Math.max(maxScore, Math.max(homeScore, awayScore));
+      
+      const league = match.leagueTitle;
+      leagueActivity.set(league, (leagueActivity.get(league) || 0) + 1);
+    });
+    
+    const avgGoals = completedMatches.length > 0 ? (totalGoals / completedMatches.length).toFixed(1) : 0;
+    const mostActiveLeague = leagueActivity.size > 0 ? 
+      [...leagueActivity.entries()].sort((a, b) => b[1] - a[1])[0][0] : '-';
+    
+    const analytics = {
+      avgGoals,
+      highestScore: maxScore,
+      mostActiveLeague,
+      recentActivity: new Date().toLocaleDateString()
+    };
+    
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // 서버 초기화 실행
 initializeServer(); 

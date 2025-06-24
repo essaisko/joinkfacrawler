@@ -116,8 +116,12 @@
 </head>
 <body>
 
-    <div class="container">
+            <div class="container">
         <h1>KFA 크롤러 대시보드</h1>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="/dashboard" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">📊 Firebase CRUD Dashboard</a>
+            <a href="/" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">🏠 크롤링 대시보드</a>
+        </div>
         
         <div class="section">
             <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
@@ -196,6 +200,18 @@
         
         // 실행 중인 프로세스 추적
         let currentProcesses = new Map();
+
+        // 로그 히스토리 복원 기능
+        socket.on('log-history', (history) => {
+            logContainer.innerHTML = '🔄 로그 히스토리 복원 중...\n';
+            setTimeout(() => {
+                logContainer.innerHTML = '';
+                history.forEach(entry => {
+                    logContainer.innerHTML += `[${new Date(entry.timestamp).toLocaleTimeString()}] ${entry.message}`;
+                });
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }, 100);
+        });
 
         const addFilterBtn = document.getElementById('addFilterBtn');
         const clearAllFiltersBtn = document.getElementById('clearAllFiltersBtn');
