@@ -375,7 +375,245 @@ async function initializeServer() {
 
 
 
+// 팀명에서 지역명 분리 함수
+function parseTeamName(fullTeamName) {
+  if (!fullTeamName) return { region: '', teamName: fullTeamName || '' };
+  
+  const regionPatterns = ['경남', '부산', '울산', '대구', '대전', '광주', '인천', '서울', '경기'];
+  
+  for (const region of regionPatterns) {
+    if (fullTeamName.startsWith(region)) {
+      const remaining = fullTeamName.substring(region.length).trim();
+      return { region, teamName: remaining };
+    }
+  }
+  
+  return { region: '', teamName: fullTeamName };
+}
+
+// 시간 형식 변환 함수
+function formatTime(timeString) {
+  if (!timeString || !timeString.includes('-')) return timeString;
+  
+  const [hour, minute] = timeString.split('-');
+  const hourNum = parseInt(hour);
+  
+  if (isNaN(hourNum)) return timeString;
+  
+  const period = hourNum < 12 ? '오전' : '오후';
+  const displayHour = hourNum === 0 ? 12 : (hourNum > 12 ? hourNum - 12 : hourNum);
+  
+  return `${period} ${displayHour}시 ${minute || '00'}분`;
+}
+
+// 순위표 계산 함수
+function calculateStandings(matches, leagueFilter = null) {
+  const standings = new Map();
+  
+  matches.forEach(match => {
+    if (leagueFilter && match.leagueTitle !== leagueFilter) return;
+    if (match.matchStatus !== '완료') return;
+    
+    const homeTeam = match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
+    const awayTeam = match.TA_CLUB_NAME || match.TEAM_AWAY || '어웨이팀';
+    const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
+    const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
+    
+    // 리그별로 팀을 구분하기 위해 고유 식별자 생성
+    const homeTeamId = `${match.leagueTitle}_${homeTeam}`;
+    const awayTeamId = `${match.leagueTitle}_${awayTeam}`;
+    
+    // 팀 통계 초기화
+    if (!standings.has(homeTeamId)) {
+      standings.set(homeTeamId, {
+        teamName: homeTeam,
+        league: match.leagueTitle,
+        region: match.regionTag,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalDifference: 0,
+        points: 0
+      });
+    }
+    
+    if (!standings.has(awayTeamId)) {
+      standings.set(awayTeamId, {
+        teamName: awayTeam,
+        league: match.leagueTitle,
+        region: match.regionTag,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalDifference: 0,
+        points: 0
+      });
+    }
+    
+    const homeStats = standings.get(homeTeamId);
+    const awayStats = standings.get(awayTeamId);
+    
+    // 경기 수 증가
+    homeStats.played++;
+    awayStats.played++;
+    
+    // 득점/실점 기록
+    homeStats.goalsFor += homeScore;
+    homeStats.goalsAgainst += awayScore;
+    awayStats.goalsFor += awayScore;
+    awayStats.goalsAgainst += homeScore;
+    
+    // 승부 결과 처리
+    if (homeScore > awayScore) {
+      homeStats.won++;
+      homeStats.points += 3;
+      awayStats.lost++;
+    } else if (homeScore < awayScore) {
+      awayStats.won++;
+      awayStats.points += 3;
+      homeStats.lost++;
+    } else {
+      homeStats.drawn++;
+      homeStats.points += 1;
+      awayStats.drawn++;
+      awayStats.points += 1;
+    }
+    
+    // 골득실 계산
+    homeStats.goalDifference = homeStats.goalsFor - homeStats.goalsAgainst;
+    awayStats.goalDifference = awayStats.goalsFor - awayStats.goalsAgainst;
+  });
+  
+  // 순위표 정렬 (승점 > 골득실 > 득점 > 팀명)
+  return Array.from(standings.values()).sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+    return a.teamName.localeCompare(b.teamName);
+  });
+}
+
 // Firebase API 엔드포인트들
+// 지역 목록 조회
+app.get('/api/regions', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const regions = [...new Set(matches.map(m => m.regionTag))].filter(Boolean).sort();
+    res.json(regions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 특정 지역의 리그 목록 조회
+app.get('/api/leagues/:region', async (req, res) => {
+  try {
+    const { region } = req.params;
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const leagues = [...new Set(
+      matches
+        .filter(m => m.regionTag === region)
+        .map(m => m.leagueTitle)
+    )].filter(Boolean).sort((a, b) => {
+      // K5, K6, K7 순서로 정렬 후 가나다순
+      const getLeagueOrder = (league) => {
+        if (league.includes('K5')) return 1;
+        if (league.includes('K6')) return 2;
+        if (league.includes('K7')) return 3;
+        return 4;
+      };
+      
+      const orderA = getLeagueOrder(a);
+      const orderB = getLeagueOrder(b);
+      
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b);
+    });
+    
+    res.json(leagues);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 모든 리그 순위표 조회
+app.get('/api/standings', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    // 리그별로 그룹화
+    const leagueGroups = {};
+    matches.forEach(match => {
+      const key = `${match.regionTag}_${match.leagueTitle}`;
+      if (!leagueGroups[key]) {
+        leagueGroups[key] = {
+          region: match.regionTag,
+          league: match.leagueTitle,
+          matches: []
+        };
+      }
+      leagueGroups[key].matches.push(match);
+    });
+    
+    // 각 리그별 순위표 계산
+    const allStandings = Object.values(leagueGroups).map(group => ({
+      region: group.region,
+      league: group.league,
+      standings: calculateStandings(group.matches, group.league)
+    })).sort((a, b) => {
+      // 지역별, 리그별 정렬
+      if (a.region !== b.region) return a.region.localeCompare(b.region);
+      
+      const getLeagueOrder = (league) => {
+        if (league.includes('K5')) return 1;
+        if (league.includes('K6')) return 2;
+        if (league.includes('K7')) return 3;
+        return 4;
+      };
+      
+      return getLeagueOrder(a.league) - getLeagueOrder(b.league);
+    });
+    
+    res.json(allStandings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 특정 리그 순위표 조회
+app.get('/api/standings/:region/:league', async (req, res) => {
+  try {
+    const { region, league } = req.params;
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const filteredMatches = matches.filter(m => 
+      m.regionTag === region && m.leagueTitle === league
+    );
+    
+    const standings = calculateStandings(filteredMatches, league);
+    
+    res.json({
+      region,
+      league,
+      standings
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 경기 통계 조회
 app.get('/api/matches/stats', async (req, res) => {
   try {
@@ -395,32 +633,53 @@ app.get('/api/matches/stats', async (req, res) => {
   }
 });
 
-// 모든 경기 조회
+// 모든 경기 조회 (개선된 버전)
 app.get('/api/matches', async (req, res) => {
   try {
     const snapshot = await db.collection('matches').limit(2000).get();
     const matches = snapshot.docs.map(doc => {
       const data = doc.data();
+      
+      // 팀명 정보 보강
+      const homeTeamFull = data.TH_CLUB_NAME || data.TEAM_HOME || data.HOME_TEAM || data.TH_NAME || '홈팀';
+      const awayTeamFull = data.TA_CLUB_NAME || data.TEAM_AWAY || data.AWAY_TEAM || data.TA_NAME || '어웨이팀';
+      
+      // 팀명에서 지역 분리
+      const homeParsed = parseTeamName(homeTeamFull);
+      const awayParsed = parseTeamName(awayTeamFull);
+      
+      // 시간 형식 변환
+      const rawTime = data.MATCH_TIME || data.TIME || data.KICK_OFF || '';
+      const formattedTime = formatTime(rawTime);
+      
       return { 
         id: doc.id, 
         ...data,
-        // 팀명 정보 보강 (실제 필드명 기반)
-        TH_CLUB_NAME: data.TH_CLUB_NAME || data.TEAM_HOME || data.HOME_TEAM || data.TH_NAME || '홈팀',
-        TA_CLUB_NAME: data.TA_CLUB_NAME || data.TEAM_AWAY || data.AWAY_TEAM || data.TA_NAME || '어웨이팀',
+        // 기존 팀명 (호환성)
+        TH_CLUB_NAME: homeTeamFull,
+        TA_CLUB_NAME: awayTeamFull,
+        // 파싱된 팀명 정보
+        HOME_TEAM_REGION: homeParsed.region,
+        HOME_TEAM_NAME: homeParsed.teamName,
+        AWAY_TEAM_REGION: awayParsed.region,
+        AWAY_TEAM_NAME: awayParsed.teamName,
         // 경기장 정보 보강  
         STADIUM: data.STADIUM || data.MATCH_AREA || data.GROUND || data.PLACE || data.VENUE || '',
         // 시간 정보 보강
-        MATCH_TIME: data.MATCH_TIME || data.TIME || data.KICK_OFF || '',
+        MATCH_TIME: rawTime,
+        MATCH_TIME_FORMATTED: formattedTime,
         // 날짜 정보 보강
-        MATCH_DATE: data.MATCH_DATE || data.MATCH_CHECK_TIME2 || data.DATE || ''
+        MATCH_DATE: data.MATCH_DATE || data.MATCH_CHECK_TIME2 || data.DATE || '',
+        // 경기 상태
+        MATCH_STATUS: data.matchStatus || '예정'
       };
     });
     
-    // 날짜순 정렬 (최신순)
+    // 날짜/시간순 오름차순 정렬 (과거 → 현재 → 미래)
     matches.sort((a, b) => {
-      const dateA = new Date(a.MATCH_DATE || '1900-01-01');
-      const dateB = new Date(b.MATCH_DATE || '1900-01-01');
-      return dateB - dateA;
+      const dateA = new Date(a.MATCH_DATE || '9999-12-31');
+      const dateB = new Date(b.MATCH_DATE || '9999-12-31');
+      return dateA - dateB;
     });
     
     res.json(matches);
