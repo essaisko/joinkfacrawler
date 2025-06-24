@@ -1,3 +1,5 @@
+자동배포테스트
+
 # Korean Football Association Crawler
 
 한국축구협회(KFA) 경기 데이터를 크롤링하고 Firebase에 업로드하는 웹 애플리케이션입니다.
