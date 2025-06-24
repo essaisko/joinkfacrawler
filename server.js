@@ -840,6 +840,120 @@ app.get('/api/leagues', async (req, res) => {
   }
 });
 
+// 팀 목록 조회
+app.get('/api/teams', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    const teams = new Set();
+    
+    matches.forEach(match => {
+      if (match.TEAM_HOME) {
+        const homeParsed = parseTeamName(match.TEAM_HOME);
+        teams.add(JSON.stringify({
+          fullName: match.TEAM_HOME,
+          teamName: homeParsed.teamName,
+          majorRegion: homeParsed.majorRegion,
+          minorRegion: homeParsed.minorRegion
+        }));
+      }
+      if (match.TEAM_AWAY) {
+        const awayParsed = parseTeamName(match.TEAM_AWAY);
+        teams.add(JSON.stringify({
+          fullName: match.TEAM_AWAY,
+          teamName: awayParsed.teamName,
+          majorRegion: awayParsed.majorRegion,
+          minorRegion: awayParsed.minorRegion
+        }));
+      }
+    });
+    
+    const teamList = Array.from(teams).map(team => JSON.parse(team));
+    teamList.sort((a, b) => a.teamName.localeCompare(b.teamName));
+    
+    res.json(teamList);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 특정 팀 정보 조회
+app.get('/api/teams/:teamName', async (req, res) => {
+  try {
+    const teamName = req.params.teamName;
+    const snapshot = await db.collection('matches').get();
+    const matches = snapshot.docs.map(doc => doc.data());
+    
+    const teamMatches = matches.filter(match => {
+      const homeParsed = parseTeamName(match.TEAM_HOME || '');
+      const awayParsed = parseTeamName(match.TEAM_AWAY || '');
+      return homeParsed.teamName === teamName || awayParsed.teamName === teamName;
+    });
+    
+    // 팀 통계 계산
+    let wins = 0, draws = 0, losses = 0, goalsFor = 0, goalsAgainst = 0;
+    const completedMatches = teamMatches.filter(m => m.matchStatus === '완료' && m.TH_SCORE_FINAL && m.TA_SCORE_FINAL);
+    
+    completedMatches.forEach(match => {
+      const homeParsed = parseTeamName(match.TEAM_HOME || '');
+      const awayParsed = parseTeamName(match.TEAM_AWAY || '');
+      const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
+      const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
+      
+      if (homeParsed.teamName === teamName) {
+        // 홈팀인 경우
+        goalsFor += homeScore;
+        goalsAgainst += awayScore;
+        if (homeScore > awayScore) wins++;
+        else if (homeScore === awayScore) draws++;
+        else losses++;
+      } else if (awayParsed.teamName === teamName) {
+        // 어웨이팀인 경우
+        goalsFor += awayScore;
+        goalsAgainst += homeScore;
+        if (awayScore > homeScore) wins++;
+        else if (awayScore === homeScore) draws++;
+        else losses++;
+      }
+    });
+    
+    const teamInfo = {
+      teamName,
+      totalMatches: teamMatches.length,
+      completedMatches: completedMatches.length,
+      wins,
+      draws,
+      losses,
+      goalsFor,
+      goalsAgainst,
+      goalDifference: goalsFor - goalsAgainst,
+      points: wins * 3 + draws,
+      matches: teamMatches.map(match => {
+        const homeParsed = parseTeamName(match.TEAM_HOME || '');
+        const awayParsed = parseTeamName(match.TEAM_AWAY || '');
+        const rawTime = match.MATCH_CHECK_TIME1 || match.TIME || match.MATCH_TIME || match.KICK_OFF || '';
+        const formattedTime = formatTime(rawTime);
+        
+        return {
+          ...match,
+          HOME_TEAM_NAME: homeParsed.teamName,
+          HOME_TEAM_MAJOR_REGION: homeParsed.majorRegion,
+          HOME_TEAM_MINOR_REGION: homeParsed.minorRegion,
+          AWAY_TEAM_NAME: awayParsed.teamName,
+          AWAY_TEAM_MAJOR_REGION: awayParsed.majorRegion,
+          AWAY_TEAM_MINOR_REGION: awayParsed.minorRegion,
+          MATCH_TIME_FORMATTED: formattedTime,
+          STADIUM: match.MATCH_AREA || match.STADIUM || '경기장 미정'
+        };
+      }).sort((a, b) => new Date(a.MATCH_DATE || 0) - new Date(b.MATCH_DATE || 0))
+    };
+    
+    res.json(teamInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 분석 데이터 조회 (확장된 축구 통계)
 app.get('/api/analytics', async (req, res) => {
   try {

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팀 정보 - 아마추어 축구 대시보드</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 2rem auto;
+            max-width: 1200px;
+            overflow: hidden;
+        }
+
+        .team-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .team-logo-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 48px;
+            margin: 0 auto 1rem;
+            border: 4px solid rgba(255,255,255,0.3);
+        }
+
+        .team-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .region-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 0.25rem;
+        }
+
+        .major-region {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .minor-region {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .matches-section {
+            padding: 2rem;
+        }
+
+        .month-section {
+            margin-bottom: 2rem;
+        }
+
+        .month-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .month-header:hover {
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        }
+
+        .month-header.active {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+        }
+
+        .match-item {
+            background: white;
+            border-radius: 12px;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .match-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .match-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .match-teams {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .team-section {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .team-logo-small {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 0.75rem;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .match-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 0 2rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .match-info {
+            text-align: right;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .match-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-upcoming {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapse-content.show {
+            max-height: 2000px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="team-header position-relative">
+            <button class="back-btn" onclick="goBack()">
+                <i class="fas fa-arrow-left me-2"></i>돌아가기
+            </button>
+            
+            <div id="teamInfo">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">팀 정보를 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="matches-section">
+            <h4 class="mb-4">
+                <i class="fas fa-calendar-alt me-2"></i>경기 일정 & 결과
+            </h4>
+            <div id="matchesContainer">
+                <!-- 경기 목록이 여기에 로드됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // URL에서 팀명 추출
+        const urlParams = new URLSearchParams(window.location.search);
+        const teamName = urlParams.get('team');
+
+        if (!teamName) {
+            document.getElementById('teamInfo').innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h4>팀 정보를 찾을 수 없습니다</h4>
+                    <p>올바른 팀명을 입력해주세요.</p>
+                </div>
+            `;
+        } else {
+            loadTeamInfo(teamName);
+        }
+
+        // 팀 정보 로드
+        async function loadTeamInfo(teamName) {
+            try {
+                const response = await fetch(`/api/teams/${encodeURIComponent(teamName)}`);
+                const teamData = await response.json();
+                
+                displayTeamInfo(teamData);
+                displayMatches(teamData.matches);
+            } catch (error) {
+                console.error('팀 정보 로드 실패:', error);
+                document.getElementById('teamInfo').innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h4>팀 정보를 불러올 수 없습니다</h4>
+                        <p>잠시 후 다시 시도해주세요.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 팀 정보 표시
+        function displayTeamInfo(teamData) {
+            const teamInitial = teamData.teamName.charAt(0).toUpperCase();
+            const winRate = teamData.completedMatches > 0 ? 
+                ((teamData.wins / teamData.completedMatches) * 100).toFixed(1) : 0;
+            
+            document.getElementById('teamInfo').innerHTML = `
+                <div class="team-logo-large">${teamInitial}</div>
+                <h2 class="mb-2">${teamData.teamName}</h2>
+                <div class="mb-3">
+                    <span class="region-badge major-region">경남</span>
+                    <span class="region-badge minor-region">부산</span>
+                </div>
+                
+                <div class="team-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${teamData.totalMatches}</div>
+                        <div class="stat-label">총 경기</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-success">${teamData.wins}</div>
+                        <div class="stat-label">승리</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-warning">${teamData.draws}</div>
+                        <div class="stat-label">무승부</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-danger">${teamData.losses}</div>
+                        <div class="stat-label">패배</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${teamData.goalsFor}</div>
+                        <div class="stat-label">득점</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${teamData.goalsAgainst}</div>
+                        <div class="stat-label">실점</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value ${teamData.goalDifference >= 0 ? 'text-success' : 'text-danger'}">
+                            ${teamData.goalDifference > 0 ? '+' : ''}${teamData.goalDifference}
+                        </div>
+                        <div class="stat-label">득실차</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${winRate}%</div>
+                        <div class="stat-label">승률</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 경기 목록 표시 (월별 그룹화)
+        function displayMatches(matches) {
+            const container = document.getElementById('matchesContainer');
+            
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                        <h5>등록된 경기가 없습니다</h5>
+                    </div>
+                `;
+                return;
+            }
+
+            // 월별로 그룹화
+            const monthGroups = {};
+            matches.forEach(match => {
+                const date = new Date(match.MATCH_DATE || Date.now());
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const monthName = `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+                
+                if (!monthGroups[monthKey]) {
+                    monthGroups[monthKey] = {
+                        name: monthName,
+                        matches: []
+                    };
+                }
+                monthGroups[monthKey].matches.push(match);
+            });
+
+            let html = '';
+            Object.keys(monthGroups).sort().reverse().forEach(monthKey => {
+                const group = monthGroups[monthKey];
+                const monthId = `month-${monthKey}`;
+                
+                html += `
+                    <div class="month-section">
+                        <div class="month-header" onclick="toggleMonth('${monthId}')">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-calendar me-2"></i>${group.name}
+                                </h5>
+                                <div>
+                                    <span class="badge bg-primary me-2">${group.matches.length}경기</span>
+                                    <i class="fas fa-chevron-down" id="icon-${monthId}"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse-content" id="${monthId}">
+                `;
+                
+                group.matches.forEach(match => {
+                    const isCompleted = match.matchStatus === '완료';
+                    const statusClass = isCompleted ? 'status-completed' : 'status-upcoming';
+                    const statusText = isCompleted ? '완료' : '예정';
+                    
+                    const homeInitial = (match.HOME_TEAM_NAME || '홈').charAt(0).toUpperCase();
+                    const awayInitial = (match.AWAY_TEAM_NAME || '어').charAt(0).toUpperCase();
+                    
+                    html += `
+                        <div class="match-item">
+                            <div class="match-content">
+                                <div class="match-teams">
+                                    <div class="team-section">
+                                        <div class="team-logo-small">${homeInitial}</div>
+                                        <div>
+                                            <div class="team-name">${match.HOME_TEAM_NAME || '홈팀'}</div>
+                                            <div>
+                                                ${match.HOME_TEAM_MAJOR_REGION ? `<span class="region-badge major-region">${match.HOME_TEAM_MAJOR_REGION}</span>` : ''}
+                                                ${match.HOME_TEAM_MINOR_REGION ? `<span class="region-badge minor-region">${match.HOME_TEAM_MINOR_REGION}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="match-score">
+                                        ${isCompleted ? 
+                                            `${match.TH_SCORE_FINAL || 0} : ${match.TA_SCORE_FINAL || 0}` :
+                                            'VS'
+                                        }
+                                    </div>
+                                    
+                                    <div class="team-section justify-content-end">
+                                        <div class="text-end">
+                                            <div class="team-name">${match.AWAY_TEAM_NAME || '어웨이팀'}</div>
+                                            <div>
+                                                ${match.AWAY_TEAM_MAJOR_REGION ? `<span class="region-badge major-region">${match.AWAY_TEAM_MAJOR_REGION}</span>` : ''}
+                                                ${match.AWAY_TEAM_MINOR_REGION ? `<span class="region-badge minor-region">${match.AWAY_TEAM_MINOR_REGION}</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="team-logo-small ms-2">${awayInitial}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="match-info">
+                                    <div class="mb-1">
+                                        <span class="match-status ${statusClass}">${statusText}</span>
+                                    </div>
+                                    <div class="mb-1">
+                                        <i class="fas fa-clock me-1"></i>
+                                        ${match.MATCH_TIME_FORMATTED || '시간 미정'}
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        ${match.STADIUM || '경기장 미정'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 월별 섹션 토글
+        function toggleMonth(monthId) {
+            const content = document.getElementById(monthId);
+            const icon = document.getElementById(`icon-${monthId}`);
+            const header = content.previousElementSibling;
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                header.classList.remove('active');
+            } else {
+                content.classList.add('show');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                header.classList.add('active');
+            }
+        }
+
+        // 뒤로가기
+        function goBack() {
+            if (document.referrer && document.referrer.includes('dashboard.html')) {
+                window.history.back();
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        }
+    </script>
+</body>
+</html>
