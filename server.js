@@ -853,6 +853,83 @@ app.get('/api/leagues/all', async (req, res) => {
   }
 });
 
+// 뉴스 피드 데이터 조회 (최근 경기 결과 + 예정 경기)
+app.get('/api/newsfeed', async (req, res) => {
+  try {
+    const snapshot = await db.collection('matches').limit(1000).get();
+    const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    // 최근 완료된 경기 (지난 주)
+    const recentMatches = matches
+      .filter(m => {
+        const matchDate = new Date(m.MATCH_DATE || m.MATCH_CHECK_TIME2 || '1970-01-01');
+        return m.matchStatus === '완료' && matchDate >= oneWeekAgo && matchDate <= now;
+      })
+      .map(m => ({
+        ...m,
+        homeTeam: parseTeamName(m.TH_CLUB_NAME || m.TEAM_HOME || '홈팀'),
+        awayTeam: parseTeamName(m.TA_CLUB_NAME || m.TEAM_AWAY || '어웨이팀'),
+        homeScore: m.TH_SCORE_FINAL || 0,
+        awayScore: m.TA_SCORE_FINAL || 0,
+        formattedTime: formatTime(m.MATCH_CHECK_TIME1 || m.TIME || ''),
+        stadium: m.STADIUM || m.MATCH_AREA || '경기장 미정'
+      }))
+      .sort((a, b) => new Date(b.MATCH_DATE || '1970-01-01') - new Date(a.MATCH_DATE || '1970-01-01'))
+      .slice(0, 10);
+    
+    // 예정된 경기 (다음 주)
+    const upcomingMatches = matches
+      .filter(m => {
+        const matchDate = new Date(m.MATCH_DATE || m.MATCH_CHECK_TIME2 || '2099-12-31');
+        return (m.matchStatus === '예정' || !m.matchStatus) && matchDate >= now && matchDate <= oneWeekLater;
+      })
+      .map(m => ({
+        ...m,
+        homeTeam: parseTeamName(m.TH_CLUB_NAME || m.TEAM_HOME || '홈팀'),
+        awayTeam: parseTeamName(m.TA_CLUB_NAME || m.TEAM_AWAY || '어웨이팀'),
+        formattedTime: formatTime(m.MATCH_CHECK_TIME1 || m.TIME || ''),
+        stadium: m.STADIUM || m.MATCH_AREA || '경기장 미정'
+      }))
+      .sort((a, b) => new Date(a.MATCH_DATE || '2099-12-31') - new Date(b.MATCH_DATE || '2099-12-31'))
+      .slice(0, 10);
+    
+    // 주요 통계
+    const totalMatches = matches.length;
+    const completedMatches = matches.filter(m => m.matchStatus === '완료').length;
+    const activeLeagues = [...new Set(matches.map(m => m.leagueTitle))].filter(Boolean).length;
+    const activeTeams = new Set();
+    matches.forEach(m => {
+      if (m.TH_CLUB_NAME || m.TEAM_HOME) activeTeams.add(m.TH_CLUB_NAME || m.TEAM_HOME);
+      if (m.TA_CLUB_NAME || m.TEAM_AWAY) activeTeams.add(m.TA_CLUB_NAME || m.TEAM_AWAY);
+    });
+    
+    // 이주의 하이라이트 (최고 득점 경기)
+    const highlight = recentMatches.reduce((max, match) => {
+      const totalGoals = (match.homeScore || 0) + (match.awayScore || 0);
+      const maxGoals = (max?.homeScore || 0) + (max?.awayScore || 0);
+      return totalGoals > maxGoals ? match : max;
+    }, null);
+    
+    res.json({
+      recentMatches,
+      upcomingMatches,
+      highlight,
+      stats: {
+        totalMatches,
+        completedMatches,
+        activeLeagues,
+        activeTeams: activeTeams.size
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 리그 목록 조회
 app.get('/api/leagues', async (req, res) => {
   try {

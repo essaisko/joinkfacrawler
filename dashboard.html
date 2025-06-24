@@ -646,6 +646,230 @@
             display: none;
         }
 
+        /* 뉴스 피드 스타일 */
+        .newsfeed-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+            margin: -2rem -15px 2rem -15px;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .newsfeed-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .newsfeed-hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+
+        .highlight-match {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .highlight-match::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateX(0) translateY(0) rotate(0deg); }
+            100% { transform: translateX(-100px) translateY(-100px) rotate(360deg); }
+        }
+
+        .highlight-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .highlight-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .match-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid #3498db;
+        }
+
+        .match-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .match-card.completed {
+            border-left-color: #27ae60;
+        }
+
+        .match-card.upcoming {
+            border-left-color: #f39c12;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .league-badge {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .match-date {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .match-teams {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1rem 0;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .team-logo-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .team-region {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .match-score {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0 1rem;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .match-vs {
+            font-size: 1.2rem;
+            color: #95a5a6;
+            font-weight: 600;
+        }
+
+        .match-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .match-time, .match-stadium {
+            display: flex;
+            align-items: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .match-time i, .match-stadium i {
+            margin-right: 0.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 2rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 0.75rem;
+            color: #3498db;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
         /* 팀 버튼 내용 스타일 */
         .team-button-content {
             flex: 1;
@@ -827,7 +1051,12 @@
         <!-- 탭 네비게이션 -->
         <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">
+                <button class="nav-link active" id="newsfeed-tab" data-bs-toggle="tab" data-bs-target="#newsfeed" type="button" role="tab">
+                    <i class="fas fa-newspaper me-2"></i>뉴스 피드
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">
                     <i class="fas fa-trophy me-2"></i>리그 순위표
                 </button>
             </li>
@@ -850,8 +1079,77 @@
 
         <!-- 탭 콘텐츠 -->
         <div class="tab-content" id="dashboardTabsContent">
+            <!-- 뉴스 피드 탭 -->
+            <div class="tab-pane fade show active" id="newsfeed" role="tabpanel">
+                <!-- 히어로 섹션 -->
+                <div class="newsfeed-hero">
+                    <div class="container">
+                        <div class="text-center">
+                            <h1>⚽ K리그 뉴스 센터</h1>
+                            <p>최신 경기 결과와 예정된 경기 일정을 한눈에 확인하세요</p>
+                            
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-number" id="totalMatchesStat">0</span>
+                                    <div class="stat-label">총 경기</div>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number" id="completedMatchesStat">0</span>
+                                    <div class="stat-label">완료 경기</div>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number" id="activeLeaguesStat">0</span>
+                                    <div class="stat-label">활성 리그</div>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number" id="activeTeamsStat">0</span>
+                                    <div class="stat-label">참가 팀</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 이주의 하이라이트 -->
+                <div id="highlightSection"></div>
+
+                <div class="container">
+                    <div class="row">
+                        <!-- 최근 경기 결과 -->
+                        <div class="col-lg-6">
+                            <h2 class="section-title">
+                                <i class="fas fa-history"></i>최근 경기 결과
+                            </h2>
+                            <div id="recentMatchesContainer">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-3">최근 경기 결과를 불러오는 중...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 예정된 경기 -->
+                        <div class="col-lg-6">
+                            <h2 class="section-title">
+                                <i class="fas fa-calendar-plus"></i>예정된 경기
+                            </h2>
+                            <div id="upcomingMatchesContainer">
+                                <div class="text-center">
+                                    <div class="spinner-border text-warning" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-3">예정된 경기를 불러오는 중...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 리그 순위표 탭 -->
-            <div class="tab-pane fade show active" id="standings" role="tabpanel">
+            <div class="tab-pane fade" id="standings" role="tabpanel">
                 <div class="filter-section">
                     <div class="filter-group">
                         <span class="filter-label">
@@ -1094,6 +1392,7 @@
         async function loadInitialData() {
             try {
                 await Promise.all([
+                    loadNewsFeed(),
                     loadRegions(),
                     loadTeams(),
                     loadStandings(),
@@ -1108,6 +1407,181 @@
             } catch (error) {
                 console.error('초기 데이터 로드 실패:', error);
             }
+        }
+
+        // 뉴스 피드 로드
+        async function loadNewsFeed() {
+            try {
+                const response = await fetch('/api/newsfeed');
+                const data = await response.json();
+                
+                // 통계 업데이트
+                document.getElementById('totalMatchesStat').textContent = data.stats.totalMatches;
+                document.getElementById('completedMatchesStat').textContent = data.stats.completedMatches;
+                document.getElementById('activeLeaguesStat').textContent = data.stats.activeLeagues;
+                document.getElementById('activeTeamsStat').textContent = data.stats.activeTeams;
+                
+                // 하이라이트 표시
+                displayHighlight(data.highlight);
+                
+                // 최근 경기 결과 표시
+                displayRecentMatches(data.recentMatches);
+                
+                // 예정된 경기 표시
+                displayUpcomingMatches(data.upcomingMatches);
+                
+            } catch (error) {
+                console.error('뉴스 피드 로드 실패:', error);
+            }
+        }
+
+        // 하이라이트 경기 표시
+        function displayHighlight(highlight) {
+            const container = document.getElementById('highlightSection');
+            
+            if (!highlight) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const totalGoals = (highlight.homeScore || 0) + (highlight.awayScore || 0);
+            
+            container.innerHTML = `
+                <div class="container">
+                    <div class="highlight-match">
+                        <div class="highlight-content">
+                            <div class="highlight-badge">🔥 이주의 하이라이트</div>
+                            <h3>최고 득점 경기 - 총 ${totalGoals}골!</h3>
+                            <div class="row align-items-center mt-3">
+                                <div class="col-4 text-center">
+                                    <div class="team-logo-small mx-auto mb-2">${highlight.homeTeam.teamName.charAt(0)}</div>
+                                    <h5>${highlight.homeTeam.teamName}</h5>
+                                    <small>${highlight.homeTeam.majorRegion || ''} ${highlight.homeTeam.minorRegion || ''}</small>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <h2 style="font-size: 3rem; margin: 0;">${highlight.homeScore} - ${highlight.awayScore}</h2>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="team-logo-small mx-auto mb-2">${highlight.awayTeam.teamName.charAt(0)}</div>
+                                    <h5>${highlight.awayTeam.teamName}</h5>
+                                    <small>${highlight.awayTeam.majorRegion || ''} ${highlight.awayTeam.minorRegion || ''}</small>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <small>📅 ${highlight.MATCH_DATE || '날짜 미정'} | 📍 ${highlight.stadium}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 최근 경기 결과 표시
+        function displayRecentMatches(matches) {
+            const container = document.getElementById('recentMatchesContainer');
+            
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                        <p>최근 완료된 경기가 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            matches.forEach(match => {
+                html += `
+                    <div class="match-card completed">
+                        <div class="match-header">
+                            <span class="league-badge">${match.leagueTitle || '리그 미정'}</span>
+                            <span class="match-date">${match.MATCH_DATE || '날짜 미정'}</span>
+                        </div>
+                        <div class="match-teams">
+                            <div class="team-info">
+                                <div class="team-logo-small">${match.homeTeam.teamName.charAt(0)}</div>
+                                <div>
+                                    <div class="team-name">${match.homeTeam.teamName}</div>
+                                    <div class="team-region">${match.homeTeam.majorRegion || ''} ${match.homeTeam.minorRegion || ''}</div>
+                                </div>
+                            </div>
+                            <div class="match-score">${match.homeScore} - ${match.awayScore}</div>
+                            <div class="team-info justify-content-end text-end">
+                                <div>
+                                    <div class="team-name">${match.awayTeam.teamName}</div>
+                                    <div class="team-region">${match.awayTeam.majorRegion || ''} ${match.awayTeam.minorRegion || ''}</div>
+                                </div>
+                                <div class="team-logo-small">${match.awayTeam.teamName.charAt(0)}</div>
+                            </div>
+                        </div>
+                        <div class="match-details">
+                            <div class="match-time">
+                                <i class="fas fa-clock"></i>${match.formattedTime || '시간 미정'}
+                            </div>
+                            <div class="match-stadium">
+                                <i class="fas fa-map-marker-alt"></i>${match.stadium}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 예정된 경기 표시
+        function displayUpcomingMatches(matches) {
+            const container = document.getElementById('upcomingMatchesContainer');
+            
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-calendar-plus fa-3x mb-3"></i>
+                        <p>예정된 경기가 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            matches.forEach(match => {
+                html += `
+                    <div class="match-card upcoming">
+                        <div class="match-header">
+                            <span class="league-badge">${match.leagueTitle || '리그 미정'}</span>
+                            <span class="match-date">${match.MATCH_DATE || '날짜 미정'}</span>
+                        </div>
+                        <div class="match-teams">
+                            <div class="team-info">
+                                <div class="team-logo-small">${match.homeTeam.teamName.charAt(0)}</div>
+                                <div>
+                                    <div class="team-name">${match.homeTeam.teamName}</div>
+                                    <div class="team-region">${match.homeTeam.majorRegion || ''} ${match.homeTeam.minorRegion || ''}</div>
+                                </div>
+                            </div>
+                            <div class="match-vs">VS</div>
+                            <div class="team-info justify-content-end text-end">
+                                <div>
+                                    <div class="team-name">${match.awayTeam.teamName}</div>
+                                    <div class="team-region">${match.awayTeam.majorRegion || ''} ${match.awayTeam.minorRegion || ''}</div>
+                                </div>
+                                <div class="team-logo-small">${match.awayTeam.teamName.charAt(0)}</div>
+                            </div>
+                        </div>
+                        <div class="match-details">
+                            <div class="match-time">
+                                <i class="fas fa-clock"></i>${match.formattedTime || '시간 미정'}
+                            </div>
+                            <div class="match-stadium">
+                                <i class="fas fa-map-marker-alt"></i>${match.stadium}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
         }
 
         // 지역 목록 로드 (버튼형 필터)
