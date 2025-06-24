@@ -45,6 +45,12 @@
             background: none;
             font-size: 16px;
             transition: all 0.3s;
+            color: #495057;
+            font-weight: 500;
+        }
+        .nav-tab:hover {
+            background: #e9ecef;
+            color: #667eea;
         }
         .nav-tab.active {
             background: white;
@@ -184,6 +190,7 @@
             <button class="nav-tab active" onclick="showTab('overview')">📊 Overview</button>
             <button class="nav-tab" onclick="showTab('matches')">⚽ Matches</button>
             <button class="nav-tab" onclick="showTab('leagues')">🏆 Leagues</button>
+            <button class="nav-tab" onclick="showTab('standings')">🏅 Standings</button>
             <button class="nav-tab" onclick="showTab('analytics')">📈 Analytics</button>
         </div>
         
@@ -258,6 +265,29 @@
             </div>
         </div>
         
+        <!-- Standings Tab -->
+        <div id="standings" class="tab-content">
+            <div class="controls">
+                <div class="control-group">
+                    <label>리그 선택</label>
+                    <select id="standingsLeagueFilter">
+                        <option value="">전체 리그</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>지역 선택</label>
+                    <select id="standingsRegionFilter">
+                        <option value="">전체 지역</option>
+                    </select>
+                </div>
+                <button onclick="generateStandings()">🏅 순위표 생성</button>
+            </div>
+            
+            <div id="standingsTable" class="loading">
+                순위표를 생성하려면 위의 버튼을 클릭하세요.
+            </div>
+        </div>
+
         <!-- Analytics Tab -->
         <div id="analytics" class="tab-content">
             <div class="stats">
@@ -282,6 +312,25 @@
             <div class="controls">
                 <button onclick="generateAnalytics()">📊 분석 생성</button>
                 <button onclick="exportAnalytics()" class="btn-success">📥 분석 결과 내보내기</button>
+            </div>
+            
+            <div class="stats" style="margin-top: 30px;">
+                <div class="stat-card">
+                    <h3 id="topScoringTeam">-</h3>
+                    <p>최다 득점팀</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="bestDefenseTeam">-</h3>
+                    <p>최소 실점팀</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="mostWinsTeam">-</h3>
+                    <p>최다 승리팀</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalMatchesPlayed">-</h3>
+                    <p>총 경기 수</p>
+                </div>
             </div>
         </div>
     </div>
@@ -308,6 +357,8 @@
                 loadMatches();
             } else if (tabName === 'leagues') {
                 loadLeagues();
+            } else if (tabName === 'standings') {
+                if (allMatches.length === 0) loadMatches();
             } else if (tabName === 'analytics') {
                 generateAnalytics();
             }
@@ -335,13 +386,42 @@
             try {
                 const response = await fetch('/api/matches');
                 const matches = await response.json();
-                allMatches = matches;
-                filteredMatches = matches;
+                
+                // 날짜순으로 정렬 (최신순)
+                allMatches = matches.sort((a, b) => {
+                    const dateA = new Date(a.MATCH_DATE || '1900-01-01');
+                    const dateB = new Date(b.MATCH_DATE || '1900-01-01');
+                    return dateB - dateA;
+                });
+                
+                filteredMatches = allMatches;
                 displayMatches();
+                populateFilterOptions();
             } catch (error) {
                 document.getElementById('matchesTable').innerHTML = '<div class="loading">❌ 경기 데이터 로드 실패</div>';
                 console.error('경기 데이터 로드 실패:', error);
             }
+        }
+        
+        // 필터 옵션 채우기
+        function populateFilterOptions() {
+            const leagues = [...new Set(allMatches.map(m => m.leagueTitle).filter(Boolean))];
+            const regions = [...new Set(allMatches.map(m => m.regionTag).filter(Boolean))];
+            
+            // Standings 필터 채우기
+            const leagueSelect = document.getElementById('standingsLeagueFilter');
+            const regionSelect = document.getElementById('standingsRegionFilter');
+            
+            leagueSelect.innerHTML = '<option value="">전체 리그</option>';
+            regionSelect.innerHTML = '<option value="">전체 지역</option>';
+            
+            leagues.forEach(league => {
+                leagueSelect.innerHTML += `<option value="${league}">${league}</option>`;
+            });
+            
+            regions.forEach(region => {
+                regionSelect.innerHTML += `<option value="${region}">${region}</option>`;
+            });
         }
         
         // 경기 데이터 표시
@@ -359,11 +439,12 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>날짜</th>
+                            <th>날짜/시간</th>
                             <th>리그</th>
                             <th>홈팀</th>
                             <th>어웨이팀</th>
                             <th>스코어</th>
+                            <th>경기장</th>
                             <th>상태</th>
                             <th>작업</th>
                         </tr>
@@ -376,14 +457,29 @@
                 const awayScore = match.TA_SCORE_FINAL || '-';
                 const score = `${homeScore} : ${awayScore}`;
                 
+                // 날짜와 시간 형식 개선
+                const matchDate = match.MATCH_DATE || '';
+                const matchTime = match.MATCH_TIME || '';
+                const dateTimeDisplay = matchDate && matchTime ? 
+                    `${matchDate}<br><small style="color: #666;">${matchTime}</small>` : 
+                    matchDate || '-';
+                
+                // 팀명 표시 개선 (여러 필드에서 찾기)
+                const homeTeam = match.TH_CLUB_NAME || match.HOME_TEAM || match.TH_NAME || '-';
+                const awayTeam = match.TA_CLUB_NAME || match.AWAY_TEAM || match.TA_NAME || '-';
+                
+                // 경기장 정보
+                const stadium = match.STADIUM || match.GROUND || match.PLACE || '-';
+                
                 html += `
                     <tr>
-                        <td>${match.MATCH_DATE || '-'}</td>
-                        <td>${match.leagueTitle || '-'}</td>
-                        <td>${match.TH_CLUB_NAME || '-'}</td>
-                        <td>${match.TA_CLUB_NAME || '-'}</td>
-                        <td>${score}</td>
-                        <td><span style="color: ${match.matchStatus === '완료' ? '#28a745' : '#ffc107'}">${match.matchStatus || '-'}</span></td>
+                        <td>${dateTimeDisplay}</td>
+                        <td><small>${match.leagueTitle || '-'}</small></td>
+                        <td><strong>${homeTeam}</strong></td>
+                        <td><strong>${awayTeam}</strong></td>
+                        <td><span style="font-weight: bold; color: ${match.matchStatus === '완료' ? '#28a745' : '#666'}">${score}</span></td>
+                        <td><small>${stadium}</small></td>
+                        <td><span style="padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; background: ${match.matchStatus === '완료' ? '#28a745' : '#ffc107'}">${match.matchStatus || '-'}</span></td>
                         <td>
                             <button onclick="editMatch('${match.matchId}')" style="font-size: 12px; padding: 5px 10px;">✏️ 수정</button>
                             <button onclick="deleteMatch('${match.matchId}')" class="btn-danger" style="font-size: 12px; padding: 5px 10px;">🗑️ 삭제</button>
@@ -557,6 +653,149 @@
             document.getElementById('leaguesTable').innerHTML = html;
         }
         
+        // 순위표 생성
+        function generateStandings() {
+            const selectedLeague = document.getElementById('standingsLeagueFilter').value;
+            const selectedRegion = document.getElementById('standingsRegionFilter').value;
+            
+            // 필터링된 경기들
+            let filteredForStandings = allMatches.filter(match => {
+                const matchesLeague = !selectedLeague || match.leagueTitle === selectedLeague;
+                const matchesRegion = !selectedRegion || match.regionTag === selectedRegion;
+                const isCompleted = match.matchStatus === '완료' && match.TH_SCORE_FINAL !== null && match.TA_SCORE_FINAL !== null;
+                return matchesLeague && matchesRegion && isCompleted;
+            });
+            
+            if (filteredForStandings.length === 0) {
+                document.getElementById('standingsTable').innerHTML = '<div class="loading">선택한 조건에 맞는 완료된 경기가 없습니다.</div>';
+                return;
+            }
+            
+            // 팀별 통계 계산
+            const teamStats = new Map();
+            
+            filteredForStandings.forEach(match => {
+                const homeTeam = match.TH_CLUB_NAME || match.HOME_TEAM || match.TH_NAME || '알 수 없음';
+                const awayTeam = match.TA_CLUB_NAME || match.AWAY_TEAM || match.TA_NAME || '알 수 없음';
+                const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
+                const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
+                
+                // 홈팀 통계 업데이트
+                if (!teamStats.has(homeTeam)) {
+                    teamStats.set(homeTeam, { 
+                        name: homeTeam, 
+                        played: 0, 
+                        won: 0, 
+                        drawn: 0, 
+                        lost: 0, 
+                        goalsFor: 0, 
+                        goalsAgainst: 0, 
+                        goalDiff: 0, 
+                        points: 0 
+                    });
+                }
+                
+                // 어웨이팀 통계 업데이트
+                if (!teamStats.has(awayTeam)) {
+                    teamStats.set(awayTeam, { 
+                        name: awayTeam, 
+                        played: 0, 
+                        won: 0, 
+                        drawn: 0, 
+                        lost: 0, 
+                        goalsFor: 0, 
+                        goalsAgainst: 0, 
+                        goalDiff: 0, 
+                        points: 0 
+                    });
+                }
+                
+                const homeStats = teamStats.get(homeTeam);
+                const awayStats = teamStats.get(awayTeam);
+                
+                // 경기 수 증가
+                homeStats.played++;
+                awayStats.played++;
+                
+                // 득점/실점 기록
+                homeStats.goalsFor += homeScore;
+                homeStats.goalsAgainst += awayScore;
+                awayStats.goalsFor += awayScore;
+                awayStats.goalsAgainst += homeScore;
+                
+                // 승부 결과 기록
+                if (homeScore > awayScore) {
+                    homeStats.won++;
+                    homeStats.points += 3;
+                    awayStats.lost++;
+                } else if (homeScore < awayScore) {
+                    awayStats.won++;
+                    awayStats.points += 3;
+                    homeStats.lost++;
+                } else {
+                    homeStats.drawn++;
+                    awayStats.drawn++;
+                    homeStats.points += 1;
+                    awayStats.points += 1;
+                }
+                
+                // 골 득실 계산
+                homeStats.goalDiff = homeStats.goalsFor - homeStats.goalsAgainst;
+                awayStats.goalDiff = awayStats.goalsFor - awayStats.goalsAgainst;
+            });
+            
+            // 순위 정렬 (승점 → 골득실 → 다득점 순)
+            const standings = Array.from(teamStats.values()).sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+                return b.goalsFor - a.goalsFor;
+            });
+            
+            // 순위표 HTML 생성
+            let html = `
+                <h3>🏅 ${selectedLeague || '전체 리그'} ${selectedRegion || '전체 지역'} 순위표</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>순위</th>
+                            <th>팀명</th>
+                            <th>경기</th>
+                            <th>승</th>
+                            <th>무</th>
+                            <th>패</th>
+                            <th>득점</th>
+                            <th>실점</th>
+                            <th>골득실</th>
+                            <th>승점</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            standings.forEach((team, index) => {
+                const rank = index + 1;
+                const rankColor = rank <= 3 ? '#FFD700' : (rank <= 6 ? '#C0C0C0' : '#CD7F32');
+                
+                html += `
+                    <tr>
+                        <td><strong style="color: ${rank <= 3 ? rankColor : '#333'}">${rank}</strong></td>
+                        <td><strong>${team.name}</strong></td>
+                        <td>${team.played}</td>
+                        <td style="color: #28a745;">${team.won}</td>
+                        <td style="color: #ffc107;">${team.drawn}</td>
+                        <td style="color: #dc3545;">${team.lost}</td>
+                        <td>${team.goalsFor}</td>
+                        <td>${team.goalsAgainst}</td>
+                        <td style="color: ${team.goalDiff >= 0 ? '#28a745' : '#dc3545'};">${team.goalDiff >= 0 ? '+' : ''}${team.goalDiff}</td>
+                        <td><strong>${team.points}</strong></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('standingsTable').innerHTML = html;
+        }
+        
         // 분석 생성
         async function generateAnalytics() {
             try {
@@ -567,9 +806,78 @@
                 document.getElementById('highestScore').textContent = analytics.highestScore || '-';
                 document.getElementById('mostActiveLeague').textContent = analytics.mostActiveLeague || '-';
                 document.getElementById('recentActivity').textContent = analytics.recentActivity || '-';
+                
+                // 추가 통계 계산
+                generateDetailedAnalytics();
             } catch (error) {
                 console.error('분석 생성 실패:', error);
             }
+        }
+        
+        // 상세 분석 생성
+        function generateDetailedAnalytics() {
+            const completedMatches = allMatches.filter(m => 
+                m.matchStatus === '완료' && 
+                m.TH_SCORE_FINAL !== null && 
+                m.TA_SCORE_FINAL !== null
+            );
+            
+            if (completedMatches.length === 0) {
+                document.getElementById('topScoringTeam').textContent = '-';
+                document.getElementById('bestDefenseTeam').textContent = '-';
+                document.getElementById('mostWinsTeam').textContent = '-';
+                document.getElementById('totalMatchesPlayed').textContent = allMatches.length;
+                return;
+            }
+            
+            const teamStats = new Map();
+            
+            completedMatches.forEach(match => {
+                const homeTeam = match.TH_CLUB_NAME || match.HOME_TEAM || match.TH_NAME || '알 수 없음';
+                const awayTeam = match.TA_CLUB_NAME || match.AWAY_TEAM || match.TA_NAME || '알 수 없음';
+                const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
+                const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
+                
+                [homeTeam, awayTeam].forEach(team => {
+                    if (!teamStats.has(team)) {
+                        teamStats.set(team, { goalsFor: 0, goalsAgainst: 0, wins: 0 });
+                    }
+                });
+                
+                const homeStats = teamStats.get(homeTeam);
+                const awayStats = teamStats.get(awayTeam);
+                
+                homeStats.goalsFor += homeScore;
+                homeStats.goalsAgainst += awayScore;
+                awayStats.goalsFor += awayScore;
+                awayStats.goalsAgainst += homeScore;
+                
+                if (homeScore > awayScore) {
+                    homeStats.wins++;
+                } else if (awayScore > homeScore) {
+                    awayStats.wins++;
+                }
+            });
+            
+            // 최다 득점팀
+            const topScoringTeam = [...teamStats.entries()]
+                .sort((a, b) => b[1].goalsFor - a[1].goalsFor)[0];
+            
+            // 최소 실점팀
+            const bestDefenseTeam = [...teamStats.entries()]
+                .sort((a, b) => a[1].goalsAgainst - b[1].goalsAgainst)[0];
+            
+            // 최다 승리팀
+            const mostWinsTeam = [...teamStats.entries()]
+                .sort((a, b) => b[1].wins - a[1].wins)[0];
+            
+            document.getElementById('topScoringTeam').textContent = 
+                topScoringTeam ? `${topScoringTeam[0]} (${topScoringTeam[1].goalsFor}골)` : '-';
+            document.getElementById('bestDefenseTeam').textContent = 
+                bestDefenseTeam ? `${bestDefenseTeam[0]} (${bestDefenseTeam[1].goalsAgainst}실점)` : '-';
+            document.getElementById('mostWinsTeam').textContent = 
+                mostWinsTeam ? `${mostWinsTeam[0]} (${mostWinsTeam[1].wins}승)` : '-';
+            document.getElementById('totalMatchesPlayed').textContent = completedMatches.length;
         }
         
         // 데이터 내보내기

@@ -397,8 +397,31 @@ app.get('/api/matches/stats', async (req, res) => {
 // 모든 경기 조회
 app.get('/api/matches', async (req, res) => {
   try {
-    const snapshot = await db.collection('matches').limit(1000).get();
-    const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await db.collection('matches').limit(2000).get();
+    const matches = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id, 
+        ...data,
+        // 팀명 정보 보강 (실제 필드명 기반)
+        TH_CLUB_NAME: data.TH_CLUB_NAME || data.TEAM_HOME || data.HOME_TEAM || data.TH_NAME || '홈팀',
+        TA_CLUB_NAME: data.TA_CLUB_NAME || data.TEAM_AWAY || data.AWAY_TEAM || data.TA_NAME || '어웨이팀',
+        // 경기장 정보 보강  
+        STADIUM: data.STADIUM || data.MATCH_AREA || data.GROUND || data.PLACE || data.VENUE || '',
+        // 시간 정보 보강
+        MATCH_TIME: data.MATCH_TIME || data.TIME || data.KICK_OFF || '',
+        // 날짜 정보 보강
+        MATCH_DATE: data.MATCH_DATE || data.MATCH_CHECK_TIME2 || data.DATE || ''
+      };
+    });
+    
+    // 날짜순 정렬 (최신순)
+    matches.sort((a, b) => {
+      const dateA = new Date(a.MATCH_DATE || '1900-01-01');
+      const dateB = new Date(b.MATCH_DATE || '1900-01-01');
+      return dateB - dateA;
+    });
+    
     res.json(matches);
   } catch (error) {
     res.status(500).json({ error: error.message });

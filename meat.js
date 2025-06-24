@@ -273,7 +273,15 @@ async function fetchMatchData(league, ym, retryCount = 0) {
             month,
             leagueTitle: league.leagueTitle,
             matchIdx: league.matchIdx,
-            matchStatus: isUpcoming ? '예정' : '완료'
+            matchStatus: isUpcoming ? '예정' : '완료',
+            // 팀명 정보 보강
+            TH_CLUB_NAME: match.TH_CLUB_NAME || match.TEAM_HOME || '',
+            TA_CLUB_NAME: match.TA_CLUB_NAME || match.TEAM_AWAY || '',
+            // 경기장 정보 보강
+            STADIUM: match.STADIUM || match.MATCH_AREA || '',
+            // 날짜/시간 정보 보강  
+            MATCH_DATE: match.MATCH_DATE || match.MATCH_CHECK_TIME2 || '',
+            MATCH_TIME: match.MATCH_TIME || match.TIME || ''
           };
         });
         const mUpcoming = monthFlat.filter((m) => m.matchStatus === '예정').length;
