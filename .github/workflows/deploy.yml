@@ -30,5 +30,7 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: |
         curl -X POST "${{ secrets.DEPLOY_URL }}/deploy" \
+          -H "Content-Type: application/json" \
           -H "x-deploy-token: ${{ secrets.DEPLOY_TOKEN }}" \
-          -d "{}" 
+          -d '{}' \
+          --fail --show-error --silent 

@@ -351,20 +351,9 @@ const keepAlive = () => {
   }, 5 * 60 * 1000); // 5분마다
 };
 
-// 서버 시작시 로컬 CSV를 Firebase에 동기화
+// 서버 초기화 함수 (CSV 동기화 제거)
 async function initializeServer() {
   console.log('🚀 서버 초기화 중...');
-  
-  try {
-    // 로컬 CSV 파일이 있으면 Firebase에 동기화
-    const localCsvPath = path.join(__dirname, 'leagues.csv');
-    if (fs.existsSync(localCsvPath)) {
-      console.log('🔄 서버 시작시 로컬 CSV를 Firebase에 동기화...');
-      await syncCsvWithFirebase();
-    }
-  } catch (error) {
-    console.warn('⚠️ 서버 초기화 중 CSV 동기화 실패:', error.message);
-  }
   
   // Keep-Alive 시작 (프로덕션 환경에서만)
   if (process.env.NODE_ENV === 'production') {
@@ -374,7 +363,7 @@ async function initializeServer() {
   
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server is running on http://0.0.0.0:${PORT}`);
-    console.log('🔥 Firebase CSV 연동이 활성화되었습니다!');
+    console.log('🔥 Firebase 연동 준비 완료! (사용자 요청 시에만 동작)`);
     if (process.env.NODE_ENV === 'production') {
       console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');
     }
