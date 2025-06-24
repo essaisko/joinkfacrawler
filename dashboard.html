@@ -3,219 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KFA 축구 데이터 대시보드</title>
+    <title>⚽ K-League 축구 데이터 관리 대시보드</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-muted: #6c757d;
+            --champions-league: #0066cc;
+            --europa-league: #ff6600;
+            --relegation: #dc3545;
+            --promotion: #28a745;
         }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        .main-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             padding: 2rem 0;
             margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        
+
+        .nav-tabs {
+            border-bottom: 3px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
         .nav-tabs .nav-link {
             color: #495057;
-            border: none;
-            border-radius: 10px 10px 0 0;
-            margin-right: 5px;
             font-weight: 600;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 0;
             transition: all 0.3s ease;
         }
-        
+
         .nav-tabs .nav-link:hover {
-            background-color: #e9ecef;
-            color: #495057;
+            color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+            border-color: transparent;
         }
-        
+
         .nav-tabs .nav-link.active {
-            background-color: #667eea;
-            color: white;
-            border: none;
+            color: var(--secondary-color);
+            background-color: white;
+            border-color: var(--secondary-color) var(--secondary-color) white;
+            border-width: 0 0 3px 0;
         }
-        
+
+        /* EPL 스타일 순위표 */
         .standings-card {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             margin-bottom: 2rem;
             overflow: hidden;
-            transition: transform 0.3s ease;
         }
-        
-        .standings-card:hover {
-            transform: translateY(-5px);
-        }
-        
+
         .standings-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 1rem;
-            text-align: center;
-            font-weight: bold;
+            padding: 1.5rem;
+            font-weight: 700;
+            font-size: 1.1rem;
         }
-        
+
         .standings-table {
             margin: 0;
         }
-        
+
         .standings-table th {
             background-color: #f8f9fa;
             border: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            padding: 0.75rem 0.5rem;
+            padding: 1rem 0.75rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #495057;
         }
-        
+
         .standings-table td {
             border: none;
-            padding: 0.75rem 0.5rem;
+            padding: 1rem 0.75rem;
             vertical-align: middle;
+            border-bottom: 1px solid #f1f3f4;
         }
-        
+
         .standings-table tbody tr:hover {
-            background-color: #f8f9fa;
+            background-color: rgba(52, 152, 219, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
         }
-        
-        .position-badge {
-            display: inline-block;
-            width: 25px;
-            height: 25px;
+
+        .position-indicator {
+            width: 4px;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .position-1, .position-2, .position-3 {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+        }
+
+        .position-4, .position-5, .position-6 {
+            background: linear-gradient(45deg, var(--champions-league), #4da6ff);
+        }
+
+        .position-relegation {
+            background: linear-gradient(45deg, var(--relegation), #ff6b6b);
+        }
+
+        .team-logo {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background-color: #6c757d;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            text-align: center;
-            line-height: 25px;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 12px;
+            margin-right: 12px;
         }
-        
-        .position-1 { background-color: #ffd700; color: #333; }
-        .position-2 { background-color: #c0c0c0; color: #333; }
-        .position-3 { background-color: #cd7f32; color: white; }
-        
-        .team-region-badge {
-            background-color: #e9ecef;
+
+        .team-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+
+        .region-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-right: 4px;
+        }
+
+        .major-region {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .minor-region {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .position-number {
+            font-weight: 700;
+            font-size: 1.1rem;
             color: #495057;
-            padding: 0.2rem 0.5rem;
-            border-radius: 15px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .medal-icon {
+            margin-left: 8px;
+        }
+
+        .points-cell {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+
+        .stats-number {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        /* 경기 기록 스타일 */
+        .match-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .match-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .match-body {
+            padding: 1rem;
+        }
+
+        .match-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-section {
+            flex: 1;
+            text-align: center;
+        }
+
+        .vs-section {
+            padding: 0 1rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .score-section {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .match-status {
+            padding: 4px 8px;
+            border-radius: 12px;
             font-size: 0.75rem;
-            margin-right: 0.5rem;
+            font-weight: 600;
         }
-        
-        .match-status-completed {
-            background-color: #28a745;
-            color: white;
+
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
         }
-        
-        .match-status-upcoming {
-            background-color: #ffc107;
-            color: #333;
+
+        .status-upcoming {
+            background-color: #fff3cd;
+            color: #856404;
         }
-        
+
         .filter-section {
             background: white;
-            border-radius: 15px;
             padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
-        .btn-custom {
-            border-radius: 25px;
-            padding: 0.5rem 1.5rem;
+
+        .form-select, .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
             font-weight: 600;
             transition: all 0.3s ease;
         }
-        
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
-        
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
+
+        .loading-spinner {
+            display: none;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            padding: 2rem;
         }
-        
-        .stats-card:hover {
-            transform: translateY(-3px);
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
         }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
         }
-        
-        .table-responsive {
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .table {
-            margin: 0;
-            background: white;
-        }
-        
-        .table th {
-            background-color: #667eea;
-            color: white;
-            border: none;
-            font-weight: 600;
-            padding: 1rem 0.75rem;
-        }
-        
-        .table td {
-            border: none;
-            padding: 0.75rem;
-            vertical-align: middle;
-        }
-        
-        .table tbody tr:hover {
-            background-color: #f8f9fa;
+
+        @media (max-width: 768px) {
+            .standings-table {
+                font-size: 0.85rem;
+            }
+            
+            .team-logo {
+                width: 24px;
+                height: 24px;
+                font-size: 10px;
+            }
+            
+            .match-teams {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
+    <header class="main-header">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-0"><i class="fas fa-futbol me-3"></i>KFA 축구 데이터 대시보드</h1>
-                    <p class="mb-0 mt-2">실시간 리그 순위표 및 경기 기록 관리</p>
+                    <h1 class="mb-0">
+                        <i class="fas fa-futbol me-3"></i>
+                        K-League 축구 데이터 관리 대시보드
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">실시간 순위표, 경기 기록 및 통계 분석</p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="/" class="btn btn-light btn-custom me-2">
-                        <i class="fas fa-spider me-2"></i>크롤링 대시보드
-                    </a>
-                    <a href="/dashboard" class="btn btn-outline-light btn-custom">
-                        <i class="fas fa-chart-line me-2"></i>데이터 대시보드
+                    <a href="index.html" class="btn btn-light">
+                        <i class="fas fa-home me-2"></i>메인 페이지
                     </a>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="container-fluid">
+    <div class="container">
         <!-- 탭 네비게이션 -->
-        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">
                     <i class="fas fa-trophy me-2"></i>리그 순위표
@@ -233,49 +372,43 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab">
-                    <i class="fas fa-cogs me-2"></i>데이터 관리
+                    <i class="fas fa-cog me-2"></i>데이터 관리
                 </button>
             </li>
         </ul>
 
-        <!-- 탭 컨텐츠 -->
-        <div class="tab-content" id="mainTabContent">
+        <!-- 탭 콘텐츠 -->
+        <div class="tab-content" id="dashboardTabsContent">
             <!-- 리그 순위표 탭 -->
             <div class="tab-pane fade show active" id="standings" role="tabpanel">
                 <div class="filter-section">
-                    <div class="row align-items-end">
-                        <div class="col-md-3">
+                    <div class="row">
+                        <div class="col-md-4">
                             <label for="regionFilter" class="form-label">지역 선택</label>
                             <select class="form-select" id="regionFilter">
-                                <option value="">전체 지역</option>
+                                <option value="">모든 지역</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="leagueFilter" class="form-label">리그 선택</label>
                             <select class="form-select" id="leagueFilter">
-                                <option value="">전체 리그</option>
+                                <option value="">모든 리그</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-primary-custom btn-custom" onclick="loadStandings()">
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" onclick="loadStandings()">
                                 <i class="fas fa-sync-alt me-2"></i>순위표 새로고침
                             </button>
-                        </div>
-                        <div class="col-md-3 text-end">
-                            <div class="stats-card d-inline-block">
-                                <div class="stats-number" id="totalLeagues">0</div>
-                                <div class="text-muted">총 리그 수</div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="standingsContainer" class="row">
-                    <div class="col-12 text-center py-5">
+                <div id="standingsContainer">
+                    <div class="loading-spinner">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">로딩 중...</span>
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                        <p class="mt-3 text-muted">순위표를 불러오는 중입니다...</p>
+                        <p class="mt-3">순위표를 불러오는 중...</p>
                     </div>
                 </div>
             </div>
@@ -283,101 +416,82 @@
             <!-- 경기 기록 & 일정 탭 -->
             <div class="tab-pane fade" id="matches" role="tabpanel">
                 <div class="filter-section">
-                    <div class="row align-items-end">
-                        <div class="col-md-2">
+                    <div class="row">
+                        <div class="col-md-3">
                             <label for="matchRegionFilter" class="form-label">지역</label>
                             <select class="form-select" id="matchRegionFilter">
-                                <option value="">전체</option>
+                                <option value="">모든 지역</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label for="matchLeagueFilter" class="form-label">리그</label>
                             <select class="form-select" id="matchLeagueFilter">
-                                <option value="">전체</option>
+                                <option value="">모든 리그</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label for="matchTeamFilter" class="form-label">팀</label>
-                            <select class="form-select" id="matchTeamFilter">
-                                <option value="">전체</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="matchStatusFilter" class="form-label">상태</label>
+                        <div class="col-md-3">
+                            <label for="matchStatusFilter" class="form-label">경기 상태</label>
                             <select class="form-select" id="matchStatusFilter">
-                                <option value="">전체</option>
-                                <option value="완료">완료</option>
-                                <option value="예정">예정</option>
+                                <option value="">모든 경기</option>
+                                <option value="완료">완료된 경기</option>
+                                <option value="예정">예정된 경기</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary-custom btn-custom" onclick="loadMatches()">
-                                <i class="fas fa-search me-2"></i>검색
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" onclick="loadMatches()">
+                                <i class="fas fa-search me-2"></i>경기 검색
                             </button>
-                        </div>
-                        <div class="col-md-2 text-end">
-                            <div class="stats-card d-inline-block">
-                                <div class="stats-number" id="totalMatches">0</div>
-                                <div class="text-muted">총 경기 수</div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table" id="matchesTable">
-                        <thead>
-                            <tr>
-                                <th>날짜</th>
-                                <th>시간</th>
-                                <th>리그</th>
-                                <th>홈팀</th>
-                                <th>결과</th>
-                                <th>어웨이팀</th>
-                                <th>경기장</th>
-                                <th>상태</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="matchesTableBody">
-                            <tr>
-                                <td colspan="9" class="text-center py-5">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">로딩 중...</span>
-                                    </div>
-                                    <p class="mt-3 text-muted">경기 데이터를 불러오는 중입니다...</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div id="matchesContainer">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">경기 데이터를 불러오는 중...</p>
+                    </div>
                 </div>
             </div>
 
             <!-- 통계 분석 탭 -->
             <div class="tab-pane fade" id="analytics" role="tabpanel">
-                <div class="row mb-4">
+                <div class="row">
                     <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-number" id="avgGoals">0</div>
-                            <div class="text-muted">경기당 평균 득점</div>
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-futbol fa-2x text-primary mb-3"></i>
+                                <h5 class="card-title">평균 득점</h5>
+                                <h3 class="text-primary" id="avgGoals">-</h3>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-number" id="highestScore">0</div>
-                            <div class="text-muted">최고 득점</div>
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-trophy fa-2x text-warning mb-3"></i>
+                                <h5 class="card-title">최고 득점</h5>
+                                <h3 class="text-warning" id="highestScore">-</h3>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-number" id="mostActiveLeague">-</div>
-                            <div class="text-muted">가장 활발한 리그</div>
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-fire fa-2x text-danger mb-3"></i>
+                                <h5 class="card-title">최활성 리그</h5>
+                                <h6 class="text-danger" id="mostActiveLeague">-</h6>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-number" id="recentActivity">-</div>
-                            <div class="text-muted">최근 업데이트</div>
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-calendar fa-2x text-success mb-3"></i>
+                                <h5 class="card-title">최근 업데이트</h5>
+                                <h6 class="text-success" id="recentActivity">-</h6>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -387,21 +501,37 @@
             <div class="tab-pane fade" id="management" role="tabpanel">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="stats-card">
-                            <h5>경기 데이터 관리</h5>
-                            <p class="text-muted">경기 정보 수정 및 삭제</p>
-                            <button class="btn btn-primary-custom btn-custom" onclick="refreshAllData()">
-                                <i class="fas fa-sync-alt me-2"></i>전체 데이터 새로고침
-                            </button>
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-database me-2"></i>데이터 통계</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <h4 class="text-primary" id="totalMatches">-</h4>
+                                        <p class="text-muted">총 경기 수</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <h4 class="text-success" id="completedMatches">-</h4>
+                                        <p class="text-muted">완료된 경기</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="stats-card">
-                            <h5>리그 정보 관리</h5>
-                            <p class="text-muted">리그 설정 및 구성 관리</p>
-                            <button class="btn btn-outline-primary btn-custom" onclick="exportData()">
-                                <i class="fas fa-download me-2"></i>데이터 내보내기
-                            </button>
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-tools me-2"></i>데이터 관리</h5>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary w-100 mb-2" onclick="refreshAllData()">
+                                    <i class="fas fa-sync-alt me-2"></i>전체 데이터 새로고침
+                                </button>
+                                <button class="btn btn-info w-100" onclick="exportData()">
+                                    <i class="fas fa-download me-2"></i>데이터 내보내기
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -415,15 +545,27 @@
         let allStandings = [];
         let allMatches = [];
         let regions = [];
-        let leagues = {};
+        let leagues = [];
 
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            loadRegions();
-            loadStandings();
-            loadMatches();
-            loadAnalytics();
+            loadInitialData();
         });
+
+        // 초기 데이터 로드
+        async function loadInitialData() {
+            try {
+                await Promise.all([
+                    loadRegions(),
+                    loadStandings(),
+                    loadMatches(),
+                    loadAnalytics(),
+                    loadStats()
+                ]);
+            } catch (error) {
+                console.error('초기 데이터 로드 실패:', error);
+            }
+        }
 
         // 지역 목록 로드
         async function loadRegions() {
@@ -434,229 +576,314 @@
                 const regionSelects = ['regionFilter', 'matchRegionFilter'];
                 regionSelects.forEach(selectId => {
                     const select = document.getElementById(selectId);
-                    select.innerHTML = '<option value="">전체 지역</option>';
+                    select.innerHTML = '<option value="">모든 지역</option>';
                     regions.forEach(region => {
                         select.innerHTML += `<option value="${region}">${region}</option>`;
                     });
                 });
 
-                // 지역 선택 이벤트 리스너
-                document.getElementById('regionFilter').addEventListener('change', onRegionChange);
-                document.getElementById('matchRegionFilter').addEventListener('change', onMatchRegionChange);
+                // 지역 변경 시 리그 목록 업데이트
+                document.getElementById('regionFilter').addEventListener('change', updateLeagueFilter);
+                document.getElementById('matchRegionFilter').addEventListener('change', updateMatchLeagueFilter);
             } catch (error) {
                 console.error('지역 목록 로드 실패:', error);
             }
         }
 
-        // 지역 변경 시 리그 목록 업데이트
-        async function onRegionChange() {
-            const region = document.getElementById('regionFilter').value;
-            await loadLeaguesForRegion(region, 'leagueFilter');
-        }
-
-        async function onMatchRegionChange() {
-            const region = document.getElementById('matchRegionFilter').value;
-            await loadLeaguesForRegion(region, 'matchLeagueFilter');
-            loadTeamsForFilters();
-        }
-
-        // 특정 지역의 리그 목록 로드
-        async function loadLeaguesForRegion(region, selectId) {
-            try {
-                const select = document.getElementById(selectId);
-                select.innerHTML = '<option value="">전체 리그</option>';
-                
-                if (!region) return;
-
-                const response = await fetch(`/api/leagues/${encodeURIComponent(region)}`);
-                const regionLeagues = await response.json();
-                
-                regionLeagues.forEach(league => {
-                    select.innerHTML += `<option value="${league}">${league}</option>`;
-                });
-            } catch (error) {
-                console.error('리그 목록 로드 실패:', error);
+        // 리그 필터 업데이트
+        async function updateLeagueFilter() {
+            const selectedRegion = document.getElementById('regionFilter').value;
+            const leagueSelect = document.getElementById('leagueFilter');
+            
+            leagueSelect.innerHTML = '<option value="">모든 리그</option>';
+            
+            if (selectedRegion) {
+                try {
+                    const response = await fetch(`/api/leagues/${selectedRegion}`);
+                    const regionLeagues = await response.json();
+                    regionLeagues.forEach(league => {
+                        leagueSelect.innerHTML += `<option value="${league}">${league}</option>`;
+                    });
+                } catch (error) {
+                    console.error('리그 목록 로드 실패:', error);
+                }
             }
         }
 
-        // 팀 목록 로드 (필터용)
-        function loadTeamsForFilters() {
-            const region = document.getElementById('matchRegionFilter').value;
-            const league = document.getElementById('matchLeagueFilter').value;
+        // 경기 리그 필터 업데이트
+        async function updateMatchLeagueFilter() {
+            const selectedRegion = document.getElementById('matchRegionFilter').value;
+            const leagueSelect = document.getElementById('matchLeagueFilter');
             
-            const teamSelect = document.getElementById('matchTeamFilter');
-            teamSelect.innerHTML = '<option value="">전체 팀</option>';
+            leagueSelect.innerHTML = '<option value="">모든 리그</option>';
             
-            const teams = new Set();
-            allMatches.forEach(match => {
-                if ((!region || match.regionTag === region) && 
-                    (!league || match.leagueTitle === league)) {
-                    if (match.HOME_TEAM_NAME) teams.add(match.HOME_TEAM_NAME);
-                    if (match.AWAY_TEAM_NAME) teams.add(match.AWAY_TEAM_NAME);
+            if (selectedRegion) {
+                try {
+                    const response = await fetch(`/api/leagues/${selectedRegion}`);
+                    const regionLeagues = await response.json();
+                    regionLeagues.forEach(league => {
+                        leagueSelect.innerHTML += `<option value="${league}">${league}</option>`;
+                    });
+                } catch (error) {
+                    console.error('리그 목록 로드 실패:', error);
                 }
-            });
-            
-            Array.from(teams).sort().forEach(team => {
-                teamSelect.innerHTML += `<option value="${team}">${team}</option>`;
-            });
+            }
         }
 
         // 순위표 로드
         async function loadStandings() {
+            const container = document.getElementById('standingsContainer');
+            container.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">순위표를 불러오는 중...</p>
+                </div>
+            `;
+
             try {
                 const response = await fetch('/api/standings');
                 allStandings = await response.json();
-                
-                document.getElementById('totalLeagues').textContent = allStandings.length;
-                renderStandings();
+                displayStandings(allStandings);
             } catch (error) {
                 console.error('순위표 로드 실패:', error);
-                document.getElementById('standingsContainer').innerHTML = 
-                    '<div class="col-12 text-center py-5"><p class="text-danger">순위표를 불러오는데 실패했습니다.</p></div>';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h5>순위표를 불러올 수 없습니다</h5>
+                        <p>잠시 후 다시 시도해주세요.</p>
+                    </div>
+                `;
             }
         }
 
-        // 순위표 렌더링
-        function renderStandings() {
-            const region = document.getElementById('regionFilter').value;
-            const league = document.getElementById('leagueFilter').value;
-            
-            let filteredStandings = allStandings;
-            if (region) filteredStandings = filteredStandings.filter(s => s.region === region);
-            if (league) filteredStandings = filteredStandings.filter(s => s.league === league);
-            
+        // 순위표 표시
+        function displayStandings(standings) {
             const container = document.getElementById('standingsContainer');
-            
-            if (filteredStandings.length === 0) {
-                container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">표시할 순위표가 없습니다.</p></div>';
-                return;
+            const selectedRegion = document.getElementById('regionFilter').value;
+            const selectedLeague = document.getElementById('leagueFilter').value;
+
+            // 필터링
+            let filteredStandings = standings;
+            if (selectedRegion) {
+                filteredStandings = filteredStandings.filter(s => s.region === selectedRegion);
             }
-            
-            container.innerHTML = '';
-            
-            filteredStandings.forEach(standingData => {
-                const colClass = filteredStandings.length === 1 ? 'col-12' : 
-                                filteredStandings.length <= 2 ? 'col-md-6' : 'col-lg-4 col-md-6';
-                
-                const card = document.createElement('div');
-                card.className = colClass;
-                card.innerHTML = `
-                    <div class="standings-card">
-                        <div class="standings-header">
-                            <h5 class="mb-0">${standingData.region} ${standingData.league}</h5>
-                        </div>
-                        <table class="table standings-table">
-                            <thead>
-                                <tr>
-                                    <th>순위</th>
-                                    <th>팀명</th>
-                                    <th>경기</th>
-                                    <th>승</th>
-                                    <th>무</th>
-                                    <th>패</th>
-                                    <th>득점</th>
-                                    <th>실점</th>
-                                    <th>골득실</th>
-                                    <th>승점</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${standingData.standings.map((team, index) => `
-                                    <tr>
-                                        <td>
-                                            <span class="position-badge ${index < 3 ? 'position-' + (index + 1) : ''}">${index + 1}</span>
-                                        </td>
-                                        <td>
-                                            <strong>${team.teamName}</strong>
-                                        </td>
-                                        <td>${team.played}</td>
-                                        <td class="text-success">${team.won}</td>
-                                        <td class="text-warning">${team.drawn}</td>
-                                        <td class="text-danger">${team.lost}</td>
-                                        <td>${team.goalsFor}</td>
-                                        <td>${team.goalsAgainst}</td>
-                                        <td class="${team.goalDifference >= 0 ? 'text-success' : 'text-danger'}">${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
-                                        <td><strong>${team.points}</strong></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+            if (selectedLeague) {
+                filteredStandings = filteredStandings.filter(s => s.league === selectedLeague);
+            }
+
+            if (filteredStandings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-trophy"></i>
+                        <h5>순위표가 없습니다</h5>
+                        <p>선택한 조건에 맞는 순위표가 없습니다.</p>
                     </div>
                 `;
-                container.appendChild(card);
+                return;
+            }
+
+            let html = '';
+            filteredStandings.forEach(leagueStanding => {
+                html += `
+                    <div class="standings-card">
+                        <div class="standings-header">
+                            <i class="fas fa-trophy me-2"></i>
+                            ${leagueStanding.region} - ${leagueStanding.league}
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table standings-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">#</th>
+                                        <th>팀명</th>
+                                        <th style="width: 80px;">경기</th>
+                                        <th style="width: 60px;">승</th>
+                                        <th style="width: 60px;">무</th>
+                                        <th style="width: 60px;">패</th>
+                                        <th style="width: 80px;">득점</th>
+                                        <th style="width: 80px;">실점</th>
+                                        <th style="width: 80px;">득실</th>
+                                        <th style="width: 80px;">승점</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                leagueStanding.standings.forEach((team, index) => {
+                    const position = index + 1;
+                    let positionClass = '';
+                    let medalIcon = '';
+                    
+                    if (position <= 3) {
+                        positionClass = 'position-' + position;
+                        if (position === 1) medalIcon = '<i class="fas fa-medal text-warning medal-icon"></i>';
+                        else if (position === 2) medalIcon = '<i class="fas fa-medal text-secondary medal-icon"></i>';
+                        else if (position === 3) medalIcon = '<i class="fas fa-medal text-warning medal-icon" style="color: #cd7f32 !important;"></i>';
+                    } else if (position <= 6) {
+                        positionClass = 'position-4';
+                    } else if (position >= leagueStanding.standings.length - 2) {
+                        positionClass = 'position-relegation';
+                    }
+
+                    const teamInitial = team.teamName.charAt(0).toUpperCase();
+                    
+                    html += `
+                        <tr style="position: relative;">
+                            <div class="position-indicator ${positionClass}"></div>
+                            <td class="position-number">${position}${medalIcon}</td>
+                            <td>
+                                <div class="team-info">
+                                    <div class="team-logo">${teamInitial}</div>
+                                    <div>
+                                        <div class="team-name">${team.teamName}</div>
+                                        <div>
+                                            ${team.majorRegion ? `<span class="region-badge major-region">${team.majorRegion}</span>` : ''}
+                                            ${team.minorRegion ? `<span class="region-badge minor-region">${team.minorRegion}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="stats-number">${team.played}</td>
+                            <td class="stats-number">${team.won}</td>
+                            <td class="stats-number">${team.drawn}</td>
+                            <td class="stats-number">${team.lost}</td>
+                            <td class="stats-number">${team.goalsFor}</td>
+                            <td class="stats-number">${team.goalsAgainst}</td>
+                            <td class="stats-number ${team.goalDifference >= 0 ? 'text-success' : 'text-danger'}">${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
+                            <td class="points-cell">${team.points}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
             });
+
+            container.innerHTML = html;
         }
 
         // 경기 목록 로드
         async function loadMatches() {
+            const container = document.getElementById('matchesContainer');
+            container.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">경기 데이터를 불러오는 중...</p>
+                </div>
+            `;
+
             try {
                 const response = await fetch('/api/matches');
                 allMatches = await response.json();
-                
-                document.getElementById('totalMatches').textContent = allMatches.length;
-                loadTeamsForFilters();
-                renderMatches();
+                displayMatches(allMatches);
             } catch (error) {
                 console.error('경기 목록 로드 실패:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h5>경기 데이터를 불러올 수 없습니다</h5>
+                        <p>잠시 후 다시 시도해주세요.</p>
+                    </div>
+                `;
             }
         }
 
-        // 경기 목록 렌더링
-        function renderMatches() {
-            const region = document.getElementById('matchRegionFilter').value;
-            const league = document.getElementById('matchLeagueFilter').value;
-            const team = document.getElementById('matchTeamFilter').value;
-            const status = document.getElementById('matchStatusFilter').value;
-            
-            let filteredMatches = allMatches.filter(match => {
-                return (!region || match.regionTag === region) &&
-                       (!league || match.leagueTitle === league) &&
-                       (!team || match.HOME_TEAM_NAME === team || match.AWAY_TEAM_NAME === team) &&
-                       (!status || match.MATCH_STATUS === status);
-            });
-            
-            const tbody = document.getElementById('matchesTableBody');
-            
+        // 경기 목록 표시
+        function displayMatches(matches) {
+            const container = document.getElementById('matchesContainer');
+            const selectedRegion = document.getElementById('matchRegionFilter').value;
+            const selectedLeague = document.getElementById('matchLeagueFilter').value;
+            const selectedStatus = document.getElementById('matchStatusFilter').value;
+
+            // 필터링
+            let filteredMatches = matches;
+            if (selectedRegion) {
+                filteredMatches = filteredMatches.filter(m => m.regionTag === selectedRegion);
+            }
+            if (selectedLeague) {
+                filteredMatches = filteredMatches.filter(m => m.leagueTitle === selectedLeague);
+            }
+            if (selectedStatus) {
+                filteredMatches = filteredMatches.filter(m => m.MATCH_STATUS === selectedStatus);
+            }
+
             if (filteredMatches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5">조건에 맞는 경기가 없습니다.</td></tr>';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h5>경기가 없습니다</h5>
+                        <p>선택한 조건에 맞는 경기가 없습니다.</p>
+                    </div>
+                `;
                 return;
             }
-            
-            tbody.innerHTML = filteredMatches.map(match => `
-                <tr>
-                    <td>${match.MATCH_DATE || '-'}</td>
-                    <td>${match.MATCH_TIME_FORMATTED || '-'}</td>
-                    <td><small class="text-muted">${match.leagueTitle || '-'}</small></td>
-                    <td>
-                        ${match.HOME_TEAM_REGION ? `<span class="team-region-badge">${match.HOME_TEAM_REGION}</span>` : ''}
-                        <strong>${match.HOME_TEAM_NAME || match.TH_CLUB_NAME}</strong>
-                    </td>
-                    <td class="text-center">
-                        ${match.MATCH_STATUS === '완료' ? 
-                            `<strong>${match.TH_SCORE_FINAL || 0} : ${match.TA_SCORE_FINAL || 0}</strong>` : 
-                            '<span class="text-muted">vs</span>'
-                        }
-                    </td>
-                    <td>
-                        ${match.AWAY_TEAM_REGION ? `<span class="team-region-badge">${match.AWAY_TEAM_REGION}</span>` : ''}
-                        <strong>${match.AWAY_TEAM_NAME || match.TA_CLUB_NAME}</strong>
-                    </td>
-                    <td><small class="text-muted">${match.STADIUM || '-'}</small></td>
-                    <td>
-                        <span class="badge ${match.MATCH_STATUS === '완료' ? 'match-status-completed' : 'match-status-upcoming'}">
-                            ${match.MATCH_STATUS || '예정'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="editMatch('${match.id}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteMatch('${match.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+
+            let html = '';
+            filteredMatches.forEach(match => {
+                const isCompleted = match.MATCH_STATUS === '완료';
+                const statusClass = isCompleted ? 'status-completed' : 'status-upcoming';
+                const statusText = isCompleted ? '완료' : '예정';
+
+                html += `
+                    <div class="match-card">
+                        <div class="match-header">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <strong>${match.leagueTitle || '리그 정보 없음'}</strong>
+                                    <span class="text-muted ms-2">${match.MATCH_DATE || '날짜 미정'}</span>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <span class="match-status ${statusClass}">${statusText}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="match-body">
+                            <div class="match-teams">
+                                <div class="team-section">
+                                    <div class="team-name">${match.HOME_TEAM_NAME || '홈팀'}</div>
+                                    <div class="mt-1">
+                                        ${match.HOME_TEAM_MAJOR_REGION ? `<span class="region-badge major-region">${match.HOME_TEAM_MAJOR_REGION}</span>` : ''}
+                                        ${match.HOME_TEAM_MINOR_REGION ? `<span class="region-badge minor-region">${match.HOME_TEAM_MINOR_REGION}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="vs-section">
+                                    ${isCompleted ? 
+                                        `<div class="score-section">${match.TH_SCORE_FINAL || 0} : ${match.TA_SCORE_FINAL || 0}</div>` :
+                                        '<div class="vs-text">VS</div>'
+                                    }
+                                </div>
+                                <div class="team-section">
+                                    <div class="team-name">${match.AWAY_TEAM_NAME || '어웨이팀'}</div>
+                                    <div class="mt-1">
+                                        ${match.AWAY_TEAM_MAJOR_REGION ? `<span class="region-badge major-region">${match.AWAY_TEAM_MAJOR_REGION}</span>` : ''}
+                                        ${match.AWAY_TEAM_MINOR_REGION ? `<span class="region-badge minor-region">${match.AWAY_TEAM_MINOR_REGION}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3 text-center text-muted small">
+                                <div class="col-md-6">
+                                    <i class="fas fa-clock me-1"></i>
+                                    ${match.MATCH_TIME_FORMATTED || match.TIME || '시간 미정'}
+                                </div>
+                                <div class="col-md-6">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    ${match.STADIUM || match.MATCH_AREA || '경기장 미정'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
         }
 
         // 통계 분석 로드
@@ -670,59 +897,45 @@
                 document.getElementById('mostActiveLeague').textContent = analytics.mostActiveLeague;
                 document.getElementById('recentActivity').textContent = analytics.recentActivity;
             } catch (error) {
-                console.error('통계 로드 실패:', error);
+                console.error('통계 분석 로드 실패:', error);
             }
         }
 
-        // 경기 수정
-        function editMatch(matchId) {
-            // 경기 수정 모달 또는 페이지로 이동
-            alert('경기 수정 기능 (구현 예정): ' + matchId);
-        }
-
-        // 경기 삭제
-        async function deleteMatch(matchId) {
-            if (!confirm('정말로 이 경기를 삭제하시겠습니까?')) return;
-            
+        // 데이터 통계 로드
+        async function loadStats() {
             try {
-                const response = await fetch(`/api/matches/${matchId}`, {
-                    method: 'DELETE'
-                });
+                const response = await fetch('/api/matches/stats');
+                const stats = await response.json();
                 
-                if (response.ok) {
-                    alert('경기가 삭제되었습니다.');
-                    loadMatches();
-                    loadStandings();
-                } else {
-                    alert('경기 삭제에 실패했습니다.');
-                }
+                document.getElementById('totalMatches').textContent = stats.total;
+                document.getElementById('completedMatches').textContent = stats.completed;
             } catch (error) {
-                console.error('경기 삭제 실패:', error);
-                alert('경기 삭제 중 오류가 발생했습니다.');
+                console.error('데이터 통계 로드 실패:', error);
             }
         }
 
         // 전체 데이터 새로고침
-        function refreshAllData() {
-            loadStandings();
-            loadMatches();
-            loadAnalytics();
+        async function refreshAllData() {
+            await loadInitialData();
             alert('모든 데이터가 새로고침되었습니다.');
         }
 
         // 데이터 내보내기
         function exportData() {
-            alert('데이터 내보내기 기능 (구현 예정)');
+            const data = {
+                standings: allStandings,
+                matches: allMatches,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `k-league-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
-
-        // 필터 변경 이벤트 리스너
-        document.getElementById('leagueFilter').addEventListener('change', renderStandings);
-        document.getElementById('matchLeagueFilter').addEventListener('change', () => {
-            loadTeamsForFilters();
-            renderMatches();
-        });
-        document.getElementById('matchTeamFilter').addEventListener('change', renderMatches);
-        document.getElementById('matchStatusFilter').addEventListener('change', renderMatches);
     </script>
 </body>
 </html> 

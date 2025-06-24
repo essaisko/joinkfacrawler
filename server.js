@@ -375,35 +375,91 @@ async function initializeServer() {
 
 
 
-// 팀명에서 지역명 분리 함수
+// 팀명에서 지역명 분리 함수 (대분류 + 중분류)
 function parseTeamName(fullTeamName) {
-  if (!fullTeamName) return { region: '', teamName: fullTeamName || '' };
+  if (!fullTeamName) return { majorRegion: '', minorRegion: '', teamName: fullTeamName || '', fullRegion: '' };
   
-  const regionPatterns = ['경남', '부산', '울산', '대구', '대전', '광주', '인천', '서울', '경기'];
+  // 대분류 지역 패턴
+  const majorRegionPatterns = ['경남', '부산', '울산', '대구', '대전', '광주', '인천', '서울', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '제주'];
   
-  for (const region of regionPatterns) {
+  // 중분류 지역 패턴 (시/군/구)
+  const minorRegionPatterns = [
+    // 경남 지역
+    '양산시', '거제시', '김해시', '진주시', '창원시', '통영시', '사천시', '밀양시', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군',
+    // 부산 지역  
+    '중구', '서구', '동구', '영도구', '부산진구', '동래구', '남구', '북구', '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군',
+    // 기타 주요 시/군/구
+    '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
+  ];
+  
+  let majorRegion = '';
+  let remainingName = fullTeamName;
+  
+  // 대분류 지역 찾기
+  for (const region of majorRegionPatterns) {
     if (fullTeamName.startsWith(region)) {
-      const remaining = fullTeamName.substring(region.length).trim();
-      return { region, teamName: remaining };
+      majorRegion = region;
+      remainingName = fullTeamName.substring(region.length);
+      break;
     }
   }
   
-  return { region: '', teamName: fullTeamName };
+  let minorRegion = '';
+  let teamName = remainingName;
+  
+  // 중분류 지역 찾기
+  for (const region of minorRegionPatterns) {
+    if (remainingName.startsWith(region)) {
+      minorRegion = region;
+      teamName = remainingName.substring(region.length).trim();
+      break;
+    }
+  }
+  
+  // 팀명이 비어있으면 원본 사용
+  if (!teamName.trim()) {
+    teamName = fullTeamName;
+  }
+  
+  return { 
+    majorRegion, 
+    minorRegion, 
+    teamName: teamName.trim(),
+    fullRegion: majorRegion + minorRegion
+  };
 }
 
 // 시간 형식 변환 함수
 function formatTime(timeString) {
-  if (!timeString || !timeString.includes('-')) return timeString;
+  if (!timeString) return timeString;
   
-  const [hour, minute] = timeString.split('-');
+  // 이미 형식화된 시간인지 확인
+  if (timeString.includes('오전') || timeString.includes('오후')) return timeString;
+  
+  // 다양한 시간 형식 처리
+  let hour, minute;
+  
+  if (timeString.includes(':')) {
+    // "10:30" 형식
+    [hour, minute] = timeString.split(':');
+  } else if (timeString.includes('-')) {
+    // "10-30" 형식
+    [hour, minute] = timeString.split('-');
+  } else {
+    // 숫자만 있는 경우 시간으로 처리
+    hour = timeString;
+    minute = '00';
+  }
+  
   const hourNum = parseInt(hour);
+  const minuteNum = parseInt(minute) || 0;
   
   if (isNaN(hourNum)) return timeString;
   
   const period = hourNum < 12 ? '오전' : '오후';
   const displayHour = hourNum === 0 ? 12 : (hourNum > 12 ? hourNum - 12 : hourNum);
   
-  return `${period} ${displayHour}시 ${minute || '00'}분`;
+  return `${period} ${displayHour}시 ${minuteNum.toString().padStart(2, '0')}분`;
 }
 
 // 순위표 계산 함수
@@ -414,19 +470,27 @@ function calculateStandings(matches, leagueFilter = null) {
     if (leagueFilter && match.leagueTitle !== leagueFilter) return;
     if (match.matchStatus !== '완료') return;
     
-    const homeTeam = match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
-    const awayTeam = match.TA_CLUB_NAME || match.TEAM_AWAY || '어웨이팀';
+    const homeTeamFull = match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
+    const awayTeamFull = match.TA_CLUB_NAME || match.TEAM_AWAY || '어웨이팀';
+    
+    // 팀명 파싱
+    const homeParsed = parseTeamName(homeTeamFull);
+    const awayParsed = parseTeamName(awayTeamFull);
     const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
     const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
     
     // 리그별로 팀을 구분하기 위해 고유 식별자 생성
-    const homeTeamId = `${match.leagueTitle}_${homeTeam}`;
-    const awayTeamId = `${match.leagueTitle}_${awayTeam}`;
+    const homeTeamId = `${match.leagueTitle}_${homeParsed.teamName}`;
+    const awayTeamId = `${match.leagueTitle}_${awayParsed.teamName}`;
     
     // 팀 통계 초기화
     if (!standings.has(homeTeamId)) {
       standings.set(homeTeamId, {
-        teamName: homeTeam,
+        teamName: homeParsed.teamName,
+        fullTeamName: homeTeamFull,
+        majorRegion: homeParsed.majorRegion,
+        minorRegion: homeParsed.minorRegion,
+        fullRegion: homeParsed.fullRegion,
         league: match.leagueTitle,
         region: match.regionTag,
         played: 0,
@@ -442,7 +506,11 @@ function calculateStandings(matches, leagueFilter = null) {
     
     if (!standings.has(awayTeamId)) {
       standings.set(awayTeamId, {
-        teamName: awayTeam,
+        teamName: awayParsed.teamName,
+        fullTeamName: awayTeamFull,
+        majorRegion: awayParsed.majorRegion,
+        minorRegion: awayParsed.minorRegion,
+        fullRegion: awayParsed.fullRegion,
         league: match.leagueTitle,
         region: match.regionTag,
         played: 0,
@@ -658,10 +726,14 @@ app.get('/api/matches', async (req, res) => {
         // 기존 팀명 (호환성)
         TH_CLUB_NAME: homeTeamFull,
         TA_CLUB_NAME: awayTeamFull,
-        // 파싱된 팀명 정보
-        HOME_TEAM_REGION: homeParsed.region,
+        // 파싱된 팀명 정보 (새로운 구조)
+        HOME_TEAM_MAJOR_REGION: homeParsed.majorRegion,
+        HOME_TEAM_MINOR_REGION: homeParsed.minorRegion,
+        HOME_TEAM_FULL_REGION: homeParsed.fullRegion,
         HOME_TEAM_NAME: homeParsed.teamName,
-        AWAY_TEAM_REGION: awayParsed.region,
+        AWAY_TEAM_MAJOR_REGION: awayParsed.majorRegion,
+        AWAY_TEAM_MINOR_REGION: awayParsed.minorRegion,
+        AWAY_TEAM_FULL_REGION: awayParsed.fullRegion,
         AWAY_TEAM_NAME: awayParsed.teamName,
         // 경기장 정보 보강  
         STADIUM: data.STADIUM || data.MATCH_AREA || data.GROUND || data.PLACE || data.VENUE || '',
