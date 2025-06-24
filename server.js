@@ -83,17 +83,29 @@ app.post('/deploy', (req, res) => {
 
   const bodyToken = req.headers['x-deploy-token'];
 
+  console.log('🔄 Deploy 요청 받음, 토큰:', bodyToken);
+
   if (bodyToken !== secret) {
+    console.error('❌ 잘못된 토큰:', bodyToken);
     return res.status(403).send('Invalid deploy token');
   }
 
+  console.log('✅ 토큰 검증 완료, 배포 시작...');
+
+  // 응답을 먼저 보내고 배포 실행 (타임아웃 방지)
+  res.status(200).send('✅ Deploy started...');
+
+  // 배포 명령어 실행
   exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
     if (err) {
       console.error('❌ 자동배포 실패:', err);
-      return res.status(500).send('Deploy failed.');
+      console.error('❌ stderr:', stderr);
+    } else {
+      console.log('✅ 자동배포 완료:\n', stdout);
+      if (stderr) {
+        console.log('⚠️ stderr:', stderr);
+      }
     }
-    console.log('✅ 자동배포 완료:\n', stdout);
-    res.send('✅ Deployed:\n' + stdout);
   });
 });
 
