@@ -821,6 +821,214 @@
             opacity: 0.5;
         }
 
+        /* 탭 네비게이션 컨테이너 */
+        .nav-tabs-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 2rem;
+        }
+
+        .nav-tabs {
+            flex: 1;
+        }
+
+        /* 헤더 팀 검색 스타일 */
+        .team-search-header {
+            min-width: 300px;
+        }
+
+        .team-search-container-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            overflow: visible;
+            transition: all 0.3s ease;
+        }
+
+        .team-search-container-header:focus-within {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .team-search-icon-header {
+            position: absolute;
+            left: 1rem;
+            color: var(--text-muted);
+            z-index: 2;
+        }
+
+        .team-search-input-header {
+            flex: 1;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: none;
+            outline: none;
+            font-size: 0.9rem;
+            background: transparent;
+        }
+
+        .team-search-btn-header {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 45px;
+        }
+
+        .team-search-btn-header:hover {
+            background: var(--primary-color);
+        }
+
+        /* 팀 검색 자동완성 스타일 */
+        .team-suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-top: none;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .team-suggestion-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .team-suggestion-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .team-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-team-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .suggestion-team-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .suggestion-team-details {
+            flex: 1;
+        }
+
+        .suggestion-team-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 2px;
+        }
+
+        .suggestion-team-region {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        /* 다가오는 경기 추가 스타일 */
+        .upcoming-match-card.next-match {
+            border-left: 4px solid #f39c12;
+            background: linear-gradient(135deg, #fff8e1, #ffffff);
+        }
+
+        .time-until {
+            font-size: 0.75rem;
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .next-match-indicator {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--warning-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        /* 리그 토글 스타일 */
+        .standings-preview-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+            color: white;
+            padding: 1rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .standings-title {
+            font-size: 1.1rem;
+        }
+
+        .league-toggle-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .league-toggle-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .league-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .league-toggle-btn.active {
+            background: white;
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .standings-league-content {
+            display: none;
+        }
+
+        .standings-league-content.active {
+            display: block;
+        }
+
         /* 강화된 뉴스피드 섹션 스타일 */
         .newsfeed-section {
             background: white;
@@ -1506,33 +1714,47 @@
 
     <div class="container">
         <!-- 탭 네비게이션 -->
-        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="newsfeed-tab" data-bs-toggle="tab" data-bs-target="#newsfeed" type="button" role="tab">
-                    <i class="fas fa-newspaper me-2"></i>뉴스 피드
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">
-                    <i class="fas fa-trophy me-2"></i>리그 순위표
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches" type="button" role="tab">
-                    <i class="fas fa-calendar-alt me-2"></i>경기 기록 & 일정
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
-                    <i class="fas fa-chart-bar me-2"></i>통계 분석
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab">
-                    <i class="fas fa-cog me-2"></i>데이터 관리
-                </button>
-            </li>
-        </ul>
+        <div class="nav-tabs-container">
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="newsfeed-tab" data-bs-toggle="tab" data-bs-target="#newsfeed" type="button" role="tab">
+                        <i class="fas fa-newspaper me-2"></i>뉴스 피드
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">
+                        <i class="fas fa-trophy me-2"></i>리그 순위표
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches" type="button" role="tab">
+                        <i class="fas fa-calendar-alt me-2"></i>경기 기록 & 일정
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                        <i class="fas fa-chart-bar me-2"></i>통계 분석
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab">
+                        <i class="fas fa-cog me-2"></i>데이터 관리
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- 팀 검색 필드 -->
+            <div class="team-search-header">
+                <div class="team-search-container-header">
+                    <i class="fas fa-search team-search-icon-header"></i>
+                    <input type="text" id="teamSearchHeader" class="team-search-input-header" 
+                           placeholder="팀명을 입력하고 Enter를 눌러 팀 페이지로 이동..." />
+                    <button class="team-search-btn-header" onclick="searchTeamFromHeader()">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- 탭 콘텐츠 -->
         <div class="tab-content" id="dashboardTabsContent">
@@ -1969,8 +2191,111 @@
                 
                 // 필터 버튼 이벤트 리스너 설정
                 setupFilterButtons();
+                
+                // 헤더 팀 검색 이벤트 리스너 설정
+                setupHeaderTeamSearch();
             } catch (error) {
                 console.error('초기 데이터 로드 실패:', error);
+            }
+        }
+
+        // 헤더 팀 검색 기능 설정
+        function setupHeaderTeamSearch() {
+            const searchInput = document.getElementById('teamSearchHeader');
+            if (searchInput) {
+                // Enter 키 이벤트
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchTeamFromHeader();
+                    }
+                });
+                
+                // 자동완성 기능 (선택사항)
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase().trim();
+                    if (searchTerm.length >= 2) {
+                        showTeamSuggestions(searchTerm);
+                    } else {
+                        hideTeamSuggestions();
+                    }
+                });
+            }
+        }
+
+        // 헤더에서 팀 검색
+        function searchTeamFromHeader() {
+            const searchInput = document.getElementById('teamSearchHeader');
+            const teamName = searchInput.value.trim();
+            
+            if (!teamName) {
+                alert('팀명을 입력해주세요.');
+                return;
+            }
+            
+            // 팀명 검증 (옵션)
+            const foundTeam = allTeams.find(team => 
+                team.teamName.toLowerCase().includes(teamName.toLowerCase())
+            );
+            
+            if (foundTeam) {
+                // 팀 페이지로 이동
+                window.open(`team.html?team=${encodeURIComponent(foundTeam.teamName)}`, '_blank');
+                searchInput.value = ''; // 검색창 초기화
+            } else {
+                // 정확한 팀명을 찾지 못한 경우에도 검색 시도
+                window.open(`team.html?team=${encodeURIComponent(teamName)}`, '_blank');
+                searchInput.value = ''; // 검색창 초기화
+            }
+        }
+
+        // 팀명 자동완성 제안
+        function showTeamSuggestions(searchTerm) {
+            // 기존 제안 목록 제거
+            hideTeamSuggestions();
+            
+            const suggestions = allTeams
+                .filter(team => team.teamName.toLowerCase().includes(searchTerm))
+                .slice(0, 5); // 최대 5개 제안
+            
+            if (suggestions.length === 0) return;
+            
+            const container = document.querySelector('.team-search-container-header');
+            const suggestionsList = document.createElement('div');
+            suggestionsList.className = 'team-suggestions-list';
+            
+            suggestions.forEach(team => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'team-suggestion-item';
+                suggestionItem.innerHTML = `
+                    <div class="suggestion-team-info">
+                        <div class="suggestion-team-logo">${team.teamName.charAt(0)}</div>
+                        <div class="suggestion-team-details">
+                            <div class="suggestion-team-name">${team.teamName}</div>
+                            <div class="suggestion-team-region">
+                                ${team.majorRegion ? `<span class="region-tag">${team.majorRegion}</span>` : ''}
+                                ${team.minorRegion ? `<span class="region-tag minor">${team.minorRegion}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                suggestionItem.addEventListener('click', () => {
+                    document.getElementById('teamSearchHeader').value = team.teamName;
+                    hideTeamSuggestions();
+                    searchTeamFromHeader();
+                });
+                
+                suggestionsList.appendChild(suggestionItem);
+            });
+            
+            container.appendChild(suggestionsList);
+        }
+
+        // 팀명 제안 목록 숨기기
+        function hideTeamSuggestions() {
+            const existingSuggestions = document.querySelector('.team-suggestions-list');
+            if (existingSuggestions) {
+                existingSuggestions.remove();
             }
         }
 
@@ -2023,7 +2348,22 @@
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
             
-            if (!matches || matches.length === 0) {
+            // 현재 시간 기준으로 다가오는 경기 필터링 및 정렬
+            const now = new Date();
+            const upcomingMatches = matches
+                .filter(match => {
+                    if (!match.MATCH_DATE) return false;
+                    const matchDate = new Date(match.MATCH_DATE);
+                    return matchDate > now;
+                })
+                .sort((a, b) => {
+                    const dateA = new Date(a.MATCH_DATE);
+                    const dateB = new Date(b.MATCH_DATE);
+                    return dateA - dateB;
+                })
+                .slice(0, 5); // 가장 빠른 5개 경기
+            
+            if (!upcomingMatches || upcomingMatches.length === 0) {
                 container.innerHTML = `
                     <div class="upcoming-matches-empty">
                         <i class="fas fa-calendar-plus"></i>
@@ -2035,14 +2375,17 @@
             
             let html = '<div class="upcoming-matches-enhanced">';
             
-            matches.slice(0, 5).forEach(match => {
+            upcomingMatches.forEach((match, index) => {
                 const formattedDate = formatDateWithWeekday(match.MATCH_DATE);
+                const matchDate = new Date(match.MATCH_DATE);
+                const timeUntilMatch = getTimeUntilMatch(matchDate);
                 
                 html += `
-                    <div class="upcoming-match-card">
+                    <div class="upcoming-match-card ${index === 0 ? 'next-match' : ''}">
                         <div class="match-time-badge">
                             <div class="match-date">${formattedDate}</div>
                             <div class="match-time">${match.MATCH_TIME_FORMATTED || match.TIME || '시간 미정'}</div>
+                            <div class="time-until">${timeUntilMatch}</div>
                         </div>
                         <div class="match-teams-preview">
                             <div class="team-preview">
@@ -2056,12 +2399,30 @@
                             </div>
                         </div>
                         <div class="match-league-preview">${match.leagueTitle || '리그 정보 없음'}</div>
+                        ${index === 0 ? '<div class="next-match-indicator">다음 경기</div>' : ''}
                     </div>
                 `;
             });
             
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        // 경기까지 남은 시간 계산
+        function getTimeUntilMatch(matchDate) {
+            const now = new Date();
+            const diff = matchDate - now;
+            
+            if (diff <= 0) return '진행 중';
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (days > 0) return `${days}일 후`;
+            if (hours > 0) return `${hours}시간 후`;
+            if (minutes > 0) return `${minutes}분 후`;
+            return '곧 시작';
         }
 
         // 강화된 하이라이트 경기 표시
@@ -2108,7 +2469,7 @@
             `;
         }
 
-        // 순위표 미리보기 표시
+        // 순위표 미리보기 표시 (리그 토글 기능 포함)
         function displayStandingsPreview(standings) {
             const container = document.getElementById('standingsPreview');
             
@@ -2121,33 +2482,105 @@
                 `;
                 return;
             }
-            
-            let html = '<div class="standings-preview-enhanced">';
-            html += '<div class="standings-preview-header">🏆 리그 순위</div>';
-            
-            standings.slice(0, 6).forEach((team, index) => {
-                const position = index + 1;
-                let positionClass = '';
-                
-                if (position <= 3) positionClass = 'top-position';
-                else if (position <= 6) positionClass = 'good-position';
-                
-                html += `
-                    <div class="standings-preview-item ${positionClass}">
-                        <div class="position-num">${position}</div>
-                        <div class="team-info-preview">
-                            <div class="team-logo-small">${(team.teamName || '팀').charAt(0)}</div>
-                            <div class="team-details">
-                                <div class="team-name-small">${team.teamName || '팀명 없음'}</div>
-                                <div class="team-stats-small">${team.played || 0}경기 ${team.points || 0}점</div>
-                            </div>
-                        </div>
+
+            // 리그별로 그룹화
+            const leagueGroups = {};
+            standings.forEach(leagueStanding => {
+                if (leagueStanding.standings && leagueStanding.standings.length > 0) {
+                    const leagueKey = leagueStanding.league || '기타 리그';
+                    leagueGroups[leagueKey] = leagueStanding.standings;
+                }
+            });
+
+            const leagueKeys = Object.keys(leagueGroups);
+            if (leagueKeys.length === 0) {
+                container.innerHTML = `
+                    <div class="standings-empty">
+                        <i class="fas fa-trophy"></i>
+                        <p>순위표 정보가 없습니다</p>
                     </div>
                 `;
+                return;
+            }
+
+            let html = '<div class="standings-preview-enhanced">';
+            
+            // 헤더에 리그 토글 버튼들 추가
+            html += '<div class="standings-preview-header">';
+            html += '<div class="standings-title">🏆 리그 순위</div>';
+            html += '<div class="league-toggle-buttons">';
+            leagueKeys.forEach((leagueKey, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                html += `<button class="league-toggle-btn ${isActive}" data-league="${leagueKey}">${leagueKey}</button>`;
+            });
+            html += '</div>';
+            html += '</div>';
+            
+            // 각 리그별 순위표 생성
+            leagueKeys.forEach((leagueKey, index) => {
+                const teams = leagueGroups[leagueKey];
+                const isVisible = index === 0 ? 'active' : '';
+                
+                html += `<div class="standings-league-content ${isVisible}" data-league="${leagueKey}">`;
+                
+                teams.slice(0, 6).forEach((team, teamIndex) => {
+                    const position = teamIndex + 1;
+                    let positionClass = '';
+                    
+                    if (position <= 3) positionClass = 'top-position';
+                    else if (position <= 6) positionClass = 'good-position';
+                    
+                    html += `
+                        <div class="standings-preview-item ${positionClass}">
+                            <div class="position-num">${position}</div>
+                            <div class="team-info-preview">
+                                <div class="team-logo-small">${(team.teamName || '팀').charAt(0)}</div>
+                                <div class="team-details">
+                                    <div class="team-name-small">
+                                        <a href="team.html?team=${encodeURIComponent(team.teamName)}" class="team-name-clickable">
+                                            ${team.teamName || '팀명 없음'}
+                                        </a>
+                                    </div>
+                                    <div class="team-stats-small">${team.played || 0}경기 ${team.points || 0}점</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
             });
             
             html += '</div>';
             container.innerHTML = html;
+            
+            // 리그 토글 이벤트 리스너 추가
+            setupLeagueToggle();
+        }
+
+        // 리그 토글 기능 설정
+        function setupLeagueToggle() {
+            const toggleButtons = document.querySelectorAll('.league-toggle-btn');
+            const leagueContents = document.querySelectorAll('.standings-league-content');
+            
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetLeague = button.dataset.league;
+                    
+                    // 모든 버튼 비활성화
+                    toggleButtons.forEach(btn => btn.classList.remove('active'));
+                    // 클릭된 버튼 활성화
+                    button.classList.add('active');
+                    
+                    // 모든 콘텐츠 숨기기
+                    leagueContents.forEach(content => content.classList.remove('active'));
+                    // 해당 리그 콘텐츠 보이기
+                    const targetContent = document.querySelector(`.standings-league-content[data-league="${targetLeague}"]`);
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                    }
+                });
+            });
         }
 
         // 팀 목록 로드 (정렬 적용)
