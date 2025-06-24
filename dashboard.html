@@ -342,6 +342,7 @@
             text-align: center;
             min-width: 180px;
             flex: 1;
+            justify-content: center;
         }
 
         .epl-team-logo {
@@ -469,12 +470,12 @@
         }
 
         .league-k5 {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            background: linear-gradient(135deg, #f39c12, #e67e22);
             color: white;
         }
 
         .league-k6 {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
+            background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
         }
 
@@ -520,38 +521,105 @@
         /* 팀 필터 버튼 균등 크기 */
         .team-filter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 0.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.75rem;
             margin-bottom: 1rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .team-filter-grid.expanded {
+            max-height: 2000px;
+        }
+
+        .team-filter-toggle {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .team-filter-toggle:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .team-filter-toggle i {
+            transition: transform 0.3s ease;
+        }
+
+        .team-filter-toggle.expanded i {
+            transform: rotate(180deg);
         }
 
         .team-filter-btn {
-            padding: 0.5rem 1rem;
+            position: relative;
+            padding: 0;
             border: 2px solid #e9ecef;
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 0.85rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
             color: #495057;
-            text-align: center;
-            white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
         }
 
         .team-filter-btn:hover {
             border-color: var(--secondary-color);
-            color: var(--secondary-color);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .team-filter-btn.active {
-            background: var(--secondary-color);
             border-color: var(--secondary-color);
+            box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .team-filter-btn .league-stripe {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 25%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
             color: white;
-            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .team-filter-btn .league-stripe.k5-stripe {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .team-filter-btn .league-stripe.k6-stripe {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .team-filter-btn .league-stripe.k7-stripe {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .team-filter-btn .league-stripe.other-stripe {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
         }
 
         /* 순위표 1등/꼴찌 색상 */
@@ -580,22 +648,28 @@
 
         /* 팀 버튼 내용 스타일 */
         .team-button-content {
+            flex: 1;
+            padding: 0.75rem;
+            margin-left: 25%;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
+            justify-content: center;
             gap: 0.25rem;
         }
 
         .team-name {
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
         }
 
         .team-regions {
             display: flex;
             gap: 0.25rem;
             flex-wrap: wrap;
-            justify-content: center;
+            align-items: center;
         }
 
         .match-status {
@@ -856,6 +930,11 @@
                             <input type="text" id="teamSearchInput" class="team-search-input" 
                                    placeholder="팀명을 입력하여 검색하세요..." />
                         </div>
+                        <!-- 팀 필터 토글 버튼 -->
+                        <button class="team-filter-toggle" id="teamFilterToggle" onclick="toggleTeamFilters()">
+                            <i class="fas fa-chevron-down"></i>
+                            팀 목록 보기 (<span id="teamCount">0</span>개 팀)
+                        </button>
                         <!-- 팀 필터 버튼들 (그리드 형태) -->
                         <div class="team-filter-grid" id="teamFilterButtons">
                             <button class="team-filter-btn active" data-value="">모든 팀</button>
@@ -1200,7 +1279,7 @@
             Object.keys(teamsByCategory).forEach(category => {
                 if (teamsByCategory[category].length > 0) {
                     teamsByCategory[category].forEach(team => {
-                        const categoryClass = getLeagueCategoryClass(team.leagueTitle);
+                        const stripeClass = getLeagueStripeClass(team.leagueTitle);
                         const regionLabel = team.majorRegion ? 
                             `<span class="region-badge major-region">${team.majorRegion}</span>` : '';
                         const minorRegionLabel = team.minorRegion ? 
@@ -1208,7 +1287,7 @@
                         
                         teamFilterButtons.innerHTML += `
                             <button class="team-filter-btn" data-value="${team.teamName}" title="${team.fullName}">
-                                <span class="league-category-label ${categoryClass}">${category}</span>
+                                <div class="league-stripe ${stripeClass}">${category}</div>
                                 <div class="team-button-content">
                                     <div class="team-name">${team.teamName}</div>
                                     <div class="team-regions">${regionLabel}${minorRegionLabel}</div>
@@ -1218,6 +1297,12 @@
                     });
                 }
             });
+            
+            // 팀 개수 업데이트
+            const teamCount = document.getElementById('teamCount');
+            if (teamCount) {
+                teamCount.textContent = filteredTeams.length;
+            }
         }
 
         // 순위표 탭 리그 필터 버튼 업데이트 (K5~K7 분류 포함)
@@ -1279,6 +1364,35 @@
             if (league.includes('K6')) return 'K6';
             if (league.includes('K7')) return 'K7';
             return '기타';
+        }
+
+        // 리그 스트라이프 클래스 반환
+        function getLeagueStripeClass(league) {
+            if (league.includes('K5')) return 'k5-stripe';
+            if (league.includes('K6')) return 'k6-stripe';
+            if (league.includes('K7')) return 'k7-stripe';
+            return 'other-stripe';
+        }
+
+        // 팀 필터 토글
+        function toggleTeamFilters() {
+            const grid = document.getElementById('teamFilterButtons');
+            const toggle = document.getElementById('teamFilterToggle');
+            const icon = toggle.querySelector('i');
+            
+            if (grid.classList.contains('expanded')) {
+                grid.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                toggle.innerHTML = `<i class="fas fa-chevron-down"></i>팀 목록 보기 (<span id="teamCount">${filteredTeams.length}</span>개 팀)`;
+            } else {
+                grid.classList.add('expanded');
+                toggle.classList.add('expanded');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                toggle.innerHTML = `<i class="fas fa-chevron-up"></i>팀 목록 숨기기 (<span id="teamCount">${filteredTeams.length}</span>개 팀)`;
+            }
         }
 
         // 경기 기록 탭 리그 필터 버튼 업데이트 (K5~K7 분류 포함)
@@ -1549,7 +1663,7 @@
             });
 
             let html = '';
-            Object.keys(monthGroups).sort().reverse().forEach(monthKey => {
+            Object.keys(monthGroups).sort().forEach(monthKey => {
                 const group = monthGroups[monthKey];
                 const monthId = `month-${monthKey}`;
                 
@@ -1568,6 +1682,13 @@
                         </button>
                         <div class="month-content" id="${monthId}">
                 `;
+                
+                // 월 내에서 날짜순 오름차순 정렬
+                group.matches.sort((a, b) => {
+                    const dateA = new Date(a.MATCH_DATE || '9999-12-31');
+                    const dateB = new Date(b.MATCH_DATE || '9999-12-31');
+                    return dateA - dateB;
+                });
                 
                 group.matches.forEach(match => {
                     const isCompleted = match.MATCH_STATUS === '완료';

@@ -602,7 +602,7 @@ app.get('/api/regions', async (req, res) => {
     const snapshot = await db.collection('matches').get();
     const matches = snapshot.docs.map(doc => doc.data());
     
-    const regions = [...new Set(matches.map(m => m.regionTag))].filter(Boolean).sort();
+    const regions = [...new Set(matches.map(m => m.regionTag))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'ko-KR'));
     res.json(regions);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -633,7 +633,7 @@ app.get('/api/leagues/:region', async (req, res) => {
       const orderB = getLeagueOrder(b);
       
       if (orderA !== orderB) return orderA - orderB;
-      return a.localeCompare(b);
+      return a.localeCompare(b, 'ko-KR');
     });
     
     res.json(leagues);
@@ -669,7 +669,7 @@ app.get('/api/standings', async (req, res) => {
       standings: calculateStandings(group.matches, group.league)
     })).sort((a, b) => {
       // 지역별, 리그별 정렬
-      if (a.region !== b.region) return a.region.localeCompare(b.region);
+      if (a.region !== b.region) return a.region.localeCompare(b.region, 'ko-KR');
       
       const getLeagueOrder = (league) => {
         if (league.includes('K5')) return 1;
@@ -844,7 +844,7 @@ app.get('/api/leagues/all', async (req, res) => {
     
     // 각 카테고리 내에서 정렬
     Object.keys(leaguesByCategory).forEach(category => {
-      leaguesByCategory[category].sort((a, b) => a.localeCompare(b));
+      leaguesByCategory[category].sort((a, b) => a.localeCompare(b, 'ko-KR'));
     });
     
     res.json(leaguesByCategory);
