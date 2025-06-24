@@ -436,25 +436,53 @@ function formatTime(timeString) {
   // 이미 형식화된 시간인지 확인
   if (timeString.includes('오전') || timeString.includes('오후')) return timeString;
   
-  // 다양한 시간 형식 처리
   let hour, minute;
   
-  if (timeString.includes(':')) {
-    // "10:30" 형식
-    [hour, minute] = timeString.split(':');
-  } else if (timeString.includes('-')) {
-    // "10-30" 형식
-    [hour, minute] = timeString.split('-');
-  } else {
-    // 숫자만 있는 경우 시간으로 처리
-    hour = timeString;
-    minute = '00';
+  // MATCH_CHECK_TIME1 형식: "2025-05-25 (일) 13:00"
+  if (timeString.includes('(') && timeString.includes(')')) {
+    const timeMatch = timeString.match(/(\d{1,2}):(\d{2})$/);
+    if (timeMatch) {
+      hour = timeMatch[1];
+      minute = timeMatch[2];
+    }
   }
+  // MATCH_TIME 형식: "2025-05-25-일-13-00"
+  else if (timeString.includes('-')) {
+    const parts = timeString.split('-');
+    if (parts.length >= 5) {
+      hour = parts[parts.length - 2]; // 끝에서 두 번째가 시간
+      minute = parts[parts.length - 1]; // 마지막이 분
+    } else {
+      // 간단한 "13-00" 형식
+      const timeParts = timeString.split('-');
+      if (timeParts.length === 2) {
+        hour = timeParts[0];
+        minute = timeParts[1];
+      }
+    }
+  }
+  // 단순 "13:00" 형식
+  else if (timeString.includes(':')) {
+    [hour, minute] = timeString.split(':');
+  }
+  // 숫자만 있는 경우
+  else if (/^\d+$/.test(timeString)) {
+    if (timeString.length === 4) {
+      hour = timeString.substring(0, 2);
+      minute = timeString.substring(2, 4);
+    } else {
+      hour = timeString;
+      minute = '00';
+    }
+  }
+  
+  if (!hour || !minute) return timeString;
   
   const hourNum = parseInt(hour);
   const minuteNum = parseInt(minute) || 0;
   
-  if (isNaN(hourNum)) return timeString;
+  if (isNaN(hourNum) || hourNum < 0 || hourNum > 23) return timeString;
+  if (isNaN(minuteNum) || minuteNum < 0 || minuteNum > 59) return timeString;
   
   const period = hourNum < 12 ? '오전' : '오후';
   const displayHour = hourNum === 0 ? 12 : (hourNum > 12 ? hourNum - 12 : hourNum);
@@ -716,8 +744,8 @@ app.get('/api/matches', async (req, res) => {
       const homeParsed = parseTeamName(homeTeamFull);
       const awayParsed = parseTeamName(awayTeamFull);
       
-      // 시간 형식 변환
-      const rawTime = data.MATCH_TIME || data.TIME || data.KICK_OFF || '';
+      // 시간 형식 변환 (우선순위: MATCH_CHECK_TIME1 > TIME > MATCH_TIME)
+      const rawTime = data.MATCH_CHECK_TIME1 || data.TIME || data.MATCH_TIME || data.KICK_OFF || '';
       const formattedTime = formatTime(rawTime);
       
       return { 
@@ -812,7 +840,7 @@ app.get('/api/leagues', async (req, res) => {
   }
 });
 
-// 분석 데이터 조회
+// 분석 데이터 조회 (확장된 축구 통계)
 app.get('/api/analytics', async (req, res) => {
   try {
     const snapshot = await db.collection('matches').get();
@@ -821,7 +849,9 @@ app.get('/api/analytics', async (req, res) => {
     
     let totalGoals = 0;
     let maxScore = 0;
+    let maxGoalMatch = null;
     const leagueActivity = new Map();
+    const teamStats = new Map();
     
     completedMatches.forEach(match => {
       const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
@@ -829,21 +859,114 @@ app.get('/api/analytics', async (req, res) => {
       const totalMatchGoals = homeScore + awayScore;
       
       totalGoals += totalMatchGoals;
-      maxScore = Math.max(maxScore, Math.max(homeScore, awayScore));
+      
+      // 최고 득점 경기 기록
+      if (Math.max(homeScore, awayScore) > maxScore) {
+        maxScore = Math.max(homeScore, awayScore);
+        maxGoalMatch = {
+          homeTeam: match.TEAM_HOME || '홈팀',
+          awayTeam: match.TEAM_AWAY || '어웨이팀',
+          homeScore,
+          awayScore,
+          date: match.MATCH_CHECK_TIME2 || match.MATCH_DATE
+        };
+      }
       
       const league = match.leagueTitle;
       leagueActivity.set(league, (leagueActivity.get(league) || 0) + 1);
+      
+      // 팀별 통계 계산
+      const homeTeamFull = match.TEAM_HOME || '홈팀';
+      const awayTeamFull = match.TEAM_AWAY || '어웨이팀';
+      const homeParsed = parseTeamName(homeTeamFull);
+      const awayParsed = parseTeamName(awayTeamFull);
+      
+      // 홈팀 통계
+      if (!teamStats.has(homeParsed.teamName)) {
+        teamStats.set(homeParsed.teamName, {
+          teamName: homeParsed.teamName,
+          majorRegion: homeParsed.majorRegion,
+          minorRegion: homeParsed.minorRegion,
+          goals: 0,
+          conceded: 0,
+          wins: 0,
+          matches: 0
+        });
+      }
+      const homeStats = teamStats.get(homeParsed.teamName);
+      homeStats.goals += homeScore;
+      homeStats.conceded += awayScore;
+      homeStats.matches++;
+      if (homeScore > awayScore) homeStats.wins++;
+      
+      // 어웨이팀 통계
+      if (!teamStats.has(awayParsed.teamName)) {
+        teamStats.set(awayParsed.teamName, {
+          teamName: awayParsed.teamName,
+          majorRegion: awayParsed.majorRegion,
+          minorRegion: awayParsed.minorRegion,
+          goals: 0,
+          conceded: 0,
+          wins: 0,
+          matches: 0
+        });
+      }
+      const awayStats = teamStats.get(awayParsed.teamName);
+      awayStats.goals += awayScore;
+      awayStats.conceded += homeScore;
+      awayStats.matches++;
+      if (awayScore > homeScore) awayStats.wins++;
     });
     
+    const teams = Array.from(teamStats.values());
+    
+    // 각종 기록 계산
     const avgGoals = completedMatches.length > 0 ? (totalGoals / completedMatches.length).toFixed(1) : 0;
     const mostActiveLeague = leagueActivity.size > 0 ? 
       [...leagueActivity.entries()].sort((a, b) => b[1] - a[1])[0][0] : '-';
     
+    // 최다 득점팀
+    const topScorer = teams.length > 0 ? 
+      teams.reduce((max, team) => team.goals > max.goals ? team : max) : null;
+    
+    // 최소 실점팀 (최소 3경기 이상)
+    const bestDefense = teams.length > 0 ? 
+      teams.filter(t => t.matches >= 3).reduce((min, team) => 
+        team.conceded < min.conceded ? team : min, { conceded: Infinity }) : null;
+    
+    // 최다 승리팀
+    const mostWins = teams.length > 0 ? 
+      teams.reduce((max, team) => team.wins > max.wins ? team : max) : null;
+    
+    // 평균 득점이 높은 팀 (최소 3경기 이상)
+    const bestAttack = teams.length > 0 ? 
+      teams.filter(t => t.matches >= 3).reduce((max, team) => {
+        const avgGoals = team.goals / team.matches;
+        const maxAvgGoals = max.goals / max.matches;
+        return avgGoals > maxAvgGoals ? team : max;
+      }, { goals: 0, matches: 1 }) : null;
+    
     const analytics = {
       avgGoals,
       highestScore: maxScore,
+      maxGoalMatch,
       mostActiveLeague,
-      recentActivity: new Date().toLocaleDateString()
+      recentActivity: new Date().toLocaleDateString(),
+      topScorer: topScorer ? {
+        ...topScorer,
+        avgGoals: (topScorer.goals / topScorer.matches).toFixed(1)
+      } : null,
+      bestDefense: bestDefense && bestDefense.conceded !== Infinity ? {
+        ...bestDefense,
+        avgConceded: (bestDefense.conceded / bestDefense.matches).toFixed(1)
+      } : null,
+      mostWins,
+      bestAttack: bestAttack && bestAttack.matches > 1 ? {
+        ...bestAttack,
+        avgGoals: (bestAttack.goals / bestAttack.matches).toFixed(1)
+      } : null,
+      totalMatches: completedMatches.length,
+      totalTeams: teams.length
     };
     
     res.json(analytics);
