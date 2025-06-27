@@ -1009,6 +1009,10 @@
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .league-toggle-btn:hover {
@@ -1019,6 +1023,40 @@
             background: white;
             color: var(--warning-color);
             font-weight: 600;
+        }
+
+        /* 리그별 색상 라벨 */
+        .league-color-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 16px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        }
+
+        .league-color-label.k5 {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+            border: 1px solid #FF5252;
+        }
+
+        .league-color-label.k6 {
+            background: linear-gradient(135deg, #4ECDC4, #6DDAD6);
+            border: 1px solid #26A69A;
+        }
+
+        .league-color-label.k7 {
+            background: linear-gradient(135deg, #45B7D1, #74C5E8);
+            border: 1px solid #2196F3;
+        }
+
+        .league-color-label.other {
+            background: linear-gradient(135deg, #95a5a6, #bdc3c7);
+            border: 1px solid #7f8c8d;
         }
 
         .standings-league-content {
@@ -1604,6 +1642,9 @@
             cursor: pointer;
             transition: all 0.3s ease;
             color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .filter-btn:hover {
@@ -2344,24 +2385,36 @@
             displayHighlightEnhanced(data.highlight);
         }
 
-        // 강화된 다가오는 경기 표시
+        // 강화된 다가오는 경기 표시 (이번주 기준)
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
             
-            // 현재 시간 기준으로 다가오는 경기 필터링 및 정렬
+            // 이번주 범위 계산 (월요일~일요일)
             const now = new Date();
+            const currentDay = now.getDay(); // 0(일) ~ 6(토)
+            const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay; // 월요일까지의 일 수
+            
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() + mondayOffset);
+            weekStart.setHours(0, 0, 0, 0);
+            
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+            
+            // 이번주 예정 경기 필터링 및 정렬
             const upcomingMatches = matches
                 .filter(match => {
                     if (!match.MATCH_DATE) return false;
                     const matchDate = new Date(match.MATCH_DATE);
-                    return matchDate > now;
+                    return matchDate >= now && matchDate <= weekEnd;
                 })
                 .sort((a, b) => {
                     const dateA = new Date(a.MATCH_DATE);
                     const dateB = new Date(b.MATCH_DATE);
                     return dateA - dateB;
                 })
-                .slice(0, 5); // 가장 빠른 5개 경기
+                .slice(0, 5); // 이번주 중 가장 빠른 5개 경기
             
             if (!upcomingMatches || upcomingMatches.length === 0) {
                 container.innerHTML = `
@@ -2398,7 +2451,10 @@
                                 <div class="team-name-preview">${match.AWAY_TEAM_NAME || '어웨이팀'}</div>
                             </div>
                         </div>
-                        <div class="match-league-preview">${match.leagueTitle || '리그 정보 없음'}</div>
+                        <div class="match-league-preview">
+                            <span class="league-color-label ${getLeagueCategory(match.leagueTitle || '')}">${getLeagueCategory(match.leagueTitle || '').toUpperCase()}</span>
+                            ${match.leagueTitle || '리그 정보 없음'}
+                        </div>
                         ${index === 0 ? '<div class="next-match-indicator">다음 경기</div>' : ''}
                     </div>
                 `;
@@ -2463,7 +2519,10 @@
                         </div>
                     </div>
                     <div class="highlight-footer">
-                        <div class="highlight-league">${highlight.leagueTitle || '리그 정보 없음'}</div>
+                        <div class="highlight-league">
+                            <span class="league-color-label ${getLeagueCategory(highlight.leagueTitle || '')}">${getLeagueCategory(highlight.leagueTitle || '').toUpperCase()}</span>
+                            ${highlight.leagueTitle || '리그 정보 없음'}
+                        </div>
                     </div>
                 </div>
             `;
@@ -2511,7 +2570,12 @@
             html += '<div class="league-toggle-buttons">';
             leagueKeys.forEach((leagueKey, index) => {
                 const isActive = index === 0 ? 'active' : '';
-                html += `<button class="league-toggle-btn ${isActive}" data-league="${leagueKey}">${leagueKey}</button>`;
+                const category = getLeagueCategory(leagueKey);
+                const categoryLabel = category.toUpperCase();
+                html += `<button class="league-toggle-btn ${isActive} ${category}" data-league="${leagueKey}">
+                    <span class="league-color-label ${category}">${categoryLabel}</span>
+                    ${leagueKey}
+                </button>`;
             });
             html += '</div>';
             html += '</div>';
@@ -2669,6 +2733,14 @@
             }
         }
 
+        // 리그명에서 분류 추출 헬퍼 함수
+        function getLeagueCategory(leagueTitle) {
+            if (leagueTitle.includes('K5')) return 'k5';
+            if (leagueTitle.includes('K6')) return 'k6';
+            if (leagueTitle.includes('K7')) return 'k7';
+            return 'other';
+        }
+
         // 리그 필터 버튼 업데이트 (모든 리그 기본 표시)
         async function updateLeagueFilterButtons(showAll = false) {
             const container = document.getElementById('standingLeagueFilterButtons');
@@ -2682,7 +2754,12 @@
                 // 모든 리그를 기본적으로 표시 (지역 선택과 무관)
                 if (showAll || !regions.length) {
                     allLeagues.forEach(league => {
-                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                        const category = getLeagueCategory(league.leagueTitle);
+                        const categoryLabel = category.toUpperCase();
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">
+                            <span class="league-color-label ${category}">${categoryLabel}</span>
+                            ${league.leagueTitle}
+                        </button>`;
                     });
                 } else {
                     // 기존 로직 유지
@@ -2692,7 +2769,12 @@
                         allLeagues;
                     
                     filteredLeagues.forEach(league => {
-                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                        const category = getLeagueCategory(league.leagueTitle);
+                        const categoryLabel = category.toUpperCase();
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">
+                            <span class="league-color-label ${category}">${categoryLabel}</span>
+                            ${league.leagueTitle}
+                        </button>`;
                     });
                 }
                 
@@ -2724,7 +2806,12 @@
                 // 모든 리그를 기본적으로 표시 (지역 선택과 무관)
                 if (showAll || !regions.length) {
                     allLeagues.forEach(league => {
-                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                        const category = getLeagueCategory(league.leagueTitle);
+                        const categoryLabel = category.toUpperCase();
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">
+                            <span class="league-color-label ${category}">${categoryLabel}</span>
+                            ${league.leagueTitle}
+                        </button>`;
                     });
                 } else {
                     // 기존 로직 유지
@@ -2734,7 +2821,12 @@
                         allLeagues;
                     
                     filteredLeagues.forEach(league => {
-                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">${league.leagueTitle}</button>`;
+                        const category = getLeagueCategory(league.leagueTitle);
+                        const categoryLabel = category.toUpperCase();
+                        html += `<button class="filter-btn" data-value="${league.leagueTitle}">
+                            <span class="league-color-label ${category}">${categoryLabel}</span>
+                            ${league.leagueTitle}
+                        </button>`;
                     });
                 }
                 
