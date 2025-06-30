@@ -205,7 +205,7 @@
                     <button id="stopCrawlBtn" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; display:none;">🛑 크롤링 중단</button>
                     <button id="stopUploadBtn" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; display:none;">🛑 업로드 중단</button>
                 </div>
-            </div>
+        </div>
         
         <!-- Git 커밋 정보 표시 -->
         <div id="gitInfo" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #495057;">
@@ -723,8 +723,8 @@
             enableButtons();
 
             if(options && options.league && options.year){
-                const region = options.region || '';
-                const key = `${options.league}_${region}_${options.year}`;
+                const regionKey = options.region && options.region.trim()!=='' ? options.region : 'national';
+                const key = `${options.league}_${regionKey}_${options.year}`;
                 const ts = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; };
                 const label = ts();
                 if(type==='crawling') {
@@ -760,7 +760,8 @@
             if (!tableBody) return;
             tableBody.innerHTML = '';
             leagues.forEach((l) => {
-                const key = `${l.leagueTag}_${l.regionTag}_${l.year}`;
+                const regionKey = l.regionTag && l.regionTag.trim()!=='' ? l.regionTag : 'national';
+                const key = `${l.leagueTag}_${regionKey}_${l.year}`;
                 const tr = document.createElement('tr');
                 const regionDisplay = l.regionTag && l.regionTag.trim() !== '' ? l.regionTag : '전국';
                 tr.innerHTML = `
@@ -776,7 +777,7 @@
                 `;
                 tableBody.appendChild(tr);
             });
-        }
+                    }
 
         // === 선택 작업 버튼 ===
         document.getElementById('selectAllLeagues').addEventListener('change', (e)=>{
@@ -869,7 +870,7 @@
         document.getElementById('logoutBtn').addEventListener('click',()=>{
             localStorage.removeItem('loggedIn');
             location.reload();
-         });
+              });
 
         // === 테이블 내 버튼 클릭 처리 (이벤트 위임)
         document.addEventListener('click', (e) => {
@@ -901,14 +902,14 @@
             }
         });
 
-        stopUploadBtn.addEventListener('click', () => {
+         stopUploadBtn.addEventListener('click', () => {
             const uploading = Array.from(currentProcesses.entries()).find(([pid, info]) => info.type === 'uploading');
             if(uploading){
                 const [processId] = uploading;
-                socket.emit('stop-process', { processId });
-                stopUploadBtn.disabled = true;
-            }
-        });
+                 socket.emit('stop-process', { processId });
+                 stopUploadBtn.disabled = true;
+             }
+         });
     </script>
 </body>
 </html> 

@@ -322,6 +322,56 @@ io.on('connection', (socket) => {
     emitQueueStatus();
   });
 
+  // ===== 업로드 실행 함수 =====
+  async function launchUploader(options, socket) {
+    isUploading = true;
+    socket.emit('log', `☁️ Firebase 업로드를 시작합니다... (옵션: ${JSON.stringify(options)})\n`);
+
+    const args = ['firebase_uploader.js'];
+    if (options.year) args.push(`--year=${options.year}`);
+    if (options.month) args.push(`--month=${options.month}`);
+    if (options.league) args.push(`--league=${options.league}`);
+
+    const uploader = spawn('node', args);
+    const processId = `uploading-${Date.now()}`;
+
+    runningProcesses.set(processId, { process: uploader, type: 'uploading', socket: socket.id, options });
+    socket.runningProcesses.add(processId);
+    socket.emit('process-started', { processId, type: 'uploading', options });
+    emitQueueStatus();
+
+    uploader.stdout.on('data', data => {
+      const msg = data.toString();
+      console.log(msg);
+      addToLogHistory(msg);
+      io.emit('log', msg);
+    });
+    uploader.stderr.on('data', data => {
+      const msg = `❌ ERROR: ${data.toString()}`;
+      console.error(msg);
+      addToLogHistory(msg);
+      io.emit('log', msg);
+    });
+    uploader.on('close', code => {
+      const msg = `🏁 업로드 프로세스가 종료되었습니다 (Code: ${code}).`;
+      console.log(msg);
+      addToLogHistory(msg);
+      io.emit('log', msg);
+
+      runningProcesses.delete(processId);
+      socket.runningProcesses.delete(processId);
+      io.emit('process-ended', { processId, type: 'uploading', options });
+
+      if (uploadQueue.length > 0) {
+        const next = uploadQueue.shift();
+        launchUploader(next.options, next.socket);
+      } else {
+        isUploading = false;
+      }
+      emitQueueStatus();
+    });
+  }
+
   // 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
   socket.on('start-uploading', (options) => {
     console.log('📥 업로드 큐 요청 추가:', options);
