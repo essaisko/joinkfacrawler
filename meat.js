@@ -212,7 +212,24 @@ async function fetchMatchData(league, ym, retryCount = 0) {
   } catch (err) {
     console.error(`[ERROR] ${league.leagueTitle} ${ym} 크롤 실패 (시도 ${retryCount + 1}/${maxRetries + 1}): ${err.message}`);
     
-    // 재시도 로직 (서버 안정성 고려)
+    const chromeMissing = err.message && err.message.includes('Could not find Chrome');
+
+    // Chrome이 없을 때는 설치 시도 후 재시도 (1회 한정)
+    if (chromeMissing && retryCount === 0) {
+      console.log('⚙️ Chrome이 설치되어 있지 않습니다. 자동 설치를 시도합니다...');
+      try {
+        const { execSync } = require('child_process');
+        execSync('node scripts/install-chrome.js', { stdio: 'inherit' });
+        console.log('✅ Chrome 설치 스크립트 실행 완료. 재시도합니다...');
+      } catch (installErr) {
+        console.error('❌ Chrome 자동 설치 실패:', installErr.message);
+        return [];
+      }
+      // 설치 후 바로 재귀 호출 (retryCount 증가)
+      return await fetchMatchData(league, ym, retryCount + 1);
+    }
+
+    // 기타 재시도 로직 (서버 안정성 고려)
     if (retryCount < maxRetries && (err.message.includes('timeout') || err.message.includes('Navigation'))) {
       const waitTime = (retryCount + 1) * 5; // 5초, 10초 대기
       console.log(`🔄 [RETRY] ${league.leagueTitle} ${ym} - ${retryCount + 1}번째 재시도 (${waitTime}초 대기)`);
