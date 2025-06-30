@@ -97,7 +97,8 @@ if (filterLeague) {
 }
 
 // 인자에 따라 월 목록 필터링
-const ALL_MONTHS = Array.from({ length: 10 }, (_, i) => String(i + 3).padStart(2, '0'));
+// 01월부터 12월까지 모두 포함하도록 수정 (기존: 03~12)
+const ALL_MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
 const MONTHS = filterMonth ? [filterMonth.padStart(2, '0')] : ALL_MONTHS;
 
 // 터미널 환경이 아닐 경우(웹페이지에서 실행 등) 컬러 코드 비활성화

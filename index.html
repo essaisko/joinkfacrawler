@@ -112,6 +112,32 @@
         #copyFiltersBtn:hover:not(:disabled) {
             background-color: #5a6268;
         }
+        /* === 리그별 테이블 UI 추가 === */
+        #leagueTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        #leagueTable th, #leagueTable td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        #leagueTable th {
+            background-color: #f8f9fa;
+        }
+        .action-btn {
+            padding: 4px 10px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #fff;
+        }
+        .crawl-row-btn { background-color: #42b72a; }
+        .crawl-row-btn:hover { background-color: #36a420; }
+        .upload-row-btn { background-color: #1877f2; }
+        .upload-row-btn:hover { background-color: #166fe5; }
     </style>
 </head>
 <body>
@@ -166,6 +192,28 @@
                 <div id="csvSyncStatus" style="font-size: 12px; color: #666; margin-left: 10px;">
                     💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!
                 </div>
+            </div>
+
+            <!-- 리그별 액션 테이블 -->
+            <div id="leagueTableSection" style="margin-top: 25px;">
+                <h3 style="margin:0 0 10px 0;">🏷️ 개별 리그 작업</h3>
+                <div style="overflow-x:auto;">
+                    <table id="leagueTable">
+                        <thead>
+                            <tr>
+                                <th>태그</th>
+                                <th>지역</th>
+                                <th>년도</th>
+                                <th style="text-align:left;">리그 이름</th>
+                                <th>크롤링</th>
+                                <th>업로드</th>
+                                <th>최근 동기화</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 8px;">🕒 "최근 동기화"는 이 페이지에서 실행한 시점을 표시합니다.</p>
             </div>
         </div>
 
@@ -383,6 +431,9 @@
                     console.log('✅ CSV 파일 새로고침 완료');
                     console.log('📄 현재 CSV 내용:', content);
                     
+                    // === CSV 파싱 후 테이블 렌더 ===
+                    renderLeagueTable(content);
+                    
                     // Firebase 연동 상태 업데이트
                     firebaseStatus.textContent = '🔥 Firebase 연동';
                     firebaseStatus.style.color = '#28a745';
@@ -418,7 +469,7 @@
                       document.getElementById('gitCommitDate').textContent = data.commit.date;
                       document.getElementById('gitCommitMessage').textContent = data.commit.message;
                       
-                      // 툴팁으로 전체 해시 표시
+                      // 툴크으로 전체 해시 표시
                       document.getElementById('gitCommitHash').title = `전체 해시: ${data.commit.fullHash}`;
                       
                       console.log('✅ Git 정보 로드 성공:', data.commit);
@@ -858,6 +909,76 @@
                  }, 5000);
              }
          });
+
+        // ======================= 리그 테이블 JS =======================
+        function parseCsvToArray(csv) {
+            const lines = csv.trim().split('\n');
+            const result = [];
+            if (lines.length < 2) return result;
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                if (cols.length < 5) continue; // 누락 데이터 방지
+                const [leagueTag, regionTag, year, leagueTitle, matchIdx] = cols;
+                if (!leagueTag) continue;
+                result.push({ leagueTag, regionTag, year, leagueTitle, matchIdx });
+            }
+            return result;
+        }
+
+        function renderLeagueTable(csvContent) {
+            const tableBody = document.querySelector('#leagueTable tbody');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            const leagues = parseCsvToArray(csvContent);
+            leagues.forEach((l) => {
+                const key = `${l.leagueTag}_${l.regionTag}_${l.year}`;
+                const tr = document.createElement('tr');
+                const regionDisplay = l.regionTag && l.regionTag.trim() !== '' ? l.regionTag : '전국';
+                tr.innerHTML = `
+                    <td>${l.leagueTag}</td>
+                    <td>${regionDisplay}</td>
+                    <td>${l.year}</td>
+                    <td style="text-align:left;">${l.leagueTitle}</td>
+                    <td><button class="action-btn crawl-row-btn" data-key="${key}">크롤</button></td>
+                    <td><button class="action-btn upload-row-btn" data-key="${key}">업로드</button></td>
+                    <td class="sync-time" id="sync-${key}">${localStorage.getItem('sync_'+key) || '-'}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 테이블 내 버튼 클릭 처리 (이벤트 위임)
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('crawl-row-btn')) {
+                const key = e.target.dataset.key;
+                const [leagueTag, regionTag, year] = key.split('_');
+                disableButtons(); // 기존 버튼 비활성화 재사용
+                appendLog(`🚀 [${leagueTag} ${year}] 개별 크롤링을 시작합니다...`);
+                socket.emit('start-crawling', { year, league: leagueTag });
+                e.target.disabled = true;
+            }
+            if (e.target.classList.contains('upload-row-btn')) {
+                const key = e.target.dataset.key;
+                const [leagueTag, regionTag, year] = key.split('_');
+                disableButtons();
+                appendLog(`☁️ [${leagueTag} ${year}] 개별 업로드를 시작합니다...`);
+                socket.emit('start-uploading', { year, league: leagueTag });
+                e.target.disabled = true;
+            }
+        });
+
+        // 프로세스 종료 시 동기화 시간 갱신
+        socket.on('process-ended', (data) => {
+            if (data.type === 'crawling' || data.type === 'uploading') {
+                const now = new Date();
+                const syncedLabel = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+                // 현재 동작했던 마지막 options를 알 수 없어 로그 기반 처리 생략
+                // 사용자가 즉시 확인할 수 있도록 전체 테이블을 리렌더
+                if (csvEditor.value) {
+                    renderLeagueTable(csvEditor.value);
+                }
+            }
+        });
     </script>
 </body>
 </html> 
