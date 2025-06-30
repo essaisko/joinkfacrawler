@@ -148,8 +148,13 @@ function shouldProcessFile(filePath, matches) {
     return false;
   }
   
-  if (filterLeague && !fileName.includes(filterLeague)) {
-    return false;
+  if (filterLeague) {
+    const lc = filterLeague.toLowerCase();
+    const inPath = pathParts.some(p => p.toLowerCase() === lc);
+    const inName = fileName.toLowerCase().includes(lc);
+    if (!inPath && !inName) {
+      return false;
+    }
   }
   
   // 월 필터링은 실제 데이터를 확인해야 함
