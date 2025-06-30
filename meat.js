@@ -81,13 +81,8 @@ function parseArgs() {
 const cliArgs = parseArgs();
 const { year: filterYear, month: filterMonth, league: filterLeague } = cliArgs;
 
-const csv = fs.readFileSync('leagues.csv', 'utf-8').replace(/^\uFEFF/, '');
-console.log(csv.split('\n'));
-
-let LEAGUE_LIST = parse(csv, {
-  columns: true,
-  skip_empty_lines: true
-});
+// CSV 내용은 실행 시점(아래 IIFE 내부)에서 로드되므로 초기값은 빈 배열
+let LEAGUE_LIST = []; // 실행 시에 채워집니다.
 
 // 인자에 따라 리그 목록 필터링
 if (filterYear) {
@@ -251,6 +246,55 @@ async function fetchMatchData(league, ym, retryCount = 0) {
   console.log('🛡️ 메모리 누수 방지 및 서버 안정성 강화');
   console.log('');
   
+  // =====================[ CSV 로드 단계 ]=====================
+  let csvContent;
+  try {
+    // 1) 로컬 파일 우선 시도
+    if (fs.existsSync('leagues.csv')) {
+      csvContent = fs.readFileSync('leagues.csv', 'utf-8');
+      console.log('📄 로컬 leagues.csv 로드 성공');
+    } else {
+      throw new Error('local csv not found');
+    }
+  } catch (err) {
+    console.log('⚠️ 로컬 leagues.csv 가 없습니다. Firebase에서 다운로드 시도...');
+    try {
+      const { downloadCsvFromFirebase } = require('./firebase_uploader');
+      csvContent = await downloadCsvFromFirebase();
+      if (csvContent) {
+        fs.writeFileSync('leagues.csv', csvContent, 'utf-8');
+        console.log('✅ Firebase 다운로드 성공, 로컬에 저장 완료');
+      } else {
+        console.error('❌ Firebase에 leagues.csv 가 존재하지 않습니다. 웹 UI에서 먼저 CSV를 업로드해주세요.');
+        process.exit(1);
+      }
+    } catch (fbErr) {
+      console.error('❌ Firebase 다운로드 실패:', fbErr.message || fbErr);
+      process.exit(1);
+    }
+  }
+
+  // BOM 제거 및 파싱
+  const csvClean = csvContent.replace(/^\uFEFF/, '');
+  console.log(csvClean.split('\n'));
+
+  LEAGUE_LIST = parse(csvClean, {
+    columns: true,
+    skip_empty_lines: true
+  });
+
+  // 인자에 따라 리그 목록 필터링
+  if (filterYear) {
+      LEAGUE_LIST = LEAGUE_LIST.filter(l => l.year === filterYear);
+  }
+  if (filterLeague) {
+      LEAGUE_LIST = LEAGUE_LIST.filter(l => 
+          l.leagueTitle.includes(filterLeague) || 
+          l.leagueTag.includes(filterLeague) ||
+          l.leagueTag.toLowerCase() === filterLeague.toLowerCase()
+      );
+  }
+
   for (const league of LEAGUE_LIST) {
     // 방어 코드 추가 (regionTag는 빈 문자열 허용)
     if (!league.leagueTag || !league.year || !league.leagueTitle || !league.matchIdx) {
