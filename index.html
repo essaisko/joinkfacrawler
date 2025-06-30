@@ -139,9 +139,11 @@
         .upload-row-btn { background-color: #1877f2; }
         .upload-row-btn:hover { background-color: #166fe5; }
         /* 레이아웃 개선 */
-        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; }
+        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; }
         .left-area { flex: 1; }
         .log-panel { width: 40%; max-width: 600px; }
+        /* 왼쪽 컨테이너 최대폭 제거 */
+        .left-area .container { width:100%; max-width:none; }
         /* 로그인 오버레이 */
         #loginOverlay {
             position: fixed;
@@ -175,9 +177,10 @@
     <div class="main-wrapper" id="dashboardWrapper" style="display:none;">
         <div class="container left-area">
             <h1>KFA 크롤러 대시보드</h1>
-            <div style="text-align: center; margin-bottom: 20px;">
+            <div style="text-align: center; margin-bottom: 20px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; align-items:center;">
                 <a href="/dashboard" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">📊 Firebase CRUD Dashboard</a>
                 <a href="/" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">🏠 크롤링 대시보드</a>
+                <button id="logoutBtn" style="background:#dc3545; color:white; padding:10px 20px; border:none; border-radius:5px;">🚪 로그아웃</button>
             </div>
             
             <!-- Git 커밋 정보 표시 -->
@@ -216,7 +219,7 @@
                 </div>
                 
                 <textarea id="csvEditor" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
-                <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap:wrap;">
                     <button id="saveCsvBtn">Firebase에 저장</button>
                     <button id="refreshCsvBtn" style="background-color: #17a2b8;">🔄 새로고침</button>
                     <button id="showNewLeagueFormBtn" style="background-color: #28a745;">➕ 새 리그 추가</button>
@@ -245,6 +248,7 @@
                                     <th style="text-align:left;">리그 이름</th>
                                     <th>크롤링</th>
                                     <th>업로드</th>
+                                    <th>최근 크롤링</th>
                                     <th>최근 업로드</th>
                                 </tr>
                             </thead>
@@ -679,12 +683,16 @@
 
         // === 업로드 프로세스 트래킹 ===
         const awaitingUploadKeys = [];
+        const awaitingCrawlKeys = [];
 
         // 프로세스 시작 이벤트
         socket.on('process-started', (data) => {
             const { processId, type } = data;
             if(type==='uploading'){
                 const key=awaitingUploadKeys.shift()||null;
+                currentProcesses.set(processId,{type, key});
+            }else if(type==='crawling'){
+                const key=awaitingCrawlKeys.shift()||null;
                 currentProcesses.set(processId,{type, key});
             }else{
                 currentProcesses.set(processId,{type});
@@ -701,12 +709,25 @@
             hideStopButton(type);
             enableButtons();
 
+            // 타임스탬프 생성 함수
+            const ts=()=>{
+                const n=new Date();
+                return `${n.getFullYear()}-${(n.getMonth()+1).toString().padStart(2,'0')}-${n.getDate().toString().padStart(2,'0')} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`;
+            };
+
             // 업로드 완료 시 시간 기록
             if(type==='uploading' && procInfo.key){
-                const now=new Date();
-                const label=`${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+                const label=ts();
                 localStorage.setItem('upload_'+procInfo.key,label);
                 const cell=document.getElementById('upload-'+procInfo.key);
+                if(cell) cell.textContent=label;
+            }
+
+            // 크롤링 완료 시 시간 기록
+            if(type==='crawling' && procInfo.key){
+                const label=ts();
+                localStorage.setItem('crawl_'+procInfo.key,label);
+                const cell=document.getElementById('crawl-'+procInfo.key);
                 if(cell) cell.textContent=label;
             }
 
@@ -1004,6 +1025,7 @@
                     <td style="text-align:left;">${l.leagueTitle}</td>
                     <td><button class="action-btn crawl-row-btn" data-key="${key}">크롤</button></td>
                     <td><button class="action-btn upload-row-btn" data-key="${key}">업로드</button></td>
+                    <td class="crawl-time" id="crawl-${key}">${localStorage.getItem('crawl_'+key) || '-'}</td>
                     <td class="upload-time" id="upload-${key}">${localStorage.getItem('upload_'+key) || '-'}</td>
                 `;
                 tableBody.appendChild(tr);
@@ -1079,6 +1101,12 @@
                 }
             });
         })();
+
+        // 로그아웃
+        document.getElementById('logoutBtn').addEventListener('click',()=>{
+            localStorage.removeItem('loggedIn');
+            location.reload();
+        });
     </script>
 </body>
 </html> 
