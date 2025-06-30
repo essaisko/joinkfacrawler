@@ -785,21 +785,23 @@
 
         // === 작업 큐 상태 업데이트 ===
         socket.on('queue-status', (status) => {
-            const { running, waiting } = status;
+            const { runningCrawl, runningUpload, waitingCrawl, waitingUpload } = status;
             const runningJobEl = document.getElementById('runningJob');
             const waitingJobsEl = document.getElementById('waitingJobs');
 
-            if (running) {
-                const year = running.year || '전체';
-                const league = running.league || '전체';
+            if (runningCrawl || runningUpload) {
+                const obj = runningCrawl || runningUpload;
+                const year = obj.year || '전체';
+                const league = obj.league || '전체';
                 runningJobEl.textContent = `${league} (${year})`;
             } else {
                 runningJobEl.textContent = '없음';
             }
 
-            if (waiting && waiting.length > 0) {
-                const waitingText = waiting.map(j => `${j.league || '전체'}(${j.year || '전체'})`).join(', ');
-                waitingJobsEl.textContent = `${waiting.length}개 대기중: ${waitingText}`;
+            const waitingArray = [...(waitingCrawl||[]), ...(waitingUpload||[])];
+            if (waitingArray.length > 0) {
+                const waitingText = waitingArray.map(j => `${j.league || '전체'}(${j.year || '전체'})`).join(', ');
+                waitingJobsEl.textContent = `${waitingArray.length}개 대기중: ${waitingText}`;
             } else {
                 waitingJobsEl.textContent = '없음';
             }
