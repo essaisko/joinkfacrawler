@@ -125,10 +125,31 @@
         
         <div class="section">
             <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
+            
+            <!-- 새 리그 추가 폼 -->
+            <div id="newLeagueForm" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 15px; display: none;">
+                <h3 style="margin-top: 0; color: #495057;">🆕 새 리그 추가</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="newLeagueTag" placeholder="리그 태그 (e.g., k1)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newRegionTag" placeholder="지역 태그 (빈칸 가능)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newYear" placeholder="년도 (e.g., 2025)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newLeagueTitle" placeholder="리그 이름 (e.g., K리그1)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newMatchIdx" placeholder="매치 인덱스 (긴 ID 문자열)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="addNewLeagueBtn" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">✅ 리그 추가</button>
+                    <button id="cancelNewLeagueBtn" style="background-color: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">❌ 취소</button>
+                </div>
+                <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+                    💡 팁: 지역 태그는 빈칸으로 두어도 됩니다 (전국 리그인 경우). 매치 인덱스는 KFA 사이트에서 가져온 고유 ID입니다.
+                </div>
+            </div>
+            
             <textarea id="csvEditor" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap;">
                 <button id="saveCsvBtn">Firebase에 저장</button>
                 <button id="refreshCsvBtn" style="background-color: #17a2b8;">🔄 새로고침</button>
+                <button id="showNewLeagueFormBtn" style="background-color: #28a745;">➕ 새 리그 추가</button>
                 <div id="csvSyncStatus" style="font-size: 12px; color: #666; margin-left: 10px;">
                     💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!
                 </div>
@@ -142,7 +163,7 @@
                     <div class="control-grid">
                         <input type="text" placeholder="특정 년도 (e.g., 2025)" class="year-filter">
                         <input type="text" placeholder="특정 월 (e.g., 05)" class="month-filter">
-                        <input type="text" placeholder="리그명 일부 검색" class="league-filter">
+                        <input type="text" placeholder="리그명 또는 태그 (e.g., K리그1, k1)" class="league-filter">
                         <button class="remove-filter-btn" onclick="removeFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
                     </div>
                 </div>
@@ -228,7 +249,7 @@
                 <div class="control-grid">
                     <input type="text" placeholder="특정 년도 (e.g., 2025)" class="year-filter">
                     <input type="text" placeholder="특정 월 (e.g., 05)" class="month-filter">
-                    <input type="text" placeholder="리그명 일부 검색" class="league-filter">
+                    <input type="text" placeholder="리그명 또는 태그 (e.g., K리그1, k1)" class="league-filter">
                     <button class="remove-filter-btn" onclick="removeFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
                 </div>
             `;
@@ -701,6 +722,63 @@
                   refreshCsvBtn.disabled = false;
                   refreshCsvBtn.textContent = '🔄 새로고침';
               }
+          });
+
+          // 새 리그 추가 관련 이벤트 리스너들
+          const showNewLeagueFormBtn = document.getElementById('showNewLeagueFormBtn');
+          const newLeagueForm = document.getElementById('newLeagueForm');
+          const addNewLeagueBtn = document.getElementById('addNewLeagueBtn');
+          const cancelNewLeagueBtn = document.getElementById('cancelNewLeagueBtn');
+
+          showNewLeagueFormBtn.addEventListener('click', () => {
+              newLeagueForm.style.display = newLeagueForm.style.display === 'none' ? 'block' : 'none';
+              showNewLeagueFormBtn.textContent = newLeagueForm.style.display === 'none' ? '➕ 새 리그 추가' : '➖ 폼 닫기';
+          });
+
+          cancelNewLeagueBtn.addEventListener('click', () => {
+              newLeagueForm.style.display = 'none';
+              showNewLeagueFormBtn.textContent = '➕ 새 리그 추가';
+              // 폼 초기화
+              ['newLeagueTag', 'newRegionTag', 'newYear', 'newLeagueTitle', 'newMatchIdx'].forEach(id => {
+                  document.getElementById(id).value = '';
+              });
+          });
+
+          addNewLeagueBtn.addEventListener('click', () => {
+              const leagueTag = document.getElementById('newLeagueTag').value.trim();
+              const regionTag = document.getElementById('newRegionTag').value.trim();
+              const year = document.getElementById('newYear').value.trim();
+              const leagueTitle = document.getElementById('newLeagueTitle').value.trim();
+              const matchIdx = document.getElementById('newMatchIdx').value.trim();
+
+              // 필수 필드 검증
+              if (!leagueTag || !year || !leagueTitle || !matchIdx) {
+                  alert('⚠️ 리그 태그, 년도, 리그 이름, 매치 인덱스는 필수 입력 항목입니다.');
+                  return;
+              }
+
+              // CSV에 새 줄 추가
+              const newRow = `${leagueTag},${regionTag},${year},${leagueTitle},${matchIdx}`;
+              const currentCsv = csvEditor.value.trim();
+              
+              // 중복 검사
+              if (currentCsv.includes(`${leagueTag},${regionTag},${year}`)) {
+                  alert('⚠️ 이미 동일한 리그 태그, 지역, 년도의 조합이 존재합니다.');
+                  return;
+              }
+              
+              csvEditor.value = currentCsv + '\n' + newRow;
+              
+              // 성공 메시지
+              appendLog(`✅ 새 리그가 추가되었습니다: ${leagueTitle} (${leagueTag})`);
+              appendLog(`💾 "Firebase에 저장" 버튼을 클릭하여 변경사항을 저장하세요.`);
+              
+              // 폼 초기화 및 닫기
+              ['newLeagueTag', 'newRegionTag', 'newYear', 'newLeagueTitle', 'newMatchIdx'].forEach(id => {
+                  document.getElementById(id).value = '';
+              });
+              newLeagueForm.style.display = 'none';
+              showNewLeagueFormBtn.textContent = '➕ 새 리그 추가';
           });
 
          // 업로드 중단 버튼 이벤트

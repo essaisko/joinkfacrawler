@@ -94,7 +94,11 @@ if (filterYear) {
     LEAGUE_LIST = LEAGUE_LIST.filter(l => l.year === filterYear);
 }
 if (filterLeague) {
-    LEAGUE_LIST = LEAGUE_LIST.filter(l => l.leagueTitle.includes(filterLeague));
+    LEAGUE_LIST = LEAGUE_LIST.filter(l => 
+        l.leagueTitle.includes(filterLeague) || 
+        l.leagueTag.includes(filterLeague) ||
+        l.leagueTag.toLowerCase() === filterLeague.toLowerCase()
+    );
 }
 
 // 인자에 따라 월 목록 필터링
@@ -301,7 +305,9 @@ async function fetchMatchData(league, ym, retryCount = 0) {
       const randomDelay = Math.random() * 100;
       await new Promise((r) => setTimeout(r, baseDelay + randomDelay));
     }
-    const dir = path.join('results', league.leagueTag, league.regionTag);
+    // regionTag가 빈 칸이면 'national'로 대체
+    const regionDir = league.regionTag && league.regionTag.trim() !== '' ? league.regionTag : 'national';
+    const dir = path.join('results', league.leagueTag, regionDir);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     const filename = path.join(
       dir,
