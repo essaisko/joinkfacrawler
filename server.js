@@ -224,14 +224,18 @@ io.on('connection', (socket) => {
 
   // ====== 크롤링 큐 시스템 ======
   const crawlQueue = [];
+  const uploadQueue = [];
   let isCrawling = false;
+  let isUploading = false;
 
   function emitQueueStatus() {
-    const runningProcess = Array.from(runningProcesses.values()).find(p => p.type === 'crawling');
-    const waitingQueue = crawlQueue.map(item => item.options);
+    const runningCrawl = Array.from(runningProcesses.values()).find(p => p.type === 'crawling');
+    const runningUpload = Array.from(runningProcesses.values()).find(p => p.type === 'uploading');
     io.emit('queue-status', {
-        running: runningProcess ? runningProcess.options : null,
-        waiting: waitingQueue
+      runningCrawl: runningCrawl ? runningCrawl.options : null,
+      runningUpload: runningUpload ? runningUpload.options : null,
+      waitingCrawl: crawlQueue.map(i => i.options),
+      waitingUpload: uploadQueue.map(i => i.options)
     });
   }
 
@@ -320,51 +324,14 @@ io.on('connection', (socket) => {
 
   // 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
   socket.on('start-uploading', (options) => {
-    console.log('🚀 Uploading process started with options:', options);
-    socket.emit('log', `🚀 Firestore 업로드를 시작합니다... (옵션: ${JSON.stringify(options)})\n`);
-    
-    // 옵션을 인자로 넘겨주기 위해 배열 생성
-    const args = ['firebase_uploader.js'];
-    if (options.year) args.push(`--year=${options.year}`);
-    if (options.month) args.push(`--month=${options.month}`);
-    if (options.league) args.push(`--league=${options.league}`);
-
-    const uploader = spawn('node', args);
-    const processId = `uploading-${Date.now()}`;
-    
-    // 프로세스 추적에 추가 (options 포함)
-    runningProcesses.set(processId, { process: uploader, type: 'uploading', socket: socket.id, options });
-    socket.runningProcesses.add(processId);
-    
-    // 클라이언트에 프로세스 ID 전송
-    socket.emit('process-started', { processId, type: 'uploading' });
-
-    uploader.stdout.on('data', (data) => {
-      const logMessage = data.toString();
-      console.log(logMessage);
-      addToLogHistory(logMessage);
-      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
-    });
-
-    uploader.stderr.on('data', (data) => {
-      const logMessage = `❌ ERROR: ${data.toString()}`;
-      console.error(logMessage);
-      addToLogHistory(logMessage);
-      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
-    });
-
-    uploader.on('close', (code) => {
-      const logMessage = `🏁 업로드 프로세스가 종료되었습니다 (Code: ${code}).`;
-      console.log(logMessage);
-      addToLogHistory(logMessage);
-      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
-      
-      // 프로세스 추적에서 제거
-      const processInfo = runningProcesses.get(processId);
-      runningProcesses.delete(processId);
-      socket.runningProcesses.delete(processId);
-      io.emit('process-ended', { processId, type: 'uploading', options: processInfo ? processInfo.options : null });
-    });
+    console.log('📥 업로드 큐 요청 추가:', options);
+    socket.emit('log', `📥 업로드 요청이 큐에 등록되었습니다. (옵션: ${JSON.stringify(options)})\n`);
+    uploadQueue.push({ options, socket });
+    if (!isUploading) {
+      const next = uploadQueue.shift();
+      launchUploader(next.options, next.socket);
+    }
+    emitQueueStatus();
   });
 
   // 프로세스 중단 이벤트
@@ -381,9 +348,14 @@ io.on('connection', (socket) => {
         
         // === 개선: 크롤링 중단 시 대기열도 함께 비우기 ===
         if (processInfo.type === 'crawling') {
-          crawlQueue.length = 0;           // 대기 중인 크롤링 제거
+          crawlQueue.length = 0;
           socket.emit('log', `🧹 크롤링 대기열을 모두 비웠습니다.\n`);
-          emitQueueStatus(); // 큐 상태 업데이트
+          emitQueueStatus();
+        }
+        if (processInfo.type === 'uploading') {
+          uploadQueue.length = 0;
+          socket.emit('log', `🧹 업로드 대기열을 모두 비웠습니다.\n`);
+          emitQueueStatus();
         }
         
         // 3초 후에도 프로세스가 살아있으면 강제 종료
