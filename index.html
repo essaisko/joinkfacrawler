@@ -170,6 +170,10 @@
         #runningJob, #waitingJobs { display: inline-block; padding: 4px 8px; border-radius: 4px; }
         #runningJob { background-color: #e7f3ff; border: 1px solid #cce0f5; color: #004085; }
         #waitingJobs { background-color: #f8f9fa; border: 1px solid #dee2e6; color: #343a40; }
+        #controlButtons {margin-top:10px;}
+        #controlButtons button{padding:6px 12px;font-size:13px;border:none;border-radius:4px;color:#fff;cursor:pointer}
+        #stopBtnGlobal{background:#dc3545;display:none}
+        #stopUploadBtnGlobal{background:#dc3545;display:none}
     </style>
 </head>
 <body>
@@ -185,10 +189,10 @@
 
     <div class="main-wrapper" id="dashboardWrapper" style="display:none;">
         <div class="container left-area">
-            <h1>KFA 크롤러 대시보드</h1>
+        <h1>KFA 크롤러 대시보드</h1>
             <div style="text-align: center; margin-bottom: 20px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; align-items:center;">
-                <a href="/dashboard" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">📊 Firebase CRUD Dashboard</a>
-                <a href="/" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">🏠 크롤링 대시보드</a>
+            <a href="/dashboard" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">📊 Firebase CRUD Dashboard</a>
+            <a href="/" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">🏠 크롤링 대시보드</a>
                 <button id="logoutBtn" style="background:#dc3545; color:white; padding:10px 20px; border:none; border-radius:5px;">🚪 로그아웃</button>
             </div>
             
@@ -197,52 +201,56 @@
                 <h3>🚀 작업 큐 현황</h3>
                 <div>실행중: <span id="runningJob">없음</span></div>
                 <div>대기중: <span id="waitingJobs">없음</span></div>
+                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button id="stopCrawlBtn" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; display:none;">🛑 크롤링 중단</button>
+                    <button id="stopUploadBtn" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; display:none;">🛑 업로드 중단</button>
+                </div>
+            </div>
+        
+        <!-- Git 커밋 정보 표시 -->
+        <div id="gitInfo" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #495057;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <span style="font-weight: bold; color: #28a745;">🔄 현재 버전:</span>
+                    <span id="gitCommitHash" style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">로딩중...</span>
+                    <span id="gitCommitDate" style="color: #6c757d;">로딩중...</span>
+                </div>
+                <button id="refreshGitInfo" style="background: #17a2b8; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 새로고침</button>
+            </div>
+            <div id="gitCommitMessage" style="margin-top: 8px; font-style: italic; color: #6c757d;">로딩중...</div>
+        </div>
+        
+        <div class="section">
+            <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
+            
+            <!-- 새 리그 추가 폼 -->
+            <div id="newLeagueForm" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 15px; display: none;">
+                <h3 style="margin-top: 0; color: #495057;">🆕 새 리그 추가</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="newLeagueTag" placeholder="리그 태그 (e.g., k1)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newRegionTag" placeholder="지역 태그 (빈칸 가능)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newYear" placeholder="년도 (e.g., 2025)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newLeagueTitle" placeholder="리그 이름 (e.g., K리그1)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <input type="text" id="newMatchIdx" placeholder="매치 인덱스 (긴 ID 문자열)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="addNewLeagueBtn" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">✅ 리그 추가</button>
+                    <button id="cancelNewLeagueBtn" style="background-color: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">❌ 취소</button>
+                </div>
+                <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+                    💡 팁: 지역 태그는 빈칸으로 두어도 됩니다 (전국 리그인 경우). 매치 인덱스는 KFA 사이트에서 가져온 고유 ID입니다.
+                </div>
             </div>
             
-            <!-- Git 커밋 정보 표시 -->
-            <div id="gitInfo" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #495057;">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                        <span style="font-weight: bold; color: #28a745;">🔄 현재 버전:</span>
-                        <span id="gitCommitHash" style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">로딩중...</span>
-                        <span id="gitCommitDate" style="color: #6c757d;">로딩중...</span>
-                    </div>
-                    <button id="refreshGitInfo" style="background: #17a2b8; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 새로고침</button>
-                </div>
-                <div id="gitCommitMessage" style="margin-top: 8px; font-style: italic; color: #6c757d;">로딩중...</div>
-            </div>
-            
-            <div class="section">
-                <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
-                
-                <!-- 새 리그 추가 폼 -->
-                <div id="newLeagueForm" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 15px; display: none;">
-                    <h3 style="margin-top: 0; color: #495057;">🆕 새 리그 추가</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px;">
-                        <input type="text" id="newLeagueTag" placeholder="리그 태그 (e.g., k1)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                        <input type="text" id="newRegionTag" placeholder="지역 태그 (빈칸 가능)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                        <input type="text" id="newYear" placeholder="년도 (e.g., 2025)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                        <input type="text" id="newLeagueTitle" placeholder="리그 이름 (e.g., K리그1)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                        <input type="text" id="newMatchIdx" placeholder="매치 인덱스 (긴 ID 문자열)" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button id="addNewLeagueBtn" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">✅ 리그 추가</button>
-                        <button id="cancelNewLeagueBtn" style="background-color: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">❌ 취소</button>
-                    </div>
-                    <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
-                        💡 팁: 지역 태그는 빈칸으로 두어도 됩니다 (전국 리그인 경우). 매치 인덱스는 KFA 사이트에서 가져온 고유 ID입니다.
-                    </div>
-                </div>
-                
-                <textarea id="csvEditor" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
+            <textarea id="csvEditor" placeholder="CSV 데이터를 로딩 중입니다..."></textarea>
                 <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap:wrap;">
-                    <button id="saveCsvBtn">Firebase에 저장</button>
-                    <button id="refreshCsvBtn" style="background-color: #17a2b8;">🔄 새로고침</button>
-                    <button id="showNewLeagueFormBtn" style="background-color: #28a745;">➕ 새 리그 추가</button>
-                    <div id="csvSyncStatus" style="font-size: 12px; color: #666; margin-left: 10px;">
-                        💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!
-                    </div>
+                <button id="saveCsvBtn">Firebase에 저장</button>
+                <button id="refreshCsvBtn" style="background-color: #17a2b8;">🔄 새로고침</button>
+                <button id="showNewLeagueFormBtn" style="background-color: #28a745;">➕ 새 리그 추가</button>
+                <div id="csvSyncStatus" style="font-size: 12px; color: #666; margin-left: 10px;">
+                    💡 이제 웹에서 직접 편집하고 저장할 수 있습니다!
                 </div>
+            </div>
 
                 <!-- 리그별 액션 테이블 -->
                 <div id="leagueTableSection" style="margin-top: 25px;">
@@ -254,7 +262,7 @@
                         <button id="crawlSelectedBtn" class="action-btn crawl-row-btn">선택 크롤링</button>
                         <button id="uploadSelectedBtn" class="action-btn upload-row-btn">선택 업로드</button>
                         <label style="font-size:13px;"><input type="checkbox" id="selectAllLeagues" /> 전체 선택</label>
-                    </div>
+        </div>
 
                     <div style="overflow-x:auto;">
                         <table id="leagueTable">
@@ -279,58 +287,58 @@
             </div>
 
             <div class="section" id="legacyFilters">
-                <h2>크롤링 실행 (다중 선택 가능)</h2>
-                <div id="crawlingFilters">
-                    <div class="filter-row">
-                        <div class="control-grid">
-                            <input type="text" placeholder="특정 년도 (e.g., 2025)" class="year-filter">
-                            <input type="text" placeholder="특정 월 (e.g., 05)" class="month-filter">
-                            <input type="text" placeholder="리그명 또는 태그 (e.g., K리그1, k1)" class="league-filter">
-                            <button class="remove-filter-btn" onclick="removeFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
-                        </div>
+            <h2>크롤링 실행 (다중 선택 가능)</h2>
+            <div id="crawlingFilters">
+                <div class="filter-row">
+                    <div class="control-grid">
+                        <input type="text" placeholder="특정 년도 (e.g., 2025)" class="year-filter">
+                        <input type="text" placeholder="특정 월 (e.g., 05)" class="month-filter">
+                        <input type="text" placeholder="리그명 또는 태그 (e.g., K리그1, k1)" class="league-filter">
+                        <button class="remove-filter-btn" onclick="removeFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
                     </div>
-                </div>
-                <div style="margin: 10px 0;">
-                    <button id="addFilterBtn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">➕ 필터 추가</button>
-                    <button id="clearAllFiltersBtn" style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; margin-left: 10px;">🧹 모든 필터 초기화</button>
-                </div>
-                <div class="buttons" style="margin-top: 15px;">
-                    <button id="crawlBtn">1. 데이터 크롤링 시작</button>
-                    <button id="stopBtn">🛑 크롤링 중단</button>
                 </div>
             </div>
-
-            <div class="section" id="legacyUploads">
-                <h2>Firebase 업로드 (다중 선택 가능)</h2>
-                <div id="uploadFilters">
-                    <div class="filter-row">
-                        <div class="control-grid">
-                            <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter">
-                            <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter">
-                            <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter">
-                            <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
-                        </div>
-                    </div>
-                </div>
-                <div style="margin: 10px 0;">
-                    <button id="addUploadFilterBtn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">➕ 업로드 필터 추가</button>
-                    <button id="clearAllUploadFiltersBtn" style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; margin-left: 10px;">🧹 모든 업로드 필터 초기화</button>
-                </div>
-                <div class="buttons" style="margin-top: 15px;">
-                    <button id="uploadBtn">2. Firestore에 업로드</button>
-                    <button id="stopUploadBtn" style="background-color: #dc3545; display: none;">🛑 업로드 중단</button>
-                    <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
-                </div>
-                <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                    💡 팁: 필터를 비워두면 모든 데이터를 업로드합니다. "크롤링 필터 복사" 버튼으로 위의 크롤링 조건을 쉽게 복사할 수 있습니다.
-                </p>
+            <div style="margin: 10px 0;">
+                <button id="addFilterBtn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">➕ 필터 추가</button>
+                <button id="clearAllFiltersBtn" style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; margin-left: 10px;">🧹 모든 필터 초기화</button>
+            </div>
+            <div class="buttons" style="margin-top: 15px;">
+                <button id="crawlBtn">1. 데이터 크롤링 시작</button>
+                <button id="stopBtn">🛑 크롤링 중단</button>
             </div>
         </div>
 
+            <div class="section" id="legacyUploads">
+            <h2>Firebase 업로드 (다중 선택 가능)</h2>
+            <div id="uploadFilters">
+                <div class="filter-row">
+                    <div class="control-grid">
+                        <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter">
+                        <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter">
+                        <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter">
+                        <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
+                    </div>
+                </div>
+            </div>
+            <div style="margin: 10px 0;">
+                <button id="addUploadFilterBtn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">➕ 업로드 필터 추가</button>
+                <button id="clearAllUploadFiltersBtn" style="background-color: #6c757d; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; margin-left: 10px;">🧹 모든 업로드 필터 초기화</button>
+            </div>
+            <div class="buttons" style="margin-top: 15px;">
+                <button id="uploadBtn">2. Firestore에 업로드</button>
+                <button id="stopUploadBtn" style="background-color: #dc3545; display: none;">🛑 업로드 중단</button>
+                <button id="copyFiltersBtn" style="background-color: #6c757d;">크롤링 필터 복사</button>
+            </div>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                💡 팁: 필터를 비워두면 모든 데이터를 업로드합니다. "크롤링 필터 복사" 버튼으로 위의 크롤링 조건을 쉽게 복사할 수 있습니다.
+            </p>
+            </div>
+        </div>
+        
         <!-- 로그 패널 오른쪽 (위치를 left-area와 동일한 레벨로 이동) -->
         <div class="log-panel">
             <button id="clearLogBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; margin-bottom:6px;">🧹 로그 지우기</button>
-            <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
+        <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
         </div>
     </div>
 
@@ -339,7 +347,7 @@
         const socket = io();
         const crawlBtn = document.getElementById('crawlBtn');
         const uploadBtn = document.getElementById('uploadBtn');
-        const stopBtn = document.getElementById('stopBtn');
+        const stopCrawlBtn = document.getElementById('stopCrawlBtn');
         const stopUploadBtn = document.getElementById('stopUploadBtn');
         const logContainer = document.getElementById('logContainer');
         const csvEditor = document.getElementById('csvEditor');
@@ -670,24 +678,18 @@
         function enableButtons() {
             crawlBtn.disabled = false;
             uploadBtn.disabled = false;
-            stopBtn.style.display = 'none';
+            stopCrawlBtn.style.display = 'none';
             stopUploadBtn.style.display = 'none';
         }
 
-        function showStopButton(processType) {
-            if (processType === 'crawling') {
-                stopBtn.style.display = 'inline-block';
-            } else if (processType === 'uploading') {
-                stopUploadBtn.style.display = 'inline-block';
-            }
+        function showStopButton(type){
+            if(type==='crawling') stopCrawlBtn.style.display='inline-block';
+            if(type==='uploading') stopUploadBtn.style.display='inline-block';
         }
 
-        function hideStopButton(processType) {
-            if (processType === 'crawling') {
-                stopBtn.style.display = 'none';
-            } else if (processType === 'uploading') {
-                stopUploadBtn.style.display = 'none';
-            }
+        function hideStopButton(type){
+            if(type==='crawling') stopCrawlBtn.style.display='none';
+            if(type==='uploading') stopUploadBtn.style.display='none';
         }
 
         function appendLog(message) {
@@ -835,6 +837,45 @@
         document.getElementById('logoutBtn').addEventListener('click',()=>{
             localStorage.removeItem('loggedIn');
             location.reload();
+         });
+
+        // === 테이블 내 버튼 클릭 처리 (이벤트 위임)
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('crawl-row-btn')) {
+                const key = e.target.dataset.key;
+                const [leagueTag, regionTag, year] = key.split('_');
+                disableButtons();
+                appendLog(`🚀 [${leagueTag} ${year}] 개별 크롤링을 시작합니다...`);
+                socket.emit('start-crawling', { year, league: leagueTag, region: regionTag });
+                e.target.disabled = true;
+            }
+            if (e.target.classList.contains('upload-row-btn')) {
+                const key = e.target.dataset.key;
+                const [leagueTag, regionTag, year] = key.split('_');
+                disableButtons();
+                appendLog(`☁️ [${leagueTag} ${year}] 개별 업로드를 시작합니다...`);
+                socket.emit('start-uploading', { year, league: leagueTag, region: regionTag });
+                e.target.disabled = true;
+            }
+        });
+
+        // === STOP 버튼 동작 ===
+        stopCrawlBtn.addEventListener('click', () => {
+            const crawling = Array.from(currentProcesses.entries()).find(([pid, info]) => info.type === 'crawling');
+            if(crawling){
+                const [processId] = crawling;
+                socket.emit('stop-process', { processId });
+                stopCrawlBtn.disabled = true;
+            }
+        });
+
+        stopUploadBtn.addEventListener('click', () => {
+            const uploading = Array.from(currentProcesses.entries()).find(([pid, info]) => info.type === 'uploading');
+            if(uploading){
+                const [processId] = uploading;
+                socket.emit('stop-process', { processId });
+                stopUploadBtn.disabled = true;
+            }
         });
     </script>
 </body>
