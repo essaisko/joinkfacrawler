@@ -13,7 +13,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
         }
         h1 {
             color: #1877f2;
@@ -139,9 +139,9 @@
         .upload-row-btn { background-color: #1877f2; }
         .upload-row-btn:hover { background-color: #166fe5; }
         /* 레이아웃 개선 */
-        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; flex-wrap:nowrap; }
+        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; box-sizing: border-box; flex-wrap:nowrap; }
         .left-area { flex: 1 1 60%; min-width:0; }
-        .log-panel { flex: 0 0 38%; max-width: 600px; }
+        .log-panel { flex: 0 0 38%; }
         /* 왼쪽 컨테이너 최대폭 제거 */
         .left-area .container { width:100%; max-width:none; }
         /* 로그인 오버레이 */
@@ -163,6 +163,13 @@
         #loginError { margin-top: 10px; color: #dc3545; font-size: 13px; }
         /* 불필요한 구버전 필터 섹션 숨김 */
         #legacyFilters, #legacyUploads { display:none; }
+        /* 작업 큐 현황 UI */
+        #queueStatusSection { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 15px; margin-bottom: 20px; }
+        #queueStatusSection h3 { margin-top: 0; font-size: 16px; color: #1c1e21; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        #queueStatusSection div { font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; margin-top: 8px; }
+        #runningJob, #waitingJobs { display: inline-block; padding: 4px 8px; border-radius: 4px; }
+        #runningJob { background-color: #e7f3ff; border: 1px solid #cce0f5; color: #004085; }
+        #waitingJobs { background-color: #f8f9fa; border: 1px solid #dee2e6; color: #343a40; }
     </style>
 </head>
 <body>
@@ -183,6 +190,13 @@
                 <a href="/dashboard" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">📊 Firebase CRUD Dashboard</a>
                 <a href="/" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">🏠 크롤링 대시보드</a>
                 <button id="logoutBtn" style="background:#dc3545; color:white; padding:10px 20px; border:none; border-radius:5px;">🚪 로그아웃</button>
+            </div>
+            
+            <!-- 작업 큐 현황 -->
+            <div id="queueStatusSection">
+                <h3>🚀 작업 큐 현황</h3>
+                <div>실행중: <span id="runningJob">없음</span></div>
+                <div>대기중: <span id="waitingJobs">없음</span></div>
             </div>
             
             <!-- Git 커밋 정보 표시 -->
@@ -232,7 +246,10 @@
 
                 <!-- 리그별 액션 테이블 -->
                 <div id="leagueTableSection" style="margin-top: 25px;">
-                    <h3 style="margin:0 0 10px 0;">🏷️ 개별 리그 작업</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                        <h3 style="margin:0;">🏷️ 개별 리그 작업</h3>
+                        <button id="refreshTableBtn" style="background-color:#17a2b8; color:white; border:none; padding: 6px 12px; border-radius:4px; font-size:12px;">�� 테이블 새로고침</button>
+                    </div>
                     <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <button id="crawlSelectedBtn" class="action-btn crawl-row-btn">선택 크롤링</button>
                         <button id="uploadSelectedBtn" class="action-btn upload-row-btn">선택 업로드</button>
@@ -1039,8 +1056,9 @@
             if (e.target.classList.contains('crawl-row-btn')) {
                 const key = e.target.dataset.key;
                 const [leagueTag, regionTag, year] = key.split('_');
-                disableButtons(); // 기존 버튼 비활성화 재사용
+                disableButtons();
                 appendLog(`🚀 [${leagueTag} ${year}] 개별 크롤링을 시작합니다...`);
+                if (!awaitingCrawlKeys.includes(key)) awaitingCrawlKeys.push(key);
                 socket.emit('start-crawling', { year, league: leagueTag });
                 e.target.disabled = true;
             }
@@ -1049,9 +1067,7 @@
                 const [leagueTag, regionTag, year] = key.split('_');
                 disableButtons();
                 appendLog(`☁️ [${leagueTag} ${year}] 개별 업로드를 시작합니다...`);
-                awaitingUploadKeys.push(key);
-                socket.emit('start-uploading', { year, league: leagueTag });
-                e.target.disabled = true;
+                keys.forEach(k=>{ const [tag, region, year] = k.split('_'); if(!awaitingUploadKeys.includes(k)) awaitingUploadKeys.push(k); socket.emit('start-uploading', { year, league: tag }); });
             }
         });
 
@@ -1073,7 +1089,37 @@
             if(keys.length===0){ alert('리그를 선택하세요.'); return; }
             disableButtons();
             appendLog(`☁️ 선택된 ${keys.length}개 리그 업로드를 시작합니다...`);
-            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); awaitingUploadKeys.push(k); socket.emit('start-uploading', { year, league: tag }); });
+            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); if(!awaitingUploadKeys.includes(k)) awaitingUploadKeys.push(k); socket.emit('start-uploading', { year, league: tag }); });
+        });
+
+        // === 테이블 새로고침 버튼 ===
+        document.getElementById('refreshTableBtn').addEventListener('click', () => {
+            if (csvEditor.value) {
+                renderLeagueTable(csvEditor.value);
+                appendLog('🔄 테이블 표시가 새로고침 되었습니다.');
+            }
+        });
+
+        // === 작업 큐 상태 업데이트 ===
+        socket.on('queue-status', (status) => {
+            const { running, waiting } = status;
+            const runningJobEl = document.getElementById('runningJob');
+            const waitingJobsEl = document.getElementById('waitingJobs');
+
+            if (running) {
+                const year = running.year || '전체';
+                const league = running.league || '전체';
+                runningJobEl.textContent = `${league} (${year})`;
+            } else {
+                runningJobEl.textContent = '없음';
+            }
+
+            if (waiting && waiting.length > 0) {
+                const waitingText = waiting.map(j => `${j.league || '전체'}(${j.year || '전체'})`).join(', ');
+                waitingJobsEl.textContent = `${waiting.length}개 대기중: ${waitingText}`;
+            } else {
+                waitingJobsEl.textContent = '없음';
+            }
         });
 
         // === 로그 지우기 ===

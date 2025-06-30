@@ -226,6 +226,15 @@ io.on('connection', (socket) => {
   const crawlQueue = [];
   let isCrawling = false;
 
+  function emitQueueStatus() {
+    const runningProcess = Array.from(runningProcesses.values()).find(p => p.type === 'crawling');
+    const waitingQueue = crawlQueue.map(item => item.options);
+    io.emit('queue-status', {
+        running: runningProcess ? runningProcess.options : null,
+        waiting: waitingQueue
+    });
+  }
+
   async function launchCrawler(options, socket) {
     isCrawling = true;
 
@@ -255,9 +264,10 @@ io.on('connection', (socket) => {
     const crawler = spawn('node', args);
     const processId = `crawling-${Date.now()}`;
 
-    runningProcesses.set(processId, { process: crawler, type: 'crawling', socket: socket.id });
+    runningProcesses.set(processId, { process: crawler, type: 'crawling', socket: socket.id, options: options });
     socket.runningProcesses.add(processId);
     socket.emit('process-started', { processId, type: 'crawling' });
+    emitQueueStatus();
 
     crawler.stdout.on('data', (data) => {
       const msg = data.toString();
@@ -290,6 +300,7 @@ io.on('connection', (socket) => {
       } else {
         isCrawling = false;
       }
+      emitQueueStatus();
     });
   }
 
@@ -303,6 +314,7 @@ io.on('connection', (socket) => {
       const next = crawlQueue.shift();
       launchCrawler(next.options, next.socket);
     }
+    emitQueueStatus();
   });
 
   // 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
@@ -369,6 +381,7 @@ io.on('connection', (socket) => {
         if (processInfo.type === 'crawling') {
           crawlQueue.length = 0;           // 대기 중인 크롤링 제거
           socket.emit('log', `🧹 크롤링 대기열을 모두 비웠습니다.\n`);
+          emitQueueStatus(); // 큐 상태 업데이트
         }
         
         // 3초 후에도 프로세스가 살아있으면 강제 종료
