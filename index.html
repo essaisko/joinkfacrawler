@@ -710,6 +710,36 @@
             appendLog(message);
         });
 
+        // === 프로세스 시작/종료 이벤트 ===
+        socket.on('process-started', (data) => {
+            const { type } = data;
+            showStopButton(type);
+            disableButtons();
+        });
+
+        socket.on('process-ended', (data) => {
+            const { type, options } = data;
+            hideStopButton(type);
+            enableButtons();
+
+            if(options && options.league && options.year){
+                const region = options.region || '';
+                const key = `${options.league}_${region}_${options.year}`;
+                const ts = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; };
+                const label = ts();
+                if(type==='crawling') {
+                    localStorage.setItem('crawl_'+key,label);
+                    const cell=document.getElementById('crawl-'+key);
+                    if(cell) cell.textContent=label;
+                }
+                if(type==='uploading') {
+                    localStorage.setItem('upload_'+key,label);
+                    const cell=document.getElementById('upload-'+key);
+                    if(cell) cell.textContent=label;
+                }
+            }
+        });
+
         // ======================= 리그 테이블 JS =======================
         function parseCsvToArray(csv) {
             const lines = csv.trim().split('\n');
