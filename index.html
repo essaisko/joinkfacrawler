@@ -139,9 +139,9 @@
         .upload-row-btn { background-color: #1877f2; }
         .upload-row-btn:hover { background-color: #166fe5; }
         /* 레이아웃 개선 */
-        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; }
-        .left-area { flex: 1; }
-        .log-panel { width: 40%; max-width: 600px; }
+        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; flex-wrap:nowrap; }
+        .left-area { flex: 1 1 60%; min-width:0; }
+        .log-panel { flex: 0 0 38%; max-width: 600px; }
         /* 왼쪽 컨테이너 최대폭 제거 */
         .left-area .container { width:100%; max-width:none; }
         /* 로그인 오버레이 */
@@ -161,6 +161,8 @@
         #loginOverlay input { padding: 10px; margin: 5px 0; width: 250px; font-size: 14px; }
         #loginOverlay button { padding: 10px 20px; background: #1877f2; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
         #loginError { margin-top: 10px; color: #dc3545; font-size: 13px; }
+        /* 불필요한 구버전 필터 섹션 숨김 */
+        #legacyFilters, #legacyUploads { display:none; }
     </style>
 </head>
 <body>
@@ -259,7 +261,7 @@
                 </div>
             </div>
 
-            <div class="section">
+            <div class="section" id="legacyFilters">
                 <h2>크롤링 실행 (다중 선택 가능)</h2>
                 <div id="crawlingFilters">
                     <div class="filter-row">
@@ -281,7 +283,7 @@
                 </div>
             </div>
 
-            <div class="section">
+            <div class="section" id="legacyUploads">
                 <h2>Firebase 업로드 (다중 선택 가능)</h2>
                 <div id="uploadFilters">
                     <div class="filter-row">
@@ -1063,7 +1065,7 @@
             if(keys.length===0){ alert('리그를 선택하세요.'); return; }
             disableButtons();
             appendLog(`🚀 선택된 ${keys.length}개 리그 크롤링을 시작합니다...`);
-            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); socket.emit('start-crawling', { year, league: tag }); });
+            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); if(!awaitingCrawlKeys.includes(k)) awaitingCrawlKeys.push(k); socket.emit('start-crawling', { year, league: tag }); });
         });
 
         document.getElementById('uploadSelectedBtn').addEventListener('click', ()=>{
