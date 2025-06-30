@@ -365,6 +365,12 @@ io.on('connection', (socket) => {
         console.log(`✅ 프로세스 ${processId} 중단 신호 전송`);
         socket.emit('log', `🛑 ${processInfo.type} 프로세스를 중단합니다...\n`);
         
+        // === 개선: 크롤링 중단 시 대기열도 함께 비우기 ===
+        if (processInfo.type === 'crawling') {
+          crawlQueue.length = 0;           // 대기 중인 크롤링 제거
+          socket.emit('log', `🧹 크롤링 대기열을 모두 비웠습니다.\n`);
+        }
+        
         // 3초 후에도 프로세스가 살아있으면 강제 종료
         setTimeout(() => {
           if (runningProcesses.has(processId)) {
