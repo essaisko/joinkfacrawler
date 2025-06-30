@@ -239,6 +239,14 @@ io.on('connection', (socket) => {
     });
   }
 
+  function maybeStartNextUpload() {
+    // 업로드는 크롤링이 모두 끝난 뒤 순차 진행
+    if (!isCrawling && !isUploading && uploadQueue.length > 0) {
+      const next = uploadQueue.shift();
+      launchUploader(next.options, next.socket);
+    }
+  }
+
   async function launchCrawler(options, socket) {
     isCrawling = true;
 
@@ -304,6 +312,8 @@ io.on('connection', (socket) => {
         launchCrawler(next.options, next.socket);
       } else {
         isCrawling = false;
+        // 크롤링이 모두 끝났으니 대기 중인 업로드가 있으면 시작
+        maybeStartNextUpload();
       }
       emitQueueStatus();
     });
@@ -401,11 +411,13 @@ io.on('connection', (socket) => {
           crawlQueue.length = 0;
           socket.emit('log', `🧹 크롤링 대기열을 모두 비웠습니다.\n`);
           emitQueueStatus();
+          maybeStartNextUpload();
         }
         if (processInfo.type === 'uploading') {
           uploadQueue.length = 0;
           socket.emit('log', `🧹 업로드 대기열을 모두 비웠습니다.\n`);
           emitQueueStatus();
+          maybeStartNextUpload();
         }
         
         // 3초 후에도 프로세스가 살아있으면 강제 종료
