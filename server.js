@@ -185,9 +185,27 @@ io.on('connection', (socket) => {
   }
 
   // 'start-crawling' 이벤트를 받으면 meat.js 실행
-  socket.on('start-crawling', (options) => {
+  socket.on('start-crawling', async (options) => {
     console.log('🚀 Crawling process started with options:', options);
     socket.emit('log', `🚀 크롤링을 시작합니다... (옵션: ${JSON.stringify(options)})\n`);
+    
+    try {
+      // 크롤링 실행 전에 Firebase에서 최신 CSV 데이터 동기화
+      socket.emit('log', `🔄 Firebase에서 최신 리그 데이터를 가져오는 중...\n`);
+      const firebaseContent = await downloadCsvFromFirebase();
+      
+      if (firebaseContent !== null) {
+        // Firebase에서 가져온 데이터로 로컬 파일 업데이트
+        const localPath = path.join(__dirname, 'leagues.csv');
+        fs.writeFileSync(localPath, firebaseContent, 'utf-8');
+        socket.emit('log', `✅ 최신 리그 데이터로 업데이트 완료\n`);
+      } else {
+        socket.emit('log', `⚠️ Firebase에서 데이터를 가져올 수 없어 로컬 파일을 사용합니다\n`);
+      }
+    } catch (error) {
+      console.error('CSV 동기화 실패:', error);
+      socket.emit('log', `⚠️ CSV 동기화 실패, 로컬 파일을 사용합니다: ${error.message}\n`);
+    }
     
     // 옵션을 인자로 넘겨주기 위해 배열 생성
     const args = ['meat.js'];

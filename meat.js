@@ -252,15 +252,16 @@ async function fetchMatchData(league, ym, retryCount = 0) {
   console.log('');
   
   for (const league of LEAGUE_LIST) {
-    // 방어 코드 추가
-    if (!league.leagueTag || !league.regionTag || !league.year || !league.leagueTitle || !league.matchIdx) {
+    // 방어 코드 추가 (regionTag는 빈 문자열 허용)
+    if (!league.leagueTag || league.regionTag === undefined || league.regionTag === null || !league.year || !league.leagueTitle || !league.matchIdx) {
       console.error('[ERROR] leagues.csv에 누락된 값이 있습니다:', league);
       continue;
     }
     let matches = [];
     let completedCount = 0;
     let upcomingCount = 0;
-    console.log(`\n[${league.year}] ${league.leagueTitle} (${league.regionTag}) 크롤링 시작...`);
+    const regionDisplay = league.regionTag && league.regionTag.trim() !== '' ? league.regionTag : '전국';
+    console.log(`\n[${league.year}] ${league.leagueTitle} (${regionDisplay}) 크롤링 시작...`);
     for (const month of MONTHS) {
       const ym = `${league.year}-${month}`;
       process.stdout.write(`  - [${ym}] 요청 중... `);
@@ -315,7 +316,7 @@ async function fetchMatchData(league, ym, retryCount = 0) {
     );
     fs.writeFileSync(filename, JSON.stringify(matches, null, 2), 'utf-8');
     console.log(
-      `\n${league.leagueTitle} (${league.regionTag}) 저장 완료: 총 ${matches.length}경기 | 완료: ${completedCount}  예정: ${upcomingCount}\n→ ${filename}`
+      `\n${league.leagueTitle} (${regionDisplay}) 저장 완료: 총 ${matches.length}경기 | 완료: ${completedCount}  예정: ${upcomingCount}\n→ ${filename}`
     );
   }
   console.log('\n🚀 모든 리그 크롤링 완료!');
