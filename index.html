@@ -65,7 +65,7 @@
             font-size: 13px;
             padding: 15px;
             border-radius: 6px;
-            height: 400px;
+            height: 80vh;
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
@@ -140,9 +140,8 @@
         .upload-row-btn:hover { background-color: #166fe5; }
         /* 레이아웃 개선 */
         .main-wrapper { display: flex; gap: 20px; align-items: flex-start; }
-        .left-panel { flex: 1; }
-        .right-panel { width: 40%; max-width: 550px; }
-        #logContainer { height: 70vh; }
+        .left-area { flex: 1; }
+        .log-panel { width: 40%; max-width: 600px; }
         /* 로그인 오버레이 */
         #loginOverlay {
             position: fixed;
@@ -174,8 +173,7 @@
     </div>
 
     <div class="main-wrapper" id="dashboardWrapper" style="display:none;">
-      <div class="left-panel">
-        <div class="container">
+        <div class="container left-area">
             <h1>KFA 크롤러 대시보드</h1>
             <div style="text-align: center; margin-bottom: 20px;">
                 <a href="/dashboard" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">📊 Firebase CRUD Dashboard</a>
@@ -247,13 +245,13 @@
                                     <th style="text-align:left;">리그 이름</th>
                                     <th>크롤링</th>
                                     <th>업로드</th>
-                                    <th>최근 동기화</th>
+                                    <th>최근 업로드</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                     </div>
-                    <p style="font-size: 12px; color: #666; margin-top: 8px;">🕒 "최근 동기화"는 이 페이지에서 실행한 시점을 표시합니다.</p>
+                    <p style="font-size: 12px; color: #666; margin-top: 8px;">🕒 "최근 업로드"는 이 페이지에서 실행한 시점을 표시합니다.</p>
                 </div>
             </div>
 
@@ -304,13 +302,13 @@
                     💡 팁: 필터를 비워두면 모든 데이터를 업로드합니다. "크롤링 필터 복사" 버튼으로 위의 크롤링 조건을 쉽게 복사할 수 있습니다.
                 </p>
             </div>
-            
-            <div class="right-panel">
-                <button id="clearLogBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; margin-bottom:6px;">🧹 로그 지우기</button>
-                <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
-            </div>
         </div>
-      </div>
+
+        <!-- 로그 패널 오른쪽 -->
+        <div class="log-panel">
+            <button id="clearLogBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; margin-bottom:6px;">🧹 로그 지우기</button>
+            <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -679,10 +677,18 @@
             appendLog(message);
         });
 
+        // === 업로드 프로세스 트래킹 ===
+        const awaitingUploadKeys = [];
+
         // 프로세스 시작 이벤트
         socket.on('process-started', (data) => {
             const { processId, type } = data;
-            currentProcesses.set(processId, type);
+            if(type==='uploading'){
+                const key=awaitingUploadKeys.shift()||null;
+                currentProcesses.set(processId,{type, key});
+            }else{
+                currentProcesses.set(processId,{type});
+            }
             showStopButton(type);
             console.log(`프로세스 시작: ${processId} (${type})`);
         });
@@ -690,9 +696,20 @@
         // 프로세스 종료 이벤트
         socket.on('process-ended', (data) => {
             const { processId, type } = data;
+            const procInfo=currentProcesses.get(processId)||{type};
             currentProcesses.delete(processId);
             hideStopButton(type);
             enableButtons();
+
+            // 업로드 완료 시 시간 기록
+            if(type==='uploading' && procInfo.key){
+                const now=new Date();
+                const label=`${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+                localStorage.setItem('upload_'+procInfo.key,label);
+                const cell=document.getElementById('upload-'+procInfo.key);
+                if(cell) cell.textContent=label;
+            }
+
             console.log(`프로세스 종료: ${processId} (${type})`);
         });
 
@@ -987,7 +1004,7 @@
                     <td style="text-align:left;">${l.leagueTitle}</td>
                     <td><button class="action-btn crawl-row-btn" data-key="${key}">크롤</button></td>
                     <td><button class="action-btn upload-row-btn" data-key="${key}">업로드</button></td>
-                    <td class="sync-time" id="sync-${key}">${localStorage.getItem('sync_'+key) || '-'}</td>
+                    <td class="upload-time" id="upload-${key}">${localStorage.getItem('upload_'+key) || '-'}</td>
                 `;
                 tableBody.appendChild(tr);
             });
@@ -1008,21 +1025,9 @@
                 const [leagueTag, regionTag, year] = key.split('_');
                 disableButtons();
                 appendLog(`☁️ [${leagueTag} ${year}] 개별 업로드를 시작합니다...`);
+                awaitingUploadKeys.push(key);
                 socket.emit('start-uploading', { year, league: leagueTag });
                 e.target.disabled = true;
-            }
-        });
-
-        // 프로세스 종료 시 동기화 시간 갱신
-        socket.on('process-ended', (data) => {
-            if (data.type === 'crawling' || data.type === 'uploading') {
-                const now = new Date();
-                const syncedLabel = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-                // 현재 동작했던 마지막 options를 알 수 없어 로그 기반 처리 생략
-                // 사용자가 즉시 확인할 수 있도록 전체 테이블을 리렌더
-                if (csvEditor.value) {
-                    renderLeagueTable(csvEditor.value);
-                }
             }
         });
 
@@ -1044,7 +1049,7 @@
             if(keys.length===0){ alert('리그를 선택하세요.'); return; }
             disableButtons();
             appendLog(`☁️ 선택된 ${keys.length}개 리그 업로드를 시작합니다...`);
-            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); socket.emit('start-uploading', { year, league: tag }); });
+            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); awaitingUploadKeys.push(k); socket.emit('start-uploading', { year, league: tag }); });
         });
 
         // === 로그 지우기 ===
