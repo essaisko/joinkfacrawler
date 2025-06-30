@@ -289,9 +289,10 @@ io.on('connection', (socket) => {
       addToLogHistory(msg);
       io.emit('log', msg);
 
+      const processInfo = runningProcesses.get(processId);
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
-      io.emit('process-ended', { processId, type: 'crawling' });
+      io.emit('process-ended', { processId, type: 'crawling', options: processInfo ? processInfo.options : null });
 
       // 다음 큐 실행
       if (crawlQueue.length > 0) {
@@ -331,8 +332,8 @@ io.on('connection', (socket) => {
     const uploader = spawn('node', args);
     const processId = `uploading-${Date.now()}`;
     
-    // 프로세스 추적에 추가
-    runningProcesses.set(processId, { process: uploader, type: 'uploading', socket: socket.id });
+    // 프로세스 추적에 추가 (options 포함)
+    runningProcesses.set(processId, { process: uploader, type: 'uploading', socket: socket.id, options });
     socket.runningProcesses.add(processId);
     
     // 클라이언트에 프로세스 ID 전송
@@ -359,9 +360,10 @@ io.on('connection', (socket) => {
       io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
       
       // 프로세스 추적에서 제거
+      const processInfo = runningProcesses.get(processId);
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
-      io.emit('process-ended', { processId, type: 'uploading' });
+      io.emit('process-ended', { processId, type: 'uploading', options: processInfo ? processInfo.options : null });
     });
   });
 

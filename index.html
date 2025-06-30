@@ -248,7 +248,7 @@
                 <div id="leagueTableSection" style="margin-top: 25px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
                         <h3 style="margin:0;">🏷️ 개별 리그 작업</h3>
-                        <button id="refreshTableBtn" style="background-color:#17a2b8; color:white; border:none; padding: 6px 12px; border-radius:4px; font-size:12px;">�� 테이블 새로고침</button>
+                        <button id="refreshTableBtn" style="background-color:#17a2b8; color:white; border:none; padding: 6px 12px; border-radius:4px; font-size:12px;">테이블 새로고침</button>
                     </div>
                     <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <button id="crawlSelectedBtn" class="action-btn crawl-row-btn">선택 크롤링</button>
@@ -327,7 +327,7 @@
             </div>
         </div>
 
-        <!-- 로그 패널 오른쪽 -->
+        <!-- 로그 패널 오른쪽 (위치를 left-area와 동일한 레벨로 이동) -->
         <div class="log-panel">
             <button id="clearLogBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; margin-bottom:6px;">🧹 로그 지우기</button>
             <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
@@ -348,6 +348,9 @@
         
         // 실행 중인 프로세스 추적
         let currentProcesses = new Map();
+
+        // === 안정적인 타임스탬프를 위한 데이터 저장 ===
+        let parsedLeagues = [];
 
         // 로그 히스토리 복원 기능
         socket.on('log-history', (history) => {
@@ -480,6 +483,12 @@
         addUploadFilterBtn.addEventListener('click', addUploadFilterRow);
         clearAllUploadFiltersBtn.addEventListener('click', clearAllUploadFilters);
 
+        // CSV 파싱 후 테이블 렌더링 및 데이터 저장
+        function renderAndStoreLeagues(csvContent) {
+            parsedLeagues = parseCsvToArray(csvContent); // 파싱된 데이터 저장
+            renderLeagueTable(parsedLeagues); // 테이블 렌더링
+        }
+
         // CSV 파일을 새로고침하는 함수
         async function refreshCsvContent() {
             try {
@@ -495,10 +504,9 @@
                     const content = await response.text();
                     csvEditor.value = content;
                     console.log('✅ CSV 파일 새로고침 완료');
-                    console.log('📄 현재 CSV 내용:', content);
                     
                     // === CSV 파싱 후 테이블 렌더 ===
-                    renderLeagueTable(content);
+                    renderAndStoreLeagues(content);
                     
                     // Firebase 연동 상태 업데이트
                     firebaseStatus.textContent = '🔥 Firebase 연동';
@@ -700,318 +708,6 @@
             appendLog(message);
         });
 
-        // === 업로드 프로세스 트래킹 ===
-        const awaitingUploadKeys = [];
-        const awaitingCrawlKeys = [];
-
-        // 프로세스 시작 이벤트
-        socket.on('process-started', (data) => {
-            const { processId, type } = data;
-            if(type==='uploading'){
-                const key=awaitingUploadKeys.shift()||null;
-                currentProcesses.set(processId,{type, key});
-            }else if(type==='crawling'){
-                const key=awaitingCrawlKeys.shift()||null;
-                currentProcesses.set(processId,{type, key});
-            }else{
-                currentProcesses.set(processId,{type});
-            }
-            showStopButton(type);
-            console.log(`프로세스 시작: ${processId} (${type})`);
-        });
-
-        // 프로세스 종료 이벤트
-        socket.on('process-ended', (data) => {
-            const { processId, type } = data;
-            const procInfo=currentProcesses.get(processId)||{type};
-            currentProcesses.delete(processId);
-            hideStopButton(type);
-            enableButtons();
-
-            // 타임스탬프 생성 함수
-            const ts=()=>{
-                const n=new Date();
-                return `${n.getFullYear()}-${(n.getMonth()+1).toString().padStart(2,'0')}-${n.getDate().toString().padStart(2,'0')} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`;
-            };
-
-            // 업로드 완료 시 시간 기록
-            if(type==='uploading' && procInfo.key){
-                const label=ts();
-                localStorage.setItem('upload_'+procInfo.key,label);
-                const cell=document.getElementById('upload-'+procInfo.key);
-                if(cell) cell.textContent=label;
-            }
-
-            // 크롤링 완료 시 시간 기록
-            if(type==='crawling' && procInfo.key){
-                const label=ts();
-                localStorage.setItem('crawl_'+procInfo.key,label);
-                const cell=document.getElementById('crawl-'+procInfo.key);
-                if(cell) cell.textContent=label;
-            }
-
-            console.log(`프로세스 종료: ${processId} (${type})`);
-        });
-
-        crawlBtn.addEventListener('click', () => {
-            logContainer.innerHTML = '';
-            disableButtons();
-            
-            const filters = getCrawlingFilters();
-            
-            if (filters.length === 0) {
-                // 필터가 없으면 전체 크롤링
-                const options = { year: '', month: '', league: '' };
-                appendLog('📋 전체 크롤링을 시작합니다...\n');
-                socket.emit('start-crawling', options);
-            } else {
-                // 다중 필터로 순차 실행
-                appendLog(`📋 ${filters.length}개의 필터 조건으로 크롤링을 시작합니다...\n`);
-                filters.forEach((filter, index) => {
-                    appendLog(`  ${index + 1}. 년도: ${filter.year || '전체'}, 월: ${filter.month || '전체'}, 리그: ${filter.league || '전체'}\n`);
-                });
-                appendLog('\n');
-                
-                let currentFilterIndex = 0;
-                
-                function runNextCrawling() {
-                    if (currentFilterIndex < filters.length) {
-                        const options = filters[currentFilterIndex];
-                        appendLog(`🚀 [${currentFilterIndex + 1}/${filters.length}] 크롤링 실행 중...\n`);
-                        socket.emit('start-crawling', options);
-                        currentFilterIndex++;
-                    }
-                }
-                
-                // 프로세스 종료 시 다음 크롤링 실행을 위한 임시 핸들러
-                const multiCrawlingEndHandler = (data) => {
-                    if (data.type === 'crawling') {
-                        setTimeout(() => {
-                            if (currentFilterIndex < filters.length) {
-                                runNextCrawling();
-                            } else {
-                                // 모든 크롤링 완료
-                                appendLog(`\n🎉 모든 크롤링이 완료되었습니다! (총 ${filters.length}개 조건)\n`);
-                                enableButtons();
-                                socket.off('process-ended', multiCrawlingEndHandler);
-                            }
-                        }, 1000);
-                    }
-                };
-                
-                socket.on('process-ended', multiCrawlingEndHandler);
-                
-                // 첫 번째 크롤링 시작
-                runNextCrawling();
-            }
-        });
-
-        uploadBtn.addEventListener('click', () => {
-            logContainer.innerHTML = '';
-            disableButtons();
-            
-            const filters = getUploadFilters();
-            
-            if (filters.length === 0) {
-                // 필터가 없으면 전체 업로드
-                const uploadOptions = { year: '', month: '', league: '' };
-                appendLog('📋 전체 데이터를 업로드합니다...\n');
-                socket.emit('start-uploading', uploadOptions);
-            } else {
-                // 다중 필터로 순차 실행
-                appendLog(`📋 ${filters.length}개의 필터 조건으로 업로드를 시작합니다...\n`);
-                filters.forEach((filter, index) => {
-                    appendLog(`  ${index + 1}. 년도: ${filter.year || '전체'}, 월: ${filter.month || '전체'}, 리그: ${filter.league || '전체'}\n`);
-                });
-                appendLog('\n');
-                
-                let currentFilterIndex = 0;
-                
-                function runNextUpload() {
-                    if (currentFilterIndex < filters.length) {
-                        const uploadOptions = filters[currentFilterIndex];
-                        appendLog(`☁️ [${currentFilterIndex + 1}/${filters.length}] 업로드 실행 중...\n`);
-                        socket.emit('start-uploading', uploadOptions);
-                        currentFilterIndex++;
-                    }
-                }
-                
-                // 프로세스 종료 시 다음 업로드 실행을 위한 임시 핸들러
-                const multiUploadEndHandler = (data) => {
-                    if (data.type === 'uploading') {
-                        setTimeout(() => {
-                            if (currentFilterIndex < filters.length) {
-                                runNextUpload();
-                            } else {
-                                // 모든 업로드 완료
-                                appendLog(`\n🎉 모든 업로드가 완료되었습니다! (총 ${filters.length}개 조건)\n`);
-                                enableButtons();
-                                socket.off('process-ended', multiUploadEndHandler);
-                            }
-                        }, 1000);
-                    }
-                };
-                
-                socket.on('process-ended', multiUploadEndHandler);
-                
-                // 첫 번째 업로드 시작
-                runNextUpload();
-            }
-        });
-
-        // 크롤링 필터 복사 버튼 이벤트
-        copyFiltersBtn.addEventListener('click', () => {
-            const crawlingFilters = getCrawlingFilters();
-            const uploadFiltersContainer = document.getElementById('uploadFilters');
-            
-            // 기존 업로드 필터 모두 제거
-            uploadFiltersContainer.innerHTML = '';
-            
-            if (crawlingFilters.length === 0) {
-                // 크롤링 필터가 없으면 빈 업로드 필터 하나 생성
-                uploadFiltersContainer.innerHTML = `
-                    <div class="filter-row">
-                        <div class="control-grid">
-                            <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter">
-                            <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter">
-                            <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter">
-                            <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                // 크롤링 필터를 업로드 필터로 복사
-                crawlingFilters.forEach(filter => {
-                    const newRow = document.createElement('div');
-                    newRow.className = 'filter-row';
-                    newRow.innerHTML = `
-                        <div class="control-grid">
-                            <input type="text" placeholder="특정 년도 (e.g., 2025)" class="upload-year-filter" value="${filter.year || ''}">
-                            <input type="text" placeholder="특정 월 (e.g., 05)" class="upload-month-filter" value="${filter.month || ''}">
-                            <input type="text" placeholder="리그명 일부 검색" class="upload-league-filter" value="${filter.league || ''}">
-                            <button class="remove-upload-filter-btn" onclick="removeUploadFilterRow(this)" style="background-color: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">❌</button>
-                        </div>
-                    `;
-                    uploadFiltersContainer.appendChild(newRow);
-                });
-            }
-            
-            // 시각적 피드백
-            copyFiltersBtn.textContent = '복사 완료!';
-            copyFiltersBtn.style.backgroundColor = '#28a745';
-            setTimeout(() => {
-                copyFiltersBtn.textContent = '크롤링 필터 복사';
-                copyFiltersBtn.style.backgroundColor = '#6c757d';
-            }, 1000);
-        });
-
-         // 크롤링 중단 버튼 이벤트
-         stopBtn.addEventListener('click', () => {
-             const crawlingProcess = Array.from(currentProcesses.entries()).find(([id, type]) => type === 'crawling');
-             if (crawlingProcess) {
-                 const [processId] = crawlingProcess;
-                 socket.emit('stop-process', { processId });
-                 stopBtn.disabled = true;
-                 stopBtn.textContent = '중단 중...';
-                 
-                 // 5초 후 버튼 복원 (안전장치)
-                 setTimeout(() => {
-                     stopBtn.disabled = false;
-                     stopBtn.textContent = '🛑 크롤링 중단';
-                                   }, 5000);
-              }
-          });
-
-          // CSV 새로고침 버튼 이벤트
-          refreshCsvBtn.addEventListener('click', async () => {
-              refreshCsvBtn.disabled = true;
-              refreshCsvBtn.textContent = '새로고침 중...';
-              
-              try {
-                  await refreshCsvContent();
-                  appendLog('✅ CSV 파일이 새로고침되었습니다.');
-              } catch (error) {
-                  appendLog(`❌ CSV 새로고침 실패: ${error.message}`);
-              } finally {
-                  refreshCsvBtn.disabled = false;
-                  refreshCsvBtn.textContent = '🔄 새로고침';
-              }
-          });
-
-          // 새 리그 추가 관련 이벤트 리스너들
-          const showNewLeagueFormBtn = document.getElementById('showNewLeagueFormBtn');
-          const newLeagueForm = document.getElementById('newLeagueForm');
-          const addNewLeagueBtn = document.getElementById('addNewLeagueBtn');
-          const cancelNewLeagueBtn = document.getElementById('cancelNewLeagueBtn');
-
-          showNewLeagueFormBtn.addEventListener('click', () => {
-              newLeagueForm.style.display = newLeagueForm.style.display === 'none' ? 'block' : 'none';
-              showNewLeagueFormBtn.textContent = newLeagueForm.style.display === 'none' ? '➕ 새 리그 추가' : '➖ 폼 닫기';
-          });
-
-          cancelNewLeagueBtn.addEventListener('click', () => {
-              newLeagueForm.style.display = 'none';
-              showNewLeagueFormBtn.textContent = '➕ 새 리그 추가';
-              // 폼 초기화
-              ['newLeagueTag', 'newRegionTag', 'newYear', 'newLeagueTitle', 'newMatchIdx'].forEach(id => {
-                  document.getElementById(id).value = '';
-              });
-          });
-
-          addNewLeagueBtn.addEventListener('click', () => {
-              const leagueTag = document.getElementById('newLeagueTag').value.trim();
-              const regionTag = document.getElementById('newRegionTag').value.trim();
-              const year = document.getElementById('newYear').value.trim();
-              const leagueTitle = document.getElementById('newLeagueTitle').value.trim();
-              const matchIdx = document.getElementById('newMatchIdx').value.trim();
-
-              // 필수 필드 검증
-              if (!leagueTag || !year || !leagueTitle || !matchIdx) {
-                  alert('⚠️ 리그 태그, 년도, 리그 이름, 매치 인덱스는 필수 입력 항목입니다.');
-                  return;
-              }
-
-              // CSV에 새 줄 추가
-              const newRow = `${leagueTag},${regionTag},${year},${leagueTitle},${matchIdx}`;
-              const currentCsv = csvEditor.value.trim();
-              
-              // 중복 검사
-              if (currentCsv.includes(`${leagueTag},${regionTag},${year}`)) {
-                  alert('⚠️ 이미 동일한 리그 태그, 지역, 년도의 조합이 존재합니다.');
-                  return;
-              }
-              
-              csvEditor.value = currentCsv + '\n' + newRow;
-              
-              // 성공 메시지
-              appendLog(`✅ 새 리그가 추가되었습니다: ${leagueTitle} (${leagueTag})`);
-              appendLog(`💾 "Firebase에 저장" 버튼을 클릭하여 변경사항을 저장하세요.`);
-              
-              // 폼 초기화 및 닫기
-              ['newLeagueTag', 'newRegionTag', 'newYear', 'newLeagueTitle', 'newMatchIdx'].forEach(id => {
-                  document.getElementById(id).value = '';
-              });
-              newLeagueForm.style.display = 'none';
-              showNewLeagueFormBtn.textContent = '➕ 새 리그 추가';
-          });
-
-         // 업로드 중단 버튼 이벤트
-         stopUploadBtn.addEventListener('click', () => {
-             const uploadingProcess = Array.from(currentProcesses.entries()).find(([id, type]) => type === 'uploading');
-             if (uploadingProcess) {
-                 const [processId] = uploadingProcess;
-                 socket.emit('stop-process', { processId });
-                 stopUploadBtn.disabled = true;
-                 stopUploadBtn.textContent = '중단 중...';
-                 
-                 // 5초 후 버튼 복원 (안전장치)
-                 setTimeout(() => {
-                     stopUploadBtn.disabled = false;
-                     stopUploadBtn.textContent = '🛑 업로드 중단';
-                 }, 5000);
-             }
-         });
-
         // ======================= 리그 테이블 JS =======================
         function parseCsvToArray(csv) {
             const lines = csv.trim().split('\n');
@@ -1027,11 +723,10 @@
             return result;
         }
 
-        function renderLeagueTable(csvContent) {
+        function renderLeagueTable(leagues) {
             const tableBody = document.querySelector('#leagueTable tbody');
             if (!tableBody) return;
             tableBody.innerHTML = '';
-            const leagues = parseCsvToArray(csvContent);
             leagues.forEach((l) => {
                 const key = `${l.leagueTag}_${l.regionTag}_${l.year}`;
                 const tr = document.createElement('tr');
@@ -1051,26 +746,6 @@
             });
         }
 
-        // 테이블 내 버튼 클릭 처리 (이벤트 위임)
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('crawl-row-btn')) {
-                const key = e.target.dataset.key;
-                const [leagueTag, regionTag, year] = key.split('_');
-                disableButtons();
-                appendLog(`🚀 [${leagueTag} ${year}] 개별 크롤링을 시작합니다...`);
-                if (!awaitingCrawlKeys.includes(key)) awaitingCrawlKeys.push(key);
-                socket.emit('start-crawling', { year, league: leagueTag });
-                e.target.disabled = true;
-            }
-            if (e.target.classList.contains('upload-row-btn')) {
-                const key = e.target.dataset.key;
-                const [leagueTag, regionTag, year] = key.split('_');
-                disableButtons();
-                appendLog(`☁️ [${leagueTag} ${year}] 개별 업로드를 시작합니다...`);
-                keys.forEach(k=>{ const [tag, region, year] = k.split('_'); if(!awaitingUploadKeys.includes(k)) awaitingUploadKeys.push(k); socket.emit('start-uploading', { year, league: tag }); });
-            }
-        });
-
         // === 선택 작업 버튼 ===
         document.getElementById('selectAllLeagues').addEventListener('change', (e)=>{
             document.querySelectorAll('.select-league').forEach(cb=>{ cb.checked = e.target.checked; });
@@ -1081,7 +756,10 @@
             if(keys.length===0){ alert('리그를 선택하세요.'); return; }
             disableButtons();
             appendLog(`🚀 선택된 ${keys.length}개 리그 크롤링을 시작합니다...`);
-            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); if(!awaitingCrawlKeys.includes(k)) awaitingCrawlKeys.push(k); socket.emit('start-crawling', { year, league: tag }); });
+            keys.forEach(k=>{ 
+                const [tag, region, year] = k.split('_'); 
+                socket.emit('start-crawling', { year, league: tag, region: region }); 
+            });
         });
 
         document.getElementById('uploadSelectedBtn').addEventListener('click', ()=>{
@@ -1089,13 +767,16 @@
             if(keys.length===0){ alert('리그를 선택하세요.'); return; }
             disableButtons();
             appendLog(`☁️ 선택된 ${keys.length}개 리그 업로드를 시작합니다...`);
-            keys.forEach(k=>{ const [tag, region, year] = k.split('_'); if(!awaitingUploadKeys.includes(k)) awaitingUploadKeys.push(k); socket.emit('start-uploading', { year, league: tag }); });
+            keys.forEach(k=>{ 
+                const [tag, region, year] = k.split('_'); 
+                socket.emit('start-uploading', { year, league: tag, region: region }); 
+            });
         });
 
         // === 테이블 새로고침 버튼 ===
         document.getElementById('refreshTableBtn').addEventListener('click', () => {
             if (csvEditor.value) {
-                renderLeagueTable(csvEditor.value);
+                renderAndStoreLeagues(csvEditor.value);
                 appendLog('🔄 테이블 표시가 새로고침 되었습니다.');
             }
         });
