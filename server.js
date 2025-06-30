@@ -222,30 +222,31 @@ io.on('connection', (socket) => {
     socket.emit('log-history', logHistory);
   }
 
-  // 'start-crawling' 이벤트를 받으면 meat.js 실행
-  socket.on('start-crawling', async (options) => {
-    console.log('🚀 Crawling process started with options:', options);
+  // ====== 크롤링 큐 시스템 ======
+  const crawlQueue = [];
+  let isCrawling = false;
+
+  async function launchCrawler(options, socket) {
+    isCrawling = true;
+
     socket.emit('log', `🚀 크롤링을 시작합니다... (옵션: ${JSON.stringify(options)})\n`);
-    
+
     try {
-      // 크롤링 실행 전에 Firebase에서 최신 CSV 데이터 동기화
+      // Firebase → 로컬 CSV 동기화
       socket.emit('log', `🔄 Firebase에서 최신 리그 데이터를 가져오는 중...\n`);
       const firebaseContent = await downloadCsvFromFirebase();
-      
       if (firebaseContent !== null) {
-        // Firebase에서 가져온 데이터로 로컬 파일 업데이트
-        const localPath = path.join(__dirname, 'leagues.csv');
-        fs.writeFileSync(localPath, firebaseContent, 'utf-8');
+        fs.writeFileSync(path.join(__dirname, 'leagues.csv'), firebaseContent, 'utf-8');
         socket.emit('log', `✅ 최신 리그 데이터로 업데이트 완료\n`);
       } else {
         socket.emit('log', `⚠️ Firebase에서 데이터를 가져올 수 없어 로컬 파일을 사용합니다\n`);
       }
-    } catch (error) {
-      console.error('CSV 동기화 실패:', error);
-      socket.emit('log', `⚠️ CSV 동기화 실패, 로컬 파일을 사용합니다: ${error.message}\n`);
+    } catch (err) {
+      console.error('CSV 동기화 실패:', err);
+      socket.emit('log', `⚠️ CSV 동기화 실패, 로컬 파일을 사용합니다: ${err.message}\n`);
     }
-    
-    // 옵션을 인자로 넘겨주기 위해 배열 생성
+
+    // 인자 배열 구성
     const args = ['meat.js'];
     if (options.year) args.push(`--year=${options.year}`);
     if (options.month) args.push(`--month=${options.month}`);
@@ -253,42 +254,56 @@ io.on('connection', (socket) => {
 
     const crawler = spawn('node', args);
     const processId = `crawling-${Date.now()}`;
-    
-    // 프로세스 추적에 추가
+
     runningProcesses.set(processId, { process: crawler, type: 'crawling', socket: socket.id });
     socket.runningProcesses.add(processId);
-    
-    // 클라이언트에 프로세스 ID 전송
     socket.emit('process-started', { processId, type: 'crawling' });
 
     crawler.stdout.on('data', (data) => {
-      const logMessage = data.toString();
-      console.log(logMessage);
-      addToLogHistory(logMessage);
-      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
+      const msg = data.toString();
+      console.log(msg);
+      addToLogHistory(msg);
+      io.emit('log', msg);
     });
 
     crawler.stderr.on('data', (data) => {
-      const logMessage = `❌ ERROR: ${data.toString()}`;
-      console.error(logMessage);
-      addToLogHistory(logMessage);
-      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
+      const msg = `❌ ERROR: ${data.toString()}`;
+      console.error(msg);
+      addToLogHistory(msg);
+      io.emit('log', msg);
     });
 
     crawler.on('close', (code) => {
-      const logMessage = `🏁 크롤링 프로세스가 종료되었습니다 (Code: ${code}).`;
-      console.log(logMessage);
-      addToLogHistory(logMessage);
-      io.emit('log', logMessage); // 모든 클라이언트에게 브로드캐스트
-      
-      // 프로세스 추적에서 제거
+      const msg = `🏁 크롤링 프로세스가 종료되었습니다 (Code: ${code}).`;
+      console.log(msg);
+      addToLogHistory(msg);
+      io.emit('log', msg);
+
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
       io.emit('process-ended', { processId, type: 'crawling' });
+
+      // 다음 큐 실행
+      if (crawlQueue.length > 0) {
+        const next = crawlQueue.shift();
+        launchCrawler(next.options, next.socket);
+      } else {
+        isCrawling = false;
+      }
     });
+  }
+
+  // 'start-crawling' 요청을 큐에 등록
+  socket.on('start-crawling', (options) => {
+    console.log('📥 큐에 크롤링 요청 추가:', options);
+    socket.emit('log', `📥 요청이 큐에 등록되었습니다. (옵션: ${JSON.stringify(options)})\n`);
+
+    crawlQueue.push({ options, socket });
+    if (!isCrawling) {
+      const next = crawlQueue.shift();
+      launchCrawler(next.options, next.socket);
+    }
   });
-
-
 
   // 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
   socket.on('start-uploading', (options) => {
