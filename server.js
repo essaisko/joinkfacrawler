@@ -39,6 +39,44 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Git 커밋 정보 가져오기 엔드포인트
+app.get('/git-info', (req, res) => {
+  exec('git log -1 --format="%H|%ad|%s" --date=format:"%Y-%m-%d %H:%M:%S"', (error, stdout, stderr) => {
+    if (error) {
+      console.error('Git 정보 가져오기 실패:', error);
+      res.json({
+        success: false,
+        error: 'Git 정보를 가져올 수 없습니다.',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    try {
+      const [hash, date, message] = stdout.trim().split('|');
+      res.json({
+        success: true,
+        commit: {
+          hash: hash,
+          fullHash: hash,
+          shortHash: hash.substring(0, 7),
+          date: date,
+          message: message,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (parseError) {
+      console.error('Git 정보 파싱 실패:', parseError);
+      res.json({
+        success: false,
+        error: 'Git 정보 파싱에 실패했습니다.',
+        raw: stdout,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+});
+
 // CSV 파일 내용을 클라이언트로 전송 (Firebase 우선)
 app.get('/leagues-csv', async (req, res) => {
   try {

@@ -253,9 +253,14 @@ async function fetchMatchData(league, ym, retryCount = 0) {
   
   for (const league of LEAGUE_LIST) {
     // 방어 코드 추가 (regionTag는 빈 문자열 허용)
-    if (!league.leagueTag || league.regionTag === undefined || league.regionTag === null || !league.year || !league.leagueTitle || !league.matchIdx) {
+    if (!league.leagueTag || !league.year || !league.leagueTitle || !league.matchIdx) {
       console.error('[ERROR] leagues.csv에 누락된 값이 있습니다:', league);
       continue;
+    }
+    
+    // regionTag가 undefined, null, 또는 문자열이 아닌 경우 빈 문자열로 설정
+    if (league.regionTag === undefined || league.regionTag === null || typeof league.regionTag !== 'string') {
+      league.regionTag = '';
     }
     let matches = [];
     let completedCount = 0;

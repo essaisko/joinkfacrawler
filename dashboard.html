@@ -1750,6 +1750,23 @@
                     </a>
                 </div>
             </div>
+            
+            <!-- Git 커밋 정보 표시 -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div style="background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 12px; font-size: 13px; color: rgba(255,255,255,0.9);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                                <span style="font-weight: bold;">🔄 현재 버전:</span>
+                                <span id="gitCommitHashDashboard" style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">로딩중...</span>
+                                <span id="gitCommitDateDashboard" style="opacity: 0.8;">로딩중...</span>
+                            </div>
+                            <button id="refreshGitInfoDashboard" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 새로고침</button>
+                        </div>
+                        <div id="gitCommitMessageDashboard" style="margin-top: 8px; font-style: italic; opacity: 0.8;">로딩중...</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -3496,6 +3513,56 @@
             a.click();
             URL.revokeObjectURL(url);
         }
+
+        // Git 정보를 가져오는 함수 (대시보드용)
+        async function loadGitInfoDashboard() {
+            try {
+                const response = await fetch('/git-info');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('gitCommitHashDashboard').textContent = data.commit.shortHash;
+                    document.getElementById('gitCommitDateDashboard').textContent = data.commit.date;
+                    document.getElementById('gitCommitMessageDashboard').textContent = data.commit.message;
+                    
+                    // 툴팁으로 전체 해시 표시
+                    document.getElementById('gitCommitHashDashboard').title = `전체 해시: ${data.commit.fullHash}`;
+                    
+                    console.log('✅ Git 정보 로드 성공 (대시보드):', data.commit);
+                } else {
+                    document.getElementById('gitCommitHashDashboard').textContent = '오류';
+                    document.getElementById('gitCommitDateDashboard').textContent = '정보 없음';
+                    document.getElementById('gitCommitMessageDashboard').textContent = data.error || 'Git 정보를 가져올 수 없습니다.';
+                    console.error('❌ Git 정보 로드 실패 (대시보드):', data.error);
+                }
+            } catch (error) {
+                document.getElementById('gitCommitHashDashboard').textContent = '오류';
+                document.getElementById('gitCommitDateDashboard').textContent = '연결 실패';
+                document.getElementById('gitCommitMessageDashboard').textContent = '서버 연결에 실패했습니다.';
+                console.error('❌ Git 정보 가져오기 실패 (대시보드):', error);
+            }
+        }
+
+        // Git 정보 새로고침 버튼 이벤트 (대시보드용)
+        document.getElementById('refreshGitInfoDashboard').addEventListener('click', async () => {
+            const refreshBtn = document.getElementById('refreshGitInfoDashboard');
+            const originalText = refreshBtn.textContent;
+            
+            refreshBtn.textContent = '⏳ 로딩...';
+            refreshBtn.disabled = true;
+            
+            await loadGitInfoDashboard();
+            
+            setTimeout(() => {
+                refreshBtn.textContent = originalText;
+                refreshBtn.disabled = false;
+            }, 500);
+        });
+
+        // 페이지 로드 시 Git 정보 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGitInfoDashboard();
+        });
     </script>
 </body>
 </html> 

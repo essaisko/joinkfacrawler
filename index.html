@@ -123,6 +123,19 @@
             <a href="/" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 10px;">🏠 크롤링 대시보드</a>
         </div>
         
+        <!-- Git 커밋 정보 표시 -->
+        <div id="gitInfo" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #495057;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <span style="font-weight: bold; color: #28a745;">🔄 현재 버전:</span>
+                    <span id="gitCommitHash" style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">로딩중...</span>
+                    <span id="gitCommitDate" style="color: #6c757d;">로딩중...</span>
+                </div>
+                <button id="refreshGitInfo" style="background: #17a2b8; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 새로고침</button>
+            </div>
+            <div id="gitCommitMessage" style="margin-top: 8px; font-style: italic; color: #6c757d;">로딩중...</div>
+        </div>
+        
         <div class="section">
             <h2>리그 목록 (leagues.csv) <span id="firebaseStatus" style="font-size: 12px; color: #28a745;">🔥 Firebase 연동</span></h2>
             
@@ -394,8 +407,56 @@
             }
         }
 
-        // 페이지 로드 시 CSV 데이터 불러오기
-        window.addEventListener('load', refreshCsvContent);
+                  // Git 정보를 가져오는 함수
+          async function loadGitInfo() {
+              try {
+                  const response = await fetch('/git-info');
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                      document.getElementById('gitCommitHash').textContent = data.commit.shortHash;
+                      document.getElementById('gitCommitDate').textContent = data.commit.date;
+                      document.getElementById('gitCommitMessage').textContent = data.commit.message;
+                      
+                      // 툴팁으로 전체 해시 표시
+                      document.getElementById('gitCommitHash').title = `전체 해시: ${data.commit.fullHash}`;
+                      
+                      console.log('✅ Git 정보 로드 성공:', data.commit);
+                  } else {
+                      document.getElementById('gitCommitHash').textContent = '오류';
+                      document.getElementById('gitCommitDate').textContent = '정보 없음';
+                      document.getElementById('gitCommitMessage').textContent = data.error || 'Git 정보를 가져올 수 없습니다.';
+                      console.error('❌ Git 정보 로드 실패:', data.error);
+                  }
+              } catch (error) {
+                  document.getElementById('gitCommitHash').textContent = '오류';
+                  document.getElementById('gitCommitDate').textContent = '연결 실패';
+                  document.getElementById('gitCommitMessage').textContent = '서버 연결에 실패했습니다.';
+                  console.error('❌ Git 정보 가져오기 실패:', error);
+              }
+          }
+
+          // Git 정보 새로고침 버튼 이벤트
+          document.getElementById('refreshGitInfo').addEventListener('click', async () => {
+              const refreshBtn = document.getElementById('refreshGitInfo');
+              const originalText = refreshBtn.textContent;
+              
+              refreshBtn.textContent = '⏳ 로딩...';
+              refreshBtn.disabled = true;
+              
+              await loadGitInfo();
+              
+              setTimeout(() => {
+                  refreshBtn.textContent = originalText;
+                  refreshBtn.disabled = false;
+              }, 500);
+          });
+
+          // 페이지 로드 시 CSV 데이터와 Git 정보 불러오기
+          window.addEventListener('load', () => {
+              refreshCsvContent();
+              loadGitInfo();
+          });
 
         // CSV 저장 버튼 이벤트
         saveCsvBtn.addEventListener('click', async () => {
