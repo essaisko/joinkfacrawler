@@ -1805,37 +1805,66 @@
         }
         
         .league-toggle-container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 8px;
             margin: 1rem 0;
             padding: 1rem;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .upcoming-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .fullscreen-toggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
             z-index: 1001;
         }
         
+        .fullscreen-toggle:hover {
+            background: #2980b9;
+            transform: scale(1.1);
+        }
+        
+        .league-toggle-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 8px;
+        }
+        
         .league-toggle-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid #3498db;
-            border-radius: 25px;
-            background: white;
-            color: #3498db;
+            display: block;
+            width: 100%;
+            padding: 6px 4px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 600;
+            color: #fff;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            opacity: 0.6;
         }
-        
-        .league-toggle-btn.active {
-            background: #3498db;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-        }
-        
+        .league-toggle-btn:hover { opacity: 0.85; }
+        .league-toggle-btn.active { opacity: 1; transform: translateY(-2px); }
+
         /* 이 스타일은 아래의 더 구체적인 선택자로 덮어쓰임 */
         
         .weekend-column { 
@@ -1974,6 +2003,17 @@
         .team-wrapper{display:flex;flex-direction:column;align-items:flex-start;}
         .team-name-link{color:#2c3e50;text-decoration:none;font-weight:600;}
         .team-name-link:hover{color:#e67e22;text-decoration:underline;}
+
+        /* Override league-toggle-container to ensure consistent spacing and background */
+        .league-toggle-container{
+            margin:1rem 0;
+            padding:1rem;
+            background:white;
+            border-radius:12px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.1);
+            position:relative;
+            z-index:1001;
+        }
     </style>
 </head>
 <body>
@@ -2693,6 +2733,15 @@
             const rangeEnd = new Date(now);
             rangeEnd.setDate(now.getDate() + 28);
 
+            // 가까운 토 / 일 계산
+            const todayD = new Date();
+            const thisSat = new Date(todayD);
+            thisSat.setDate(todayD.getDate() + ((6 - todayD.getDay() + 7) % 7));
+            const thisSun = new Date(thisSat);
+            thisSun.setDate(thisSat.getDate() + 1);
+
+            const isSameDate = (d1,d2)=> d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth() && d1.getDate()===d2.getDate();
+
             // 안전한 날짜 파서 (YYYY-MM-DD)
             const safeParseDate = (str)=>{
                 if(!str) return new Date('2100-01-01');
@@ -2714,6 +2763,11 @@
                     if (!upcomingLeagueFilter) return true;
                     const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
                     return leagueTitle === upcomingLeagueFilter;
+                })
+                // 이번 주말 경기만 유지
+                .filter(m=>{
+                    const d = safeParseDate(m.MATCH_DATE || m.matchDate || m.date || m.DATE);
+                    return isSameDate(d,thisSat) || isSameDate(d,thisSun);
                 })
                 .sort((a,b) => {
                     // 1차: 리그 등급 순
@@ -2745,6 +2799,8 @@
                     </div>
                     <div class="empty-message">예정된 경기가 없습니다</div>
                 `;
+                // 경기 리스트가 비어도 리그 토글은 표시
+                renderUpcomingLeagueToggle(rawUpcomingMatches);
                 return;
             }
             
@@ -2753,7 +2809,7 @@
             
             filteredMatches.forEach(m => {
                 const matchDateField = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
-                const matchDate = new Date(matchDateField);
+                const matchDate = safeParseDate(matchDateField);
                 const day = matchDate.getDay();
                 if(day === 6) weekend.Saturday.push(m);
                 if(day === 0) weekend.Sunday.push(m);
@@ -2763,7 +2819,7 @@
             const renderMatchItems = (matchList) => {
                 return matchList.map(match => {
                     const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
-                    const matchDate = new Date(matchDateField);
+                    const matchDate = safeParseDate(matchDateField);
                     
                     // 시간 파싱
                     const time = parseMatchTime(
@@ -2785,15 +2841,32 @@
                                    match.awayTeam || match.away_team || match.AWAY || match.TA_CLUB_NAME || match.TEAM_AWAY || '원정팀';
                     
                     const parseTeam = (str)=>{
+                        if(!str) return {teamName:'',major:'',minor:''};
                         const majors = ['경남','부산','울산','대구','대전','광주','인천','서울','경기','강원','충북','충남','전북','전남','경북','제주'];
-                        const tokens = str.split(' ');
+                        // 1) 공백이 있는 일반형
+                        const tokens = str.trim().split(' ');
                         if(tokens.length>1 && majors.includes(tokens[0])){
                             const major = tokens[0];
                             const minor = tokens[1].match(/(시|군|구)$/) ? tokens[1] : '';
-                            const teamName = minor ? tokens.slice(2).join(' ') : tokens.slice(1).join(' ');
+                            const teamName = (minor ? tokens.slice(2) : tokens.slice(1)).join(' ');
                             return {teamName, major, minor};
                         }
-                        return {teamName:str, major:'', minor:''};
+                        // 2) 공백이 없는 접두어형
+                        for(const mj of majors){
+                            if(str.startsWith(mj)){
+                                let remain = str.slice(mj.length);
+                                let minor = '';
+                                const minorMatch = remain.match(/^(.*?(시|군|구))/);
+                                if(minorMatch){
+                                    minor = minorMatch[1];
+                                    remain = remain.slice(minor.length);
+                                }
+                                const teamName = remain.trim();
+                                return {teamName, major: mj, minor};
+                            }
+                        }
+                        // 3) 그 외 그대로 반환
+                        return {teamName:str.trim(), major:'', minor:''};
                     };
 
                     const leagueRank = getLeagueRank(league);
@@ -2803,7 +2876,7 @@
                     const renderTeamHtml = (parsed)=>{
                         const regionLabel = parsed.major ? `<div class="region-label">${parsed.major}${parsed.minor? ' '+parsed.minor:''}</div>` : '';
                         const encoded = encodeURIComponent(parsed.teamName);
-                        return `<div class="team-wrapper"><a href="team.html?team=${encoded}" class="team-name-link" title="${parsed.teamName}">${parsed.teamName}</a></div>`;
+                        return `<div class="team-wrapper">${regionLabel}<a href="team.html?team=${encoded}" class="team-name-link" title="${parsed.teamName}">${parsed.teamName}</a></div>`;
                     };
 
                     return `
@@ -3885,7 +3958,7 @@
 
             // 전체 버튼
             const allBtn = document.createElement('button');
-            allBtn.className = 'league-toggle-btn' + (upcomingLeagueFilter === '' ? ' active' : '');
+            allBtn.className = 'league-toggle-btn btn-other' + (upcomingLeagueFilter === '' ? ' active' : '');
             allBtn.textContent = '전체';
             allBtn.onclick = () => {
                 upcomingLeagueFilter = ''; 
@@ -3897,7 +3970,8 @@
             // 각 리그 버튼
             uniqueLeagues.forEach(lg => {
                 const btn = document.createElement('button');
-                btn.className = 'league-toggle-btn' + (upcomingLeagueFilter === lg ? ' active' : '');
+                const colorClass = lg.includes('K5')? 'btn-k5' : lg.includes('K6')? 'btn-k6' : lg.includes('K7')? 'btn-k7' : lg.includes('K4')? 'btn-k4' : lg.includes('K3')? 'btn-k3' : lg.includes('K리그2')||lg.includes('K2')? 'btn-k2' : lg.includes('K리그1')||lg.includes('K1')? 'btn-k1' : 'btn-other';
+                btn.className = 'league-toggle-btn '+colorClass + (upcomingLeagueFilter === lg ? ' active' : '');
                 btn.textContent = lg;
                 btn.onclick = () => {
                     upcomingLeagueFilter = lg; 
