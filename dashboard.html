@@ -1765,15 +1765,7 @@
         .upcoming-match-card .next-match-indicator { font-size: 0.7rem; margin-top: 0.25rem; }
 
         /* === NEW: Upcoming matches table layout === */
-        #upcomingMatchesSection { 
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 1rem;
-            box-sizing: border-box;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            overflow: hidden;
-        }
+        /* 이 스타일은 아래의 더 구체적인 선택자로 덮어쓰임 */
         
         .upcoming-header {
             text-align: center;
@@ -1789,6 +1781,27 @@
             color: #2c3e50;
             font-size: 2rem;
             font-weight: 700;
+        }
+        
+        .fullscreen-toggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .fullscreen-toggle:hover {
+            background: #2980b9;
+            transform: scale(1.1);
         }
         
         .league-toggle-container {
@@ -1821,13 +1834,7 @@
             box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
         
-        .matches-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            height: calc(100vh - 200px);
-            overflow: hidden;
-        }
+        /* 이 스타일은 아래의 더 구체적인 선택자로 덮어쓰임 */
         
         .weekend-column { 
             background: white;
@@ -1915,17 +1922,52 @@
             font-style: italic;
         }
         
-        /* 전체 페이지 최적화 */
-        body { 
-            margin: 0; 
-            padding: 0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        /* 뉴스피드 탭 전용 최적화 */
+        #newsfeed.active .container-fluid { padding: 0 !important; }
+        #newsfeed.active .newsfeed-hero { display: none !important; }
+        
+        /* 전체 화면 모드 */
+        #newsfeed.fullscreen-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: white;
+        }
+        
+        #newsfeed.fullscreen-mode #upcomingMatchesSection {
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
         }
-        .container-fluid { padding: 0 !important; }
-        .main-header { display: none !important; }
-        .nav-tabs-container { display: none !important; }
-        .newsfeed-hero { display: none !important; }
+        
+        #newsfeed.fullscreen-mode .matches-container {
+            height: calc(100vh - 200px);
+            overflow: hidden;
+        }
+        
+        /* 기본 상태에서는 원래 레이아웃 유지 */
+        #upcomingMatchesSection { 
+            width: 100%;
+            height: auto;
+            min-height: 80vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            overflow: auto;
+        }
+        
+        .matches-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: auto;
+            min-height: 60vh;
+            overflow: visible;
+        }
     </style>
 </head>
 <body>
@@ -2769,6 +2811,9 @@
 
             // HTML 구성
             const html = `
+                <button class="fullscreen-toggle" onclick="toggleFullscreen()" title="전체화면 토글">
+                    <i class="fas fa-expand"></i>
+                </button>
                 <div class="upcoming-header">
                     <h2>⚽ 다가오는 경기</h2>
                 </div>
@@ -2801,6 +2846,27 @@
             `;
 
             container.innerHTML = html;
+        }
+
+        // 전체 화면 토글 함수
+        let isFullscreen = false;
+        function toggleFullscreen() {
+            const newsfeedTab = document.getElementById('newsfeed');
+            const toggleBtn = document.querySelector('.fullscreen-toggle i');
+            
+            if (!isFullscreen) {
+                // 전체 화면 모드 활성화
+                newsfeedTab.classList.add('fullscreen-mode');
+                document.body.style.overflow = 'hidden';
+                if (toggleBtn) toggleBtn.className = 'fas fa-compress';
+                isFullscreen = true;
+            } else {
+                // 전체 화면 모드 비활성화
+                newsfeedTab.classList.remove('fullscreen-mode');
+                document.body.style.overflow = 'auto';
+                if (toggleBtn) toggleBtn.className = 'fas fa-expand';
+                isFullscreen = false;
+            }
         }
 
         // 경기까지 남은 시간 계산
