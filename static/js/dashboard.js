@@ -280,33 +280,78 @@ const Dashboard = {
 
             const renderCompactMatchTable = (matchList, dateHeader) => {
                 if (!matchList || matchList.length === 0) return '';
-                
-                const tableRows = matchList.map(match => {
+
+                // 정렬: K리그1 → K리그7, 같은 리그는 시간 오름차순
+                const getLeagueRank = (lg='') => {
+                    const u = lg.toUpperCase();
+                    if (u.includes('K리그1') || u.includes('K1')) return 1;
+                    if (u.includes('K리그2') || u.includes('K2')) return 2;
+                    if (u.includes('K3')) return 3;
+                    if (u.includes('K4')) return 4;
+                    if (u.includes('K5')) return 5;
+                    if (u.includes('K6')) return 6;
+                    if (u.includes('K7')) return 7;
+                    return 99;
+                };
+
+                const timeToMinutes = (t='') => {
+                    if (!t || t === '시간미정') return 24 * 60 + 1;
+                    const [h, m] = t.split(':').map(n => parseInt(n));
+                    return (h || 0) * 60 + (m || 0);
+                };
+
+                const sortedMatches = [...matchList].sort((a, b) => {
+                    const leagueA = a.leagueTitle || a.league || a.LEAGUE || '';
+                    const leagueB = b.leagueTitle || b.league || b.LEAGUE || '';
+                    const rankA = getLeagueRank(leagueA);
+                    const rankB = getLeagueRank(leagueB);
+                    if (rankA !== rankB) return rankA - rankB; // K리그1 우선
+
+                    const timeA = Dashboard.utils.parseMatchTime(
+                        a.formattedTime || a.MATCH_TIME_FORMATTED || a.TIME || a.time || '',
+                        null
+                    );
+                    const timeB = Dashboard.utils.parseMatchTime(
+                        b.formattedTime || b.MATCH_TIME_FORMATTED || b.TIME || b.time || '',
+                        null
+                    );
+                    return timeToMinutes(timeA) - timeToMinutes(timeB);
+                });
+
+                const buildTeamHtml = (raw, leagueRank) => {
+                    const parsed = Dashboard.utils.parseTeam(raw);
+                    const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
+                    const regionLabel = (leagueRank >= 5 && regionText) ? `<span class="region-label">${regionText}</span> ` : '';
+                    return `${regionLabel}${parsed.teamName || raw}`;
+                };
+
+                const tableRows = sortedMatches.map(match => {
+                    const matchDateObj = safeParseDate(match.MATCH_DATE || match.matchDate || match.date || match.DATE);
                     const time = Dashboard.utils.parseMatchTime(
                         match.formattedTime || match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '',
-                        safeParseDate(match.MATCH_DATE || match.matchDate || match.date || match.DATE)
+                        matchDateObj
                     );
-                    
+
                     let league = match.leagueTitle || match.league || match.LEAGUE || '';
                     league = league.replace(/k4리그/gi, 'K4리그');
-                    
-                    const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
-                    
-                    let homeTeam = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
-                                   match.homeTeam || match.home_team || match.HOME || match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
-                    let awayTeam = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
-                                   match.awayTeam || match.away_team || match.AWAY || match.TA_CLUB_NAME || match.TEAM_AWAY || '원정팀';
+                    const leagueRank = getLeagueRank(league);
 
-                    // 팀명 정리 (지역명 제거)
-                    homeTeam = homeTeam.replace(/^(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)\s*\w*(시|군|구)?\s*/, '');
-                    awayTeam = awayTeam.replace(/^(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)\s*\w*(시|군|구)?\s*/, '');
+                    const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
+
+                    const homeRaw = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 ||
+                                    match.homeTeam || match.home_team || match.HOME || match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
+                    const awayRaw = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 ||
+                                    match.awayTeam || match.away_team || match.AWAY || match.TA_CLUB_NAME || match.TEAM_AWAY || '원정팀';
+
+                    const homeTeamHtml = buildTeamHtml(homeRaw, leagueRank);
+                    const awayTeamHtml = buildTeamHtml(awayRaw, leagueRank);
 
                     return `
                         <tr class="match-row">
                             <td class="time-col">${time}</td>
-                            <td class="home-team">${homeTeam}</td>
+                            <td class="home-team">${homeTeamHtml}</td>
                             <td class="vs-col">vs</td>
-                            <td class="away-team">${awayTeam}</td>
+                            <td class="away-team">${awayTeamHtml}</td>
                             <td class="venue-col">${venue}</td>
                             <td class="league-col">${league}</td>
                         </tr>
