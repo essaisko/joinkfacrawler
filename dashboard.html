@@ -2350,14 +2350,14 @@
         async function loadNewsFeed() {
             try {
                 const response = await fetch('/api/newsfeed');
-                
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`newsfeed API error: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
                 console.log('API 응답 데이터:', data);
-                
+
                 // 통계 업데이트 (더 시각적으로 강화)
                 if (data.stats) {
                     updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
@@ -2365,13 +2365,41 @@
                     updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
                     updateStatCard('activeTeamsStat', data.stats.activeTeams, '👥', 'info');
                 }
-                
+
                 // 메인 뉴스피드 섹션을 화려하게 구성
                 displayEnhancedNewsFeed(data);
-                
+
             } catch (error) {
                 console.error('뉴스 피드 로드 실패:', error);
-                
+
+                // 1차 실패 시 /api/matches 엔드포인트로 폴백 시도
+                try {
+                    console.log('🔄 /api/newsfeed 실패, /api/matches 로 폴백 시도...');
+                    const resp2 = await fetch('/api/matches');
+
+                    if (!resp2.ok) throw new Error(`matches API error: ${resp2.status}`);
+
+                    const matchesData = await resp2.json();
+                    console.log('matches API 응답:', matchesData.length);
+
+                    // upcomingMatches 추출 (오늘~4주 후 경기)
+                    const now = new Date();
+                    const rangeEnd = new Date(now);
+                    rangeEnd.setDate(now.getDate() + 28);
+
+                    const upcomingMatches = matchesData.filter(m => {
+                        const dateStr = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
+                        if (!dateStr) return false;
+                        const d = new Date(dateStr);
+                        return d >= now && d <= rangeEnd;
+                    });
+
+                    displayEnhancedNewsFeed({ upcomingMatches });
+                    return; // 성공적으로 렌더링했으므로 종료
+                } catch (fallbackErr) {
+                    console.error('폴백 로드 실패:', fallbackErr);
+                }
+
                 // 에러 발생 시 대체 컨텐츠 표시
                 const container = document.getElementById('upcomingMatchesSection');
                 if (container) {
