@@ -1767,6 +1767,21 @@
         .upcoming-match-card .vs-preview { margin: 0 0.5rem; font-size: 0.8rem; }
         .upcoming-match-card .match-league-preview { font-size: 0.7rem; }
         .upcoming-match-card .next-match-indicator { font-size: 0.7rem; margin-top: 0.25rem; }
+
+        /* === NEW: Upcoming matches table layout === */
+        #upcomingMatchesSection { max-height: 650px; overflow-y: auto; }
+        .upcoming-day-group { margin-bottom: 0.5rem; }
+        .upcoming-day-group .day-header {
+            font-weight: 700;
+            background: #e9ecef;
+            padding: 4px 6px;
+            font-size: 0.8rem;
+        }
+        .upcoming-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .upcoming-table td { padding: 2px 4px; white-space: nowrap; border-bottom: 1px solid #f1f3f4; }
+        .upcoming-table .col-time { width: 48px; color: var(--text-muted); }
+        .upcoming-table .col-vs { width: 22px; text-align: center; color: var(--text-muted); }
+        .upcoming-table .col-league { color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -2442,79 +2457,53 @@
         // 강화된 다가오는 경기 표시 (이번주 기준)
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
-            
-            // 이번주 범위 계산 (월요일~일요일)
+
+            // 대상 기간: 오늘~2주 후까지
             const now = new Date();
-            const currentDay = now.getDay(); // 0(일) ~ 6(토)
-            const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay; // 월요일까지의 일 수
-            
-            const weekStart = new Date(now);
-            weekStart.setDate(now.getDate() + mondayOffset);
-            weekStart.setHours(0, 0, 0, 0);
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            weekEnd.setHours(23, 59, 59, 999);
-            
-            // 이번주 예정 경기 필터링 및 정렬
-            const upcomingMatches = matches
-                .filter(match => {
-                    if (!match.MATCH_DATE) return false;
-                    const matchDate = new Date(match.MATCH_DATE);
-                    return matchDate >= now && matchDate <= weekEnd;
+            const rangeEnd = new Date(now);
+            rangeEnd.setDate(now.getDate() + 14);
+
+            const forthcoming = matches
+                .filter(m => m.MATCH_DATE)
+                .filter(m => {
+                    const d = new Date(m.MATCH_DATE);
+                    return d >= now && d <= rangeEnd;
                 })
-                .sort((a, b) => {
-                    const dateA = new Date(a.MATCH_DATE);
-                    const dateB = new Date(b.MATCH_DATE);
-                    return dateA - dateB;
-                })
-                .slice(0, 5); // 이번주 중 가장 빠른 5개 경기
-            
-            if (!upcomingMatches || upcomingMatches.length === 0) {
-                container.innerHTML = `
-                    <div class="upcoming-matches-empty">
-                        <i class="fas fa-calendar-plus"></i>
-                        <p>예정된 경기가 없습니다</p>
-                    </div>
-                `;
+                .sort((a,b) => new Date(a.MATCH_DATE) - new Date(b.MATCH_DATE));
+
+            if (forthcoming.length === 0){
+                container.innerHTML = '<p class="upcoming-matches-empty text-muted">예정된 경기가 없습니다</p>';
                 return;
             }
-            
-            let html = '<div class="upcoming-matches-enhanced">';
-            
-            upcomingMatches.forEach((match, index) => {
-                const formattedDate = formatDateWithWeekday(match.MATCH_DATE);
-                const matchDate = new Date(match.MATCH_DATE);
-                const timeUntilMatch = getTimeUntilMatch(matchDate);
-                
-                html += `
-                    <div class="upcoming-match-card ${index === 0 ? 'next-match' : ''}">
-                        <div class="match-time-badge">
-                            <div class="match-date">${formattedDate}</div>
-                            <div class="match-time">${match.MATCH_TIME_FORMATTED || match.TIME || '시간 미정'}</div>
-                            <div class="time-until">${timeUntilMatch}</div>
-                        </div>
-                        <div class="match-teams-preview">
-                            <div class="team-preview">
-                                <div class="team-logo-preview">${(match.HOME_TEAM_NAME || '홈').charAt(0)}</div>
-                                <div class="team-name-preview">${match.HOME_TEAM_NAME || '홈팀'}</div>
-                            </div>
-                            <div class="vs-preview">VS</div>
-                            <div class="team-preview">
-                                <div class="team-logo-preview">${(match.AWAY_TEAM_NAME || '어').charAt(0)}</div>
-                                <div class="team-name-preview">${match.AWAY_TEAM_NAME || '어웨이팀'}</div>
-                            </div>
-                        </div>
-                        <div class="match-league-preview">
-                            <span class="league-color-label ${getLeagueCategory(match.leagueTitle || '')}">${getLeagueCategory(match.leagueTitle || '').toUpperCase()}</span>
-                            ${match.leagueTitle || '리그 정보 없음'}
-                        </div>
-                        ${index === 0 ? '<div class="next-match-indicator">다음 경기</div>' : ''}
-                    </div>
-                `;
+
+            const weekend = { Saturday: [], Sunday: [] };
+            forthcoming.forEach(m => {
+                const day = new Date(m.MATCH_DATE).getDay();
+                if(day === 6) weekend.Saturday.push(m);
+                if(day === 0) weekend.Sunday.push(m);
             });
-            
-            html += '</div>';
+
+            const renderRows = arr => arr.map(match => {
+                const d = new Date(match.MATCH_DATE);
+                const time = (match.MATCH_TIME_FORMATTED || match.TIME || '').slice(0,5) || d.toTimeString().substring(0,5);
+                const league = match.leagueTitle || '';
+                return `<tr>
+                            <td class="col-time">${time}</td>
+                            <td class="col-home">${match.HOME_TEAM_NAME || '홈팀'}</td>
+                            <td class="col-vs">vs</td>
+                            <td class="col-away">${match.AWAY_TEAM_NAME || '원정팀'}</td>
+                            <td class="col-league">${league}</td>
+                        </tr>`;
+            }).join('');
+
+            let html = '';
+            if(weekend.Saturday.length){
+                html += `<div class="upcoming-day-group"><div class="day-header">토요일</div><table class="upcoming-table">${renderRows(weekend.Saturday)}</table></div>`;
+            }
+            if(weekend.Sunday.length){
+                html += `<div class="upcoming-day-group"><div class="day-header">일요일</div><table class="upcoming-table">${renderRows(weekend.Sunday)}</table></div>`;
+            }
+
             container.innerHTML = html;
         }
 
