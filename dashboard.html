@@ -1865,7 +1865,7 @@
         
         .match-item {
             display: grid;
-            grid-template-columns: 80px 1fr 40px 1fr 120px 80px;
+            grid-template-columns: 80px 1fr 40px 1fr 160px 60px;
             gap: 0.5rem;
             padding: 1rem;
             border-bottom: 1px solid #eee;
@@ -1902,9 +1902,8 @@
         .venue-text {
             color: #8e44ad;
             font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            overflow: visible;
         }
         
         .league-badge {
@@ -2107,10 +2106,10 @@
                                         </div>
                                         <p class="mt-3">다가오는 경기를 불러오는 중...</p>
                                     </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
 
                 </div>
@@ -2538,18 +2537,18 @@
 
                 const data = await response.json();
                 console.log('API 응답 데이터:', data);
-
+                
                 // 통계 업데이트 (더 시각적으로 강화)
                 if (data.stats) {
-                    updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
-                    updateStatCard('completedMatchesStat', data.stats.completedMatches, '✅', 'success');
-                    updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
-                    updateStatCard('activeTeamsStat', data.stats.activeTeams, '👥', 'info');
+                updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
+                updateStatCard('completedMatchesStat', data.stats.completedMatches, '✅', 'success');
+                updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
+                updateStatCard('activeTeamsStat', data.stats.activeTeams, '👥', 'info');
                 }
-
+                
                 // 메인 뉴스피드 섹션을 화려하게 구성
                 displayEnhancedNewsFeed(data);
-
+                
             } catch (error) {
                 console.error('뉴스 피드 로드 실패:', error);
 
@@ -2626,10 +2625,10 @@
             
             // 전역 보관 및 초기 토글 렌더링
             rawUpcomingMatches = upcomingMatches;
-            renderUpcomingLeagueToggle(upcomingMatches);
-            
-            // 좌측: 다가오는 최근 일정 (필터 적용)
+            // 먼저 리스트 렌더링 → 헤더 DOM 생성
             displayUpcomingMatchesEnhanced(upcomingMatches);
+            // 이후 토글 버튼 삽입
+            renderUpcomingLeagueToggle(upcomingMatches);
             
             // 다가오는 경기만 표시 (순위표 제거)
         }
@@ -2668,7 +2667,7 @@
         // 완전히 새로운 다가오는 경기 표시 함수
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
-
+            
             if (!matches || !Array.isArray(matches)) {
                 container.innerHTML = '<div class="empty-message">경기 데이터를 불러올 수 없습니다</div>';
                 return;
@@ -2694,11 +2693,21 @@
             const rangeEnd = new Date(now);
             rangeEnd.setDate(now.getDate() + 28);
 
+            // 안전한 날짜 파서 (YYYY-MM-DD)
+            const safeParseDate = (str)=>{
+                if(!str) return new Date('2100-01-01');
+                if(/^(\d{4})[.-](\d{1,2})[.-](\d{1,2})/.test(str)){
+                    const [y,m,d] = str.split(/[-.]/).map(n=>parseInt(n));
+                    return new Date(y, m-1, d);
+                }
+                return new Date(str);
+            };
+
             let filteredMatches = matches
                 .filter(m => {
                     const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
                     if (!matchDate) return false;
-                    const d = new Date(matchDate);
+                    const d = safeParseDate(matchDate);
                     return d >= now && d <= rangeEnd;
                 })
                 .filter(m => {
@@ -2716,8 +2725,8 @@
                     if (rankA !== rankB) return rankA - rankB;
                     
                     // 2차: 경기 날짜 순
-                    const dateA = new Date(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
-                    const dateB = new Date(b.MATCH_DATE || b.matchDate || b.date || b.DATE);
+                    const dateA = safeParseDate(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
+                    const dateB = safeParseDate(b.MATCH_DATE || b.matchDate || b.date || b.DATE);
                     
                     if (dateA.getTime() !== dateB.getTime()) return dateA - dateB;
                     
@@ -2738,7 +2747,7 @@
                 `;
                 return;
             }
-
+            
             // 토요일/일요일 분류
             const weekend = { Saturday: [], Sunday: [] };
             
@@ -2805,8 +2814,8 @@
                             ${renderTeamHtml(awayParsed)}
                             <div class="venue-text" title="${venue}">${venue}</div>
                             <div class="league-badge">${league}</div>
-                        </div>
-                    `;
+                    </div>
+                `;
                 }).join('');
             };
 
@@ -2841,7 +2850,7 @@
                 </button>
                 <div class="upcoming-header">
                     <h2>⚽ 다가오는 경기</h2>
-                </div>
+                    </div>
                 
                 <div class="matches-container">
                     <div class="weekend-column">
@@ -2854,12 +2863,12 @@
                                 '<div class="empty-message">예정된 경기가 없습니다</div>'
                             }
                         </div>
-                    </div>
+                        </div>
                     
                     <div class="weekend-column">
                         <div class="day-header">
                             ⚽ ${formatDate(nextWeekend.sunday)} (${weekend.Sunday.length}경기)
-                        </div>
+                    </div>
                         <div class="matches-list">
                             ${weekend.Sunday.length > 0 ? 
                                 renderMatchItems(weekend.Sunday) : 
@@ -2871,6 +2880,8 @@
             `;
 
             container.innerHTML = html;
+            // 헤더가 생성된 후 토글 버튼 재삽입
+            renderUpcomingLeagueToggle(rawUpcomingMatches);
         }
 
         // 전체 화면 토글 함수
