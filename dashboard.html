@@ -1769,19 +1769,23 @@
         .upcoming-match-card .next-match-indicator { font-size: 0.7rem; margin-top: 0.25rem; }
 
         /* === NEW: Upcoming matches table layout === */
-        #upcomingMatchesSection { max-height: 650px; overflow-y: auto; }
-        .upcoming-day-group { margin-bottom: 0.5rem; }
-        .upcoming-day-group .day-header {
-            font-weight: 700;
-            background: #e9ecef;
-            padding: 4px 6px;
-            font-size: 0.8rem;
+        #upcomingMatchesSection { max-height: 1400px; overflow-y: auto; padding: 1rem; }
+        .upcoming-day-group { margin-bottom: 1.5rem; }
+        .day-header { 
+            font-size: 1.1rem; font-weight: 600; color: #2c3e50; 
+            margin-bottom: 0.5rem; padding: 0.5rem 0; 
+            border-bottom: 2px solid #3498db; 
         }
-        .upcoming-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-        .upcoming-table td { padding: 2px 4px; white-space: nowrap; border-bottom: 1px solid #f1f3f4; }
-        .upcoming-table .col-time { width: 48px; color: var(--text-muted); }
-        .upcoming-table .col-vs { width: 22px; text-align: center; color: var(--text-muted); }
-        .upcoming-table .col-league { color: var(--text-muted); }
+        .upcoming-table { width: 100%; border-collapse: collapse; }
+        .upcoming-table td { 
+            padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; 
+            font-size: 0.75rem; line-height: 1.2; white-space: nowrap; 
+        }
+        .col-time { width: 12%; font-weight: 600; color: #e74c3c; }
+        .col-home, .col-away { width: 22%; }
+        .col-vs { width: 8%; text-align: center; color: #7f8c8d; font-weight: 500; }
+        .col-venue { width: 18%; color: #8e44ad; font-size: 0.7rem; }
+        .col-league { width: 17%; color: #27ae60; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -1901,35 +1905,18 @@
                 <!-- 메인 컨텐츠 영역 -->
                 <div class="container-fluid">
                     <div class="row">
-                        <!-- 좌측: 다가오는 최근 일정 -->
-                        <div class="col-lg-4">
+                        <!-- 좌측: 다가오는 경기 (확장) -->
+                        <div class="col-lg-8">
                             <div class="newsfeed-section">
                                 <h2 class="section-title-enhanced">
-                                    🗓️ 다가오는 경기
+                                    ⚽ 다가오는 경기
                                 </h2>
                                 <div id="upcomingMatchesSection">
                                     <div class="loading-spinner-enhanced">
                                         <div class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
-                                        <p class="mt-3">예정된 경기를 불러오는 중...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 중앙: 하이라이트 경기 -->
-                        <div class="col-lg-4">
-                            <div class="newsfeed-section">
-                                <h2 class="section-title-enhanced">
-                                    ⭐ 주목할 경기
-                                </h2>
-                                <div id="highlightSection">
-                                    <div class="loading-spinner-enhanced">
-                                        <div class="spinner-border text-warning" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="mt-3">하이라이트 경기를 불러오는 중...</p>
+                                        <p class="mt-3">다가오는 경기를 불러오는 중...</p>
                                     </div>
                                 </div>
                             </div>
@@ -2449,19 +2436,16 @@
             
             // 우측: 순위표
             displayStandingsPreview(data.standings);
-            
-            // 중앙: 하이라이트 경기
-            displayHighlightEnhanced(data.highlight);
         }
 
-        // 강화된 다가오는 경기 표시 (이번주 기준)
+        // 강화된 다가오는 경기 표시 (확장된 기간, 경기장 정보 포함)
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
 
-            // 대상 기간: 오늘~2주 후까지
+            // 대상 기간: 오늘~4주 후까지 (더 많은 경기 표시)
             const now = new Date();
             const rangeEnd = new Date(now);
-            rangeEnd.setDate(now.getDate() + 14);
+            rangeEnd.setDate(now.getDate() + 28);
 
             const forthcoming = matches
                 .filter(m => m.MATCH_DATE)
@@ -2487,21 +2471,56 @@
                 const d = new Date(match.MATCH_DATE);
                 const time = (match.MATCH_TIME_FORMATTED || match.TIME || '').slice(0,5) || d.toTimeString().substring(0,5);
                 const league = match.leagueTitle || '';
+                const venue = match.VENUE || match.STADIUM || '경기장 미정';
+                const homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || '홈팀';
+                const awayTeam = match.AWAY_TEAM_NAME || match.AWAY_TEAM || '원정팀';
+                
                 return `<tr>
                             <td class="col-time">${time}</td>
-                            <td class="col-home">${match.HOME_TEAM_NAME || '홈팀'}</td>
+                            <td class="col-home">${homeTeam}</td>
                             <td class="col-vs">vs</td>
-                            <td class="col-away">${match.AWAY_TEAM_NAME || '원정팀'}</td>
+                            <td class="col-away">${awayTeam}</td>
+                            <td class="col-venue">${venue}</td>
                             <td class="col-league">${league}</td>
                         </tr>`;
             }).join('');
 
             let html = '';
             if(weekend.Saturday.length){
-                html += `<div class="upcoming-day-group"><div class="day-header">토요일</div><table class="upcoming-table">${renderRows(weekend.Saturday)}</table></div>`;
+                html += `<div class="upcoming-day-group">
+                            <div class="day-header">🏟️ 토요일 경기 (${weekend.Saturday.length}경기)</div>
+                            <table class="upcoming-table">
+                                <thead>
+                                    <tr style="background:#f8f9fa; font-weight:600;">
+                                        <td class="col-time">시간</td>
+                                        <td class="col-home">홈팀</td>
+                                        <td class="col-vs"></td>
+                                        <td class="col-away">원정팀</td>
+                                        <td class="col-venue">경기장</td>
+                                        <td class="col-league">리그</td>
+                                    </tr>
+                                </thead>
+                                <tbody>${renderRows(weekend.Saturday)}</tbody>
+                            </table>
+                        </div>`;
             }
             if(weekend.Sunday.length){
-                html += `<div class="upcoming-day-group"><div class="day-header">일요일</div><table class="upcoming-table">${renderRows(weekend.Sunday)}</table></div>`;
+                html += `<div class="upcoming-day-group">
+                            <div class="day-header">⚽ 일요일 경기 (${weekend.Sunday.length}경기)</div>
+                            <table class="upcoming-table">
+                                <thead>
+                                    <tr style="background:#f8f9fa; font-weight:600;">
+                                        <td class="col-time">시간</td>
+                                        <td class="col-home">홈팀</td>
+                                        <td class="col-vs"></td>
+                                        <td class="col-away">원정팀</td>
+                                        <td class="col-venue">경기장</td>
+                                        <td class="col-league">리그</td>
+                                    </tr>
+                                </thead>
+                                <tbody>${renderRows(weekend.Sunday)}</tbody>
+                            </table>
+                        </div>`;
             }
 
             container.innerHTML = html;
@@ -2524,52 +2543,7 @@
             return '곧 시작';
         }
 
-        // 강화된 하이라이트 경기 표시
-        function displayHighlightEnhanced(highlight) {
-            const container = document.getElementById('highlightSection');
-            
-            if (!highlight) {
-                container.innerHTML = `
-                    <div class="highlight-empty">
-                        <i class="fas fa-star"></i>
-                        <p>주목할 만한 경기가 없습니다</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const totalGoals = (highlight.homeScore || 0) + (highlight.awayScore || 0);
-            const formattedDate = formatDateWithWeekday(highlight.matchDate);
-            
-            container.innerHTML = `
-                <div class="highlight-match-enhanced">
-                    <div class="highlight-header">
-                        <div class="highlight-badge">⭐ 주목할 경기</div>
-                        <div class="highlight-date">${formattedDate}</div>
-                    </div>
-                    <div class="highlight-content">
-                        <div class="highlight-team">
-                            <div class="highlight-team-logo">${(highlight.homeTeam || '홈').charAt(0)}</div>
-                            <div class="highlight-team-name">${highlight.homeTeam || '홈팀'}</div>
-                        </div>
-                        <div class="highlight-score">
-                            <div class="score-display">${highlight.homeScore || 0} - ${highlight.awayScore || 0}</div>
-                            <div class="total-goals">${totalGoals} 골</div>
-                        </div>
-                        <div class="highlight-team">
-                            <div class="highlight-team-logo">${(highlight.awayTeam || '어').charAt(0)}</div>
-                            <div class="highlight-team-name">${highlight.awayTeam || '어웨이팀'}</div>
-                        </div>
-                    </div>
-                    <div class="highlight-footer">
-                        <div class="highlight-league">
-                            <span class="league-color-label ${getLeagueCategory(highlight.leagueTitle || '')}">${getLeagueCategory(highlight.leagueTitle || '').toUpperCase()}</span>
-                            ${highlight.leagueTitle || '리그 정보 없음'}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+
 
         // 순위표 미리보기 표시 (리그 토글 기능 포함)
         function displayStandingsPreview(standings) {
