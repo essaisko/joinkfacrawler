@@ -1025,6 +1025,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            opacity: 1;
         }
 
         .league-toggle-btn:hover {
@@ -1035,6 +1036,7 @@
             background: white;
             color: var(--warning-color);
             font-weight: 600;
+            transform: translateY(-2px);
         }
 
         /* 리그별 색상 라벨 */
@@ -2413,7 +2415,6 @@
         // 다가오는 경기 전용 전역 변수
         let upcomingLeagueFilter = ''; // '' = 모든 리그
         let rawUpcomingMatches = [];   // API 로드 후 원본 보관
-        let upcomingTeamSearchTerm = '';
 
         // 날짜와 요일을 포맷하는 함수
         function formatDateWithWeekday(dateString) {
@@ -2789,13 +2790,6 @@
                 .filter(m=>{
                     const d = safeParseDate(m.MATCH_DATE || m.matchDate || m.date || m.DATE);
                     return isSameDate(d,thisSat) || isSameDate(d,thisSun);
-                })
-                .filter(m=>{
-                    if(!upcomingTeamSearchTerm) return true;
-                    const term = upcomingTeamSearchTerm.toLowerCase();
-                    const h = (m.homeTeam?.teamName || m.HOME_TEAM_NAME || m.HOME_TEAM || m.homeTeam || '').toLowerCase();
-                    const a = (m.awayTeam?.teamName || m.AWAY_TEAM_NAME || m.AWAY_TEAM || m.awayTeam || '').toLowerCase();
-                    return h.includes(term) || a.includes(term);
                 })
                 .sort((a,b) => {
                     // 1차: 리그 등급 순
@@ -4009,30 +4003,14 @@
                 toggleDiv.appendChild(btn);
             });
 
-            // 팀 검색 인풋
-            const searchInput = document.createElement('input');
-            searchInput.type = 'text';
-            searchInput.placeholder = '팀명 검색';
-            searchInput.className = 'form-control upcoming-team-search';
-            searchInput.value = upcomingTeamSearchTerm;
-            searchInput.oninput = () => {
-                upcomingTeamSearchTerm = searchInput.value.trim();
-                displayUpcomingMatchesEnhanced(rawUpcomingMatches);
-            };
-
-            const searchWrapper = document.createElement('div');
-            searchWrapper.style.marginTop = '0.5rem';
-            searchWrapper.appendChild(searchInput);
-
-            // 헤더 다음에 토글+검색 삽입
+            // 헤더 다음에 토글 삽입 후 함수 종료 (팀 검색 입력 제거)
             const header = container.querySelector('.upcoming-header');
             if (header) {
                 header.appendChild(toggleDiv);
-                header.appendChild(searchWrapper);
             } else {
-                container.prepend(searchWrapper);
                 container.prepend(toggleDiv);
             }
+            return;
         }
 
         // ================= Fetch matches from /api/matches directly to avoid 10-match cap =================
