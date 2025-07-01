@@ -2022,6 +2022,18 @@
         .btn-k4 { background:#34495e; }
         /* 미정/기타 */
         .btn-other { background:#7f8c8d; }
+
+        .upcoming-team-search{width:100%;max-width:300px;margin:0 auto;}
+
+        /* Active 버튼 배경 유지 */
+        .league-toggle-container .league-toggle-btn.active.btn-k5{background:#e67e22;}
+        .league-toggle-container .league-toggle-btn.active.btn-k6{background:#3498db;}
+        .league-toggle-container .league-toggle-btn.active.btn-k7{background:#27ae60;}
+        .league-toggle-container .league-toggle-btn.active.btn-k4{background:#34495e;}
+        .league-toggle-container .league-toggle-btn.active.btn-k3{background:#8e44ad;}
+        .league-toggle-container .league-toggle-btn.active.btn-k2{background:#d35400;}
+        .league-toggle-container .league-toggle-btn.active.btn-k1{background:#e74c3c;}
+        .league-toggle-container .league-toggle-btn.active.btn-other{background:#7f8c8d;}
     </style>
 </head>
 <body>
@@ -2401,6 +2413,7 @@
         // 다가오는 경기 전용 전역 변수
         let upcomingLeagueFilter = ''; // '' = 모든 리그
         let rawUpcomingMatches = [];   // API 로드 후 원본 보관
+        let upcomingTeamSearchTerm = '';
 
         // 날짜와 요일을 포맷하는 함수
         function formatDateWithWeekday(dateString) {
@@ -2777,6 +2790,13 @@
                     const d = safeParseDate(m.MATCH_DATE || m.matchDate || m.date || m.DATE);
                     return isSameDate(d,thisSat) || isSameDate(d,thisSun);
                 })
+                .filter(m=>{
+                    if(!upcomingTeamSearchTerm) return true;
+                    const term = upcomingTeamSearchTerm.toLowerCase();
+                    const h = (m.homeTeam?.teamName || m.HOME_TEAM_NAME || m.HOME_TEAM || m.homeTeam || '').toLowerCase();
+                    const a = (m.awayTeam?.teamName || m.AWAY_TEAM_NAME || m.AWAY_TEAM || m.awayTeam || '').toLowerCase();
+                    return h.includes(term) || a.includes(term);
+                })
                 .sort((a,b) => {
                     // 1차: 리그 등급 순
                     const leagueA = a.leagueTitle || a.league || a.LEAGUE || '';
@@ -2882,7 +2902,7 @@
                     const awayParsed = parseTeam(rawAway);
 
                     const renderTeamHtml = (parsed)=>{
-                        const regionLabel = parsed.major ? `<div class="region-label">${parsed.major}${parsed.minor? ' '+parsed.minor:''}</div>` : '';
+                        const regionLabel = (leagueRank>=5 && parsed.major)? `<div class="region-label">${parsed.major}${parsed.minor? ' '+parsed.minor:''}</div>` : '';
                         const encoded = encodeURIComponent(parsed.teamName);
                         return `<div class="team-wrapper">${regionLabel}<a href="team.html?team=${encoded}" class="team-name-link" title="${parsed.teamName}">${parsed.teamName}</a></div>`;
                     };
@@ -3989,11 +4009,28 @@
                 toggleDiv.appendChild(btn);
             });
 
-            // 헤더 다음에 삽입
+            // 팀 검색 인풋
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = '팀명 검색';
+            searchInput.className = 'form-control upcoming-team-search';
+            searchInput.value = upcomingTeamSearchTerm;
+            searchInput.oninput = () => {
+                upcomingTeamSearchTerm = searchInput.value.trim();
+                displayUpcomingMatchesEnhanced(rawUpcomingMatches);
+            };
+
+            const searchWrapper = document.createElement('div');
+            searchWrapper.style.marginTop = '0.5rem';
+            searchWrapper.appendChild(searchInput);
+
+            // 헤더 다음에 토글+검색 삽입
             const header = container.querySelector('.upcoming-header');
             if (header) {
                 header.appendChild(toggleDiv);
+                header.appendChild(searchWrapper);
             } else {
+                container.prepend(searchWrapper);
                 container.prepend(toggleDiv);
             }
         }
