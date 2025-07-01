@@ -50,7 +50,7 @@ app.get('/health', (req, res) => {
 
 // Git 커밋 정보 가져오기 엔드포인트
 app.get('/git-info', (req, res) => {
-  exec('git log -1 --format="%H|%ad|%s" --date=format:"%Y-%m-%d %H:%M:%S"', (error, stdout, stderr) => {
+  exec('git log -1 --format="%H|%ad|%s" --date=local', (error, stdout, stderr) => {
     if (error) {
       console.error('Git 정보 가져오기 실패:', error);
       res.json({
@@ -1031,21 +1031,52 @@ app.get('/api/newsfeed', async (req, res) => {
       .sort((a, b) => new Date(b.MATCH_DATE || '1970-01-01') - new Date(a.MATCH_DATE || '1970-01-01'))
       .slice(0, 10);
     
-    // 예정된 경기 (다음 주)
+    // 예정된 경기 (다음 4주)
+    const twelveWeeksLater = new Date(now);
+    twelveWeeksLater.setDate(now.getDate() + 84); // 12주로 확장 - 모든 경기 표시
+    
     const upcomingMatches = matches
       .filter(m => {
-        const matchDate = new Date(m.MATCH_DATE || m.MATCH_CHECK_TIME2 || '2099-12-31');
-        return (m.matchStatus === '예정' || !m.matchStatus) && matchDate >= now && matchDate <= oneWeekLater;
+        // 여러 날짜 필드 시도
+        const dateStr = m.MATCH_DATE || m.MATCH_CHECK_TIME2 || m.matchDate || m.date || m.DATE;
+        if (!dateStr) return false;
+        
+        // 다양한 날짜 형식 처리
+        let matchDate;
+        try {
+          if (typeof dateStr === 'string' && dateStr.includes('-')) {
+            matchDate = new Date(dateStr);
+          } else {
+            matchDate = new Date(dateStr);
+          }
+        } catch (e) {
+          console.warn('날짜 파싱 실패:', dateStr);
+          return false;
+        }
+        
+        if (isNaN(matchDate.getTime())) return false;
+        
+        // 예정된 경기 조건: 완료되지 않은 경기 + 날짜 범위 내
+        const isUpcoming = (m.matchStatus === '예정' || !m.matchStatus || 
+                           (m.TH_SCORE_FINAL === null && m.TA_SCORE_FINAL === null) ||
+                           (!m.homeScore && !m.awayScore));
+        
+        return isUpcoming && matchDate >= now && matchDate <= twelveWeeksLater;
       })
       .map(m => ({
         ...m,
-        homeTeam: parseTeamName(m.TH_CLUB_NAME || m.TEAM_HOME || '홈팀'),
-        awayTeam: parseTeamName(m.TA_CLUB_NAME || m.TEAM_AWAY || '어웨이팀'),
-        formattedTime: formatTime(m.MATCH_CHECK_TIME1 || m.TIME || ''),
-        stadium: m.STADIUM || m.MATCH_AREA || '경기장 미정'
+        homeTeam: parseTeamName(m.TH_CLUB_NAME || m.TEAM_HOME || m.homeTeam || '홈팀'),
+        awayTeam: parseTeamName(m.TA_CLUB_NAME || m.TEAM_AWAY || m.awayTeam || '어웨이팀'),
+        formattedTime: formatTime(m.MATCH_CHECK_TIME1 || m.MATCH_TIME || m.TIME || m.time || ''),
+        stadium: m.STADIUM || m.MATCH_AREA || m.venue || m.stadium || '경기장 미정',
+        matchDate: m.MATCH_DATE || m.MATCH_CHECK_TIME2 || m.matchDate || m.date || m.DATE
       }))
-      .sort((a, b) => new Date(a.MATCH_DATE || '2099-12-31') - new Date(b.MATCH_DATE || '2099-12-31'))
-      .slice(0, 10);
+      .sort((a, b) => {
+        const dateA = new Date(a.matchDate || '2099-12-31');
+        const dateB = new Date(b.matchDate || '2099-12-31');
+        return dateA - dateB;
+      })
+             // .slice(0, 20) 제거 - 모든 경기 표시
     
     // 주요 통계
     const totalMatches = matches.length;

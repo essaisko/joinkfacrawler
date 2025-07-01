@@ -223,7 +223,7 @@ const Dashboard = {
             // 필터링 및 정렬 로직
             const now = new Date();
             const rangeEnd = new Date(now);
-            rangeEnd.setDate(now.getDate() + 28);
+            rangeEnd.setDate(now.getDate() + 84); // 12주로 확장 - 모든 경기 표시
 
             const todayD = new Date();
             const thisSat = new Date(todayD);
@@ -245,10 +245,7 @@ const Dashboard = {
                     const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
                     return leagueTitle === Dashboard.state.upcomingLeagueFilter;
                 })
-                .filter(m => {
-                    const d = safeParseDate(m.MATCH_DATE || m.matchDate || m.date || m.DATE);
-                    return isSameDate(d,thisSat) || isSameDate(d,thisSun);
-                })
+
                 .sort((a,b) => {
                     const leagueA = a.leagueTitle || a.league || a.LEAGUE || '';
                     const leagueB = b.leagueTitle || b.league || b.LEAGUE || '';
@@ -278,15 +275,8 @@ const Dashboard = {
                 return;
             }
             
-            // 토요일/일요일 분류
-            const weekend = { Saturday: [], Sunday: [] };
-            filteredMatches.forEach(m => {
-                const matchDateField = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
-                const matchDate = safeParseDate(matchDateField);
-                const day = matchDate.getDay();
-                if(day === 6) weekend.Saturday.push(m);
-                if(day === 0) weekend.Sunday.push(m);
-            });
+            // 날짜별로 분류 (모든 날짜의 경기 표시)
+            const allMatches = filteredMatches;
 
             const renderMatchItems = (matchList) => {
                 return matchList.map(match => {
@@ -310,8 +300,16 @@ const Dashboard = {
 
                     const leagueRank = getLeagueRank(league);
 
+                    // 경기 날짜 포맷팅
+                    const formattedDate = matchDate.toLocaleDateString('ko-KR', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        weekday: 'short'
+                    });
+
                     return `
                         <div class="match-item">
+                            <div class="match-date">${formattedDate}</div>
                             <div class="match-time">${time}</div>
                             ${renderTeamHtml(rawHome, leagueRank)}
                             <div class="vs-text">VS</div>
@@ -331,48 +329,21 @@ const Dashboard = {
                 });
             };
 
-            const getNextWeekend = () => {
-                const today = new Date();
-                const saturday = new Date(today);
-                const daysUntilSaturday = (6 - today.getDay() + 7) % 7;
-                saturday.setDate(today.getDate() + daysUntilSaturday);
-                
-                const sunday = new Date(saturday);
-                sunday.setDate(saturday.getDate() + 1);
-                
-                return { saturday, sunday };
-            };
 
-            const nextWeekend = getNextWeekend();
 
             const html = `
                 <button class="fullscreen-toggle" onclick="Dashboard.ui.toggleFullscreen()" title="전체화면 토글">
                     <i class="fas fa-expand"></i>
                 </button>
                 <div class="upcoming-header">
-                    <h2>⚽ 다가오는 경기</h2>
+                    <h2>⚽ 다가오는 경기 (${allMatches.length}경기)</h2>
                 </div>
                 
                 <div class="matches-container">
-                    <div class="weekend-column">
-                        <div class="day-header">
-                            🏟️ ${formatDate(nextWeekend.saturday)} (${weekend.Saturday.length}경기)
-                        </div>
+                    <div class="all-matches-column">
                         <div class="matches-list">
-                            ${weekend.Saturday.length > 0 ? 
-                                renderMatchItems(weekend.Saturday) : 
-                                '<div class="empty-message">예정된 경기가 없습니다</div>'
-                            }
-                        </div>
-                    </div>
-                    
-                    <div class="weekend-column">
-                        <div class="day-header">
-                            ⚽ ${formatDate(nextWeekend.sunday)} (${weekend.Sunday.length}경기)
-                        </div>
-                        <div class="matches-list">
-                            ${weekend.Sunday.length > 0 ? 
-                                renderMatchItems(weekend.Sunday) : 
+                            ${allMatches.length > 0 ? 
+                                renderMatchItems(allMatches) : 
                                 '<div class="empty-message">예정된 경기가 없습니다</div>'
                             }
                         </div>
@@ -495,6 +466,215 @@ const Dashboard = {
             document.getElementById('gitCommitHashDashboard').textContent = '오류';
             document.getElementById('gitCommitDateDashboard').textContent = '정보 없음';
             document.getElementById('gitCommitMessageDashboard').textContent = error || 'Git 정보를 가져올 수 없습니다.';
+        },
+
+        displayStandings(standings) {
+            const container = document.getElementById('standingsContainer');
+            if (!container) return;
+
+            if (!standings || Object.keys(standings).length === 0) {
+                container.innerHTML = '<div class="empty-message">순위표 데이터가 없습니다</div>';
+                return;
+            }
+
+            let html = '';
+            for (const [league, teams] of Object.entries(standings)) {
+                html += `
+                    <div class="league-section">
+                        <h3 class="league-title">${league}</h3>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>순위</th>
+                                        <th>팀명</th>
+                                        <th>경기</th>
+                                        <th>승</th>
+                                        <th>무</th>
+                                        <th>패</th>
+                                        <th>득점</th>
+                                        <th>실점</th>
+                                        <th>득실차</th>
+                                        <th>승점</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                teams.forEach((team, index) => {
+                    html += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><a href="team.html?team=${encodeURIComponent(team.teamName)}">${team.teamName}</a></td>
+                            <td>${team.matches}</td>
+                            <td>${team.wins}</td>
+                            <td>${team.draws}</td>
+                            <td>${team.losses}</td>
+                            <td>${team.goalsFor}</td>
+                            <td>${team.goalsAgainst}</td>
+                            <td>${team.goalDifference}</td>
+                            <td><strong>${team.points}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        },
+
+        displayMatches(matches) {
+            const container = document.getElementById('matchesContainer');
+            if (!container) return;
+
+            if (!matches || matches.length === 0) {
+                container.innerHTML = '<div class="empty-message">경기 데이터가 없습니다</div>';
+                return;
+            }
+
+            // 리그별로 그룹핑
+            const groupedMatches = {};
+            matches.forEach(match => {
+                const league = match.leagueTitle || match.league || '기타';
+                if (!groupedMatches[league]) {
+                    groupedMatches[league] = [];
+                }
+                groupedMatches[league].push(match);
+            });
+
+            let html = '';
+            for (const [league, leagueMatches] of Object.entries(groupedMatches)) {
+                html += `
+                    <div class="league-section">
+                        <h3 class="league-title">${league}</h3>
+                        <div class="matches-grid">
+                `;
+
+                leagueMatches.slice(0, 50).forEach(match => {
+                    const homeTeam = match.HOME_TEAM_NAME || match.homeTeam || match.TEAM_HOME || '';
+                    const awayTeam = match.AWAY_TEAM_NAME || match.awayTeam || match.TEAM_AWAY || '';
+                    const matchDate = match.MATCH_DATE || match.matchDate || match.date || '';
+                    const matchTime = match.MATCH_TIME_FORMATTED || match.matchTime || match.time || '';
+                    const homeScore = match.TH_SCORE_FINAL || match.homeScore || '';
+                    const awayScore = match.TA_SCORE_FINAL || match.awayScore || '';
+                    const status = match.MATCH_STATUS || match.matchStatus || '예정';
+                    const stadium = match.STADIUM || match.stadium || match.MATCH_AREA || '경기장 미정';
+
+                    html += `
+                        <div class="match-card">
+                            <div class="match-header">
+                                <div class="match-date">${matchDate}</div>
+                                <div class="match-time">${matchTime}</div>
+                                <div class="match-status">${status}</div>
+                            </div>
+                            <div class="match-teams">
+                                <div class="team home-team">
+                                    <span class="team-name">${homeTeam}</span>
+                                    ${homeScore ? `<span class="score">${homeScore}</span>` : ''}
+                                </div>
+                                <div class="vs">VS</div>
+                                <div class="team away-team">
+                                    <span class="team-name">${awayTeam}</span>
+                                    ${awayScore ? `<span class="score">${awayScore}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="match-venue">${stadium}</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        },
+
+        updateAnalyticsDisplay(analytics) {
+            const container = document.getElementById('analyticsContainer');
+            if (!container) return;
+
+            if (!analytics) {
+                container.innerHTML = '<div class="empty-message">통계 데이터가 없습니다</div>';
+                return;
+            }
+
+            const html = `
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h4>경기 통계</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">총 경기 수:</span>
+                            <span class="stat-value">${analytics.totalMatches || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">완료된 경기:</span>
+                            <span class="stat-value">${analytics.completedMatches || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">총 득점:</span>
+                            <span class="stat-value">${analytics.totalGoals || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">경기당 평균 득점:</span>
+                            <span class="stat-value">${analytics.avgGoals || 0}</span>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h4>리그 활동</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">가장 활발한 리그:</span>
+                            <span class="stat-value">${analytics.mostActiveLeague || '-'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">최고 득점 경기:</span>
+                            <span class="stat-value">${analytics.maxGoalMatch ? `${analytics.maxGoalMatch.homeTeam} vs ${analytics.maxGoalMatch.awayTeam} (${analytics.maxScore}골)` : '-'}</span>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h4>팀 기록</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">최다 득점팀:</span>
+                            <span class="stat-value">${analytics.topScorer ? `${analytics.topScorer.name} (${analytics.topScorer.goals}골)` : '-'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">최소 실점팀:</span>
+                            <span class="stat-value">${analytics.bestDefense ? `${analytics.bestDefense.name} (${analytics.bestDefense.conceded}실점)` : '-'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">최다 승리팀:</span>
+                            <span class="stat-value">${analytics.mostWins ? `${analytics.mostWins.name} (${analytics.mostWins.wins}승)` : '-'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        },
+
+        showAnalyticsError() {
+            const container = document.getElementById('analyticsContainer');
+            if (container) {
+                container.innerHTML = '<div class="error-message">통계 데이터를 불러올 수 없습니다</div>';
+            }
+        },
+
+        showTeamSuggestions(searchTerm) {
+            // TODO: 팀 검색 자동완성 구현
+        },
+
+        hideTeamSuggestions() {
+            // TODO: 팀 검색 자동완성 숨기기 구현
         }
     },
 
@@ -597,6 +777,41 @@ const Dashboard = {
     // === 이벤트 리스너 설정 ===
     events: {
         setupEventListeners() {
+            // 탭 전환 이벤트 리스너 추가
+            const navTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+            navTabs.forEach(tab => {
+                tab.addEventListener('shown.bs.tab', async (e) => {
+                    const targetId = e.target.getAttribute('data-bs-target');
+                    console.log('탭 전환:', targetId);
+                    
+                    switch (targetId) {
+                        case '#newsfeed':
+                            if (!Dashboard.state.rawUpcomingMatches || Dashboard.state.rawUpcomingMatches.length === 0) {
+                                await Dashboard.api.loadNewsFeed();
+                            }
+                            break;
+                        case '#standings':
+                            if (!Dashboard.state.allStandings || Dashboard.state.allStandings.length === 0) {
+                                await Dashboard.api.loadStandings();
+                            }
+                            break;
+                        case '#matches':
+                            if (!Dashboard.state.allMatches || Dashboard.state.allMatches.length === 0) {
+                                await Dashboard.api.loadMatches();
+                            }
+                            break;
+                        case '#analytics':
+                            if (!Dashboard.state.allAnalytics) {
+                                await Dashboard.api.loadAnalytics();
+                            }
+                            break;
+                        case '#management':
+                            await Dashboard.management.loadStats();
+                            break;
+                    }
+                });
+            });
+            
             // Git 정보 새로고침 버튼
             const gitRefreshBtn = document.getElementById('refreshGitInfoDashboard');
             if (gitRefreshBtn) {
@@ -680,17 +895,11 @@ const Dashboard = {
             // 이벤트 리스너 설정
             this.events.setupEventListeners();
             
-            // 초기 데이터 로드
-            await Promise.all([
-                this.api.loadNewsFeed(),
-                this.api.loadRegions(),
-                this.api.loadTeams(),
-                this.api.loadStandings(),
-                this.api.loadMatches(),
-                this.api.loadAnalytics(),
-                this.api.loadStats(),
-                this.api.loadGitInfo()
-            ]);
+            // 초기 데이터 로드 (순서대로 로드)
+            await this.api.loadNewsFeed();
+            await this.api.loadRegions();
+            await this.api.loadTeams();
+            await this.api.loadGitInfo();
             
             console.log('✅ Dashboard 초기화 완료');
         } catch (error) {
