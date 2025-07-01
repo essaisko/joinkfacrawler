@@ -200,9 +200,18 @@ const Dashboard = {
 
             const safeParseDate = (str) => {
                 if(!str) return new Date('2100-01-01');
-                if(/^(\d{4})[.-](\d{1,2})[.-](\d{1,2})/.test(str)){
-                    const [y,m,d] = str.split(/[-.]/).map(n=>parseInt(n));
-                    return new Date(y, m-1, d);
+                if(/^([0-9]{4})[.-]([0-9]{1,2})[.-]([0-9]{1,2})/.test(str)){
+                    const [y,m,d]=str.split(/[-.]/).map(n=>parseInt(n));
+                    return new Date(y,m-1,d);
+                }
+                if(/^\d{8}$/.test(str)){
+                    const y=str.substr(0,4); const m=str.substr(4,2); const d=str.substr(6,2);
+                    return new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+                }
+                if(/^\d{2}[.-]\d{2}$/.test(str)){
+                    const today=new Date();
+                    const [m,d]=str.split(/[-.]/).map(n=>parseInt(n));
+                    return new Date(today.getFullYear(),m-1,d);
                 }
                 return new Date(str);
             };
