@@ -1766,14 +1766,15 @@
 
         /* === NEW: Upcoming matches table layout === */
         #upcomingMatchesSection { 
-            width: 100vw; /* 페이지 전체 폭 사용 */
+            width: 98vw; /* 페이지 전체 폭 사용 (스크롤바 고려) */
             max-width: none;
             margin-left: calc(-50vw + 50%); /* 컨테이너 padding 제거 효과 */
             max-height: none; 
             min-height: 80vh; 
-            padding: 0.5rem 1rem; 
+            padding: 1rem 2rem; /* 좌우 여백을 늘려서 내용물 보호 */
             display: flex; 
-            gap: 1rem; 
+            gap: 2rem; /* 칼럼 사이 여백 확대 */
+            box-sizing: border-box;
         }
         .weekend-column { 
             flex: 1 1 50%;
@@ -1789,14 +1790,14 @@
         }
         .upcoming-table { width: 100%; border-collapse: collapse; }
         .upcoming-table td { 
-            padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; 
-            font-size: 0.85rem; line-height: 1.3; white-space: nowrap; /* 줄바꿈 방지 */
+            padding: 0.6rem 0.8rem; border-bottom: 1px solid #eee; 
+            font-size: 0.9rem; line-height: 1.4; 
         }
-        .col-time { width: 10%; font-weight: 600; color: #e74c3c; }
-        .col-home, .col-away { width: 28%; font-weight: 500; }
-        .col-vs { width: 4%; text-align: center; color: #7f8c8d; font-weight: 500; }
-        .col-venue { width: 18%; color: #8e44ad; font-size: 0.8rem; }
-        .col-league { width: 12%; color: #27ae60; font-weight: 500; }
+        .col-time { font-weight: 600; color: #e74c3c; }
+        .col-home, .col-away { font-weight: 500; }
+        .col-vs { text-align: center; color: #7f8c8d; font-weight: 500; }
+        .col-venue { color: #8e44ad; font-size: 0.85rem; }
+        .col-league { color: #27ae60; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -2446,7 +2447,11 @@
             
             console.log('다가오는 경기 데이터:', upcomingMatches);
             
-            // 좌측: 다가오는 최근 일정
+            // 전역 보관 및 초기 토글 렌더링
+            rawUpcomingMatches = upcomingMatches;
+            renderUpcomingLeagueToggle(upcomingMatches);
+            
+            // 좌측: 다가오는 최근 일정 (필터 적용)
             displayUpcomingMatchesEnhanced(upcomingMatches);
             
             // 다가오는 경기만 표시 (순위표 제거)
@@ -2465,13 +2470,33 @@
 
             console.log('처리할 경기 수:', matches.length);
 
+            // 선택된 리그 필터 적용
+            const filtered = matches.filter(m => {
+                if (!upcomingLeagueFilter) return true;
+                const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
+                return leagueTitle === upcomingLeagueFilter;
+            });
+
+            // 리그 우선순위 정의
+            const getLeagueRank = (league='') => {
+                const name = league.toUpperCase();
+                if (name.includes('K리그1') || name.includes('K1')) return 1;
+                if (name.includes('K리그2') || name.includes('K2')) return 2;
+                if (name.includes('K3')) return 3;
+                if (name.includes('K4')) return 4;
+                if (name.includes('K5')) return 5;
+                if (name.includes('K6')) return 6;
+                if (name.includes('K7')) return 7;
+                return 99;
+            };
+
             // 대상 기간: 오늘~4주 후까지 (모든 경기 표시)
             const now = new Date();
             const rangeEnd = new Date(now);
             rangeEnd.setDate(now.getDate() + 28);
 
             // 다양한 날짜 필드명 지원
-            const forthcoming = matches
+            const forthcoming = filtered
                 .filter(m => {
                     const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
                     return matchDate; // 날짜 필드가 있는 경기만 필터링
@@ -2482,9 +2507,24 @@
                     return d >= now && d <= rangeEnd;
                 })
                 .sort((a,b) => {
+                    // 1차: 리그 등급 순
+                    const leagueA = a.leagueTitle || a.league || a.LEAGUE || '';
+                    const leagueB = b.leagueTitle || b.league || b.LEAGUE || '';
+                    const rankA = getLeagueRank(leagueA);
+                    const rankB = getLeagueRank(leagueB);
+                    
+                    if (rankA !== rankB) return rankA - rankB;
+                    
+                    // 2차: 경기 날짜/시간 순
                     const dateA = new Date(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
                     const dateB = new Date(b.MATCH_DATE || b.matchDate || b.date || b.DATE);
-                    return dateA - dateB;
+                    
+                    if (dateA.getTime() !== dateB.getTime()) return dateA - dateB;
+                    
+                    // 3차: 경기 시간 순
+                    const timeA = a.MATCH_TIME_FORMATTED || a.TIME || a.time || '0000';
+                    const timeB = b.MATCH_TIME_FORMATTED || b.TIME || b.time || '0000';
+                    return timeA.localeCompare(timeB);
                 });
 
             console.log('필터링된 다가오는 경기 수:', forthcoming.length);
@@ -2528,11 +2568,28 @@
             const renderRows = arr => arr.map(match => {
                 const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
                 const d = new Date(matchDateField);
-                let rawTime = match.MATCH_TIME_FORMATTED || match.TIME || match.time || '';
-                // TIME 필드가 HHMM 형태면 콜론 추가
-                if (/^\d{4}$/.test(rawTime)) rawTime = rawTime.slice(0,2)+':'+rawTime.slice(2);
-                if (!rawTime.includes(':')) rawTime = d.toTimeString().substring(0,5);
-                const time = rawTime;
+                
+                // 시간 파싱 개선
+                let time = '시간 미정';
+                const rawTime = match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '';
+                
+                if (rawTime) {
+                    if (/^\d{4}$/.test(rawTime)) {
+                        // HHMM 형태 (예: "1430" -> "14:30")
+                        time = rawTime.slice(0,2) + ':' + rawTime.slice(2);
+                    } else if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
+                        // 이미 HH:MM 형태
+                        time = rawTime;
+                    } else if (/^\d{1,2}$/.test(rawTime)) {
+                        // 시간만 있는 경우 (예: "14" -> "14:00")
+                        time = rawTime.padStart(2, '0') + ':00';
+                    } else {
+                        // 기타 경우 날짜에서 시간 추출
+                        const timeFromDate = d.toTimeString().substring(0,5);
+                        time = timeFromDate !== '00:00' ? timeFromDate : '시간 미정';
+                    }
+                }
+                
                 let league = match.leagueTitle || match.league || match.LEAGUE || '';
                 // K4리그 명칭 수정
                 league = league.replace(/k4리그/gi, 'K4리그');
@@ -2550,13 +2607,13 @@
                 awayTeam = awayTeam.replace(/원정팀|away/gi, '').trim() || '원정팀';
                 
                 return `<tr>
-                            <td class="col-time">${time}</td>
-                            <td class="col-home" title="${homeTeam}">${homeTeam}</td>
-                            <td class="col-vs">vs</td>
-                            <td class="col-away" title="${awayTeam}">${awayTeam}</td>
-                            <td class="col-venue" title="${venue}">${venue}</td>
-                            <td class="col-league">${league}</td>
-                        </tr>`;
+                            <td class="col-time" style="white-space: nowrap;">${time}</td>
+                            <td class="col-home" title="${homeTeam}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${homeTeam}</td>
+                            <td class="col-vs" style="white-space: nowrap;">vs</td>
+                            <td class="col-away" title="${awayTeam}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${awayTeam}</td>
+                            <td class="col-venue" title="${venue}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${venue}</td>
+                            <td class="col-league" style="white-space: nowrap;">${league}</td>
+                         </tr>`;
             }).join('');
 
             // 좌우 분할 레이아웃
@@ -2571,20 +2628,20 @@
                 });
                 saturdayHtml = `<div class="upcoming-day-group">
                                 <div class="day-header">🏟️ 토요일 ${saturdayDateStr}<br><small>(${weekend.Saturday.length}경기)</small></div>
-                                <table class="upcoming-table">
+                                <table class="upcoming-table" style="width: 100%; table-layout: fixed;">
                                     <thead>
                                         <tr style="background:#f8f9fa; font-weight:600;">
-                                            <td class="col-time">시간</td>
-                                            <td class="col-home">홈팀</td>
-                                            <td class="col-vs"></td>
-                                            <td class="col-away">원정팀</td>
-                                            <td class="col-venue">경기장</td>
-                                            <td class="col-league">리그</td>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${renderRows(weekend.Saturday)}</tbody>
-                                </table>
-                            </div>`;
+                                            <td class="col-time" style="width: 12%;">시간</td>
+                                            <td class="col-home" style="width: 26%;">홈팀</td>
+                                            <td class="col-vs" style="width: 6%;">VS</td>
+                                            <td class="col-away" style="width: 26%;">원정팀</td>
+                                            <td class="col-venue" style="width: 18%;">경기장</td>
+                                            <td class="col-league" style="width: 12%;">리그</td>
+                                         </tr>
+                                     </thead>
+                                     <tbody>${renderRows(weekend.Saturday)}</tbody>
+                                 </table>
+                             </div>`;
             } else {
                 saturdayHtml = '<div class="upcoming-day-group"><div class="day-header">🏟️ 토요일</div><p class="text-muted text-center">예정된 경기가 없습니다</p></div>';
             }
@@ -2598,20 +2655,20 @@
                 });
                 sundayHtml = `<div class="upcoming-day-group">
                                 <div class="day-header">⚽ 일요일 ${sundayDateStr}<br><small>(${weekend.Sunday.length}경기)</small></div>
-                                <table class="upcoming-table">
+                                <table class="upcoming-table" style="width: 100%; table-layout: fixed;">
                                     <thead>
                                         <tr style="background:#f8f9fa; font-weight:600;">
-                                            <td class="col-time">시간</td>
-                                            <td class="col-home">홈팀</td>
-                                            <td class="col-vs"></td>
-                                            <td class="col-away">원정팀</td>
-                                            <td class="col-venue">경기장</td>
-                                            <td class="col-league">리그</td>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${renderRows(weekend.Sunday)}</tbody>
-                                </table>
-                            </div>`;
+                                            <td class="col-time" style="width: 12%;">시간</td>
+                                            <td class="col-home" style="width: 26%;">홈팀</td>
+                                            <td class="col-vs" style="width: 6%;">VS</td>
+                                            <td class="col-away" style="width: 26%;">원정팀</td>
+                                            <td class="col-venue" style="width: 18%;">경기장</td>
+                                            <td class="col-league" style="width: 12%;">리그</td>
+                                         </tr>
+                                     </thead>
+                                     <tbody>${renderRows(weekend.Sunday)}</tbody>
+                                 </table>
+                             </div>`;
             } else {
                 sundayHtml = '<div class="upcoming-day-group"><div class="day-header">⚽ 일요일</div><p class="text-muted text-center">예정된 경기가 없습니다</p></div>';
             }
