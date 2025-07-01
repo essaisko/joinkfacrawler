@@ -1043,14 +1043,8 @@ app.get('/api/newsfeed', async (req, res) => {
         if (!dateStr) return false;
         
         // 다양한 날짜 형식 처리
-        let matchDate;
-        try {
-          if (typeof dateStr === 'string' && dateStr.includes('-')) {
-            matchDate = new Date(dateStr);
-          } else {
-            matchDate = new Date(dateStr);
-          }
-        } catch (e) {
+        const matchDate = parseFlexibleDate(dateStr);
+        if(!matchDate){
           console.warn('날짜 파싱 실패:', dateStr);
           return false;
         }
@@ -1420,6 +1414,26 @@ app.get('/api/analytics', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Helper to parse various date formats into Date obj
+function parseFlexibleDate(str){
+  if(!str) return null;
+  if(typeof str!=='string') return new Date(str);
+  let s=str.trim();
+  // replace separators to '-'
+  s=s.replace(/[\.\/]/g,'-');
+  if(/^\d{8}$/.test(s)){
+    s=s.replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');
+  }
+  // handle without year (e.g., '07-05') use current year
+  if(/^\d{2}-\d{2}$/.test(s)){
+    const y=new Date().getFullYear();
+    s=`${y}-${s}`;
+  }
+  const d=new Date(s);
+  if(isNaN(d)){return null;}
+  return d;
+}
 
 // 서버 초기화 실행
 initializeServer(); 

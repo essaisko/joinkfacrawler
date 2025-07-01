@@ -445,39 +445,38 @@ body {
 
 /* === 리그 토글 버튼 === */
 .league-toggle-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-    gap: 8px;
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
     margin: 1rem 0;
-    padding: 1rem;
+    padding: 0.5rem;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    position: relative;
-    z-index: 1001;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .league-toggle-btn {
-    display: block;
-    width: 100%;
-    padding: 6px 4px;
+    padding: 0.5rem 1rem;
     border: none;
-    border-radius: 20px;
-    font-size: 0.85rem;
+    border-radius: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-    opacity: 0.6;
+    transition: all 0.2s ease;
+    opacity: 0.8;
 }
 
 .league-toggle-btn:hover {
-    opacity: 0.85;
+    opacity: 1;
 }
 
 .league-toggle-btn.active {
     opacity: 1;
     transform: translateY(-2px);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.6) inset;
 }
 
 /* 리그별 색상 */
@@ -1757,10 +1756,10 @@ body {
 
 .matches-table .venue-col {
     color: #6c757d;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    max-width: none;
 }
 
 .matches-table .league-col {

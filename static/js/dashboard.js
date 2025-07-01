@@ -332,11 +332,12 @@ const Dashboard = {
                 const buildTeamHtml = (raw, leagueRank) => {
                     const parsed = Dashboard.utils.parseTeam(raw);
                     const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
-                    if(leagueRank<=4){
-                        return raw; // K1~K4 : 지역 포함 원본 표시
+                    if (leagueRank <= 4) {
+                        return raw;
                     }
-                    const regionLabel = regionText ? `<span class=\"region-label\">${regionText}</span> ` : '';
-                    return `${regionLabel}${parsed.teamName || raw}`;
+                    const regionLabel = regionText ? `<span class=\"region-label\">${regionText}</span><br/>` : '';
+                    const teamName = parsed.teamName || raw;
+                    return `${regionLabel}${teamName}`;
                 };
 
                 const tableRows = sortedMatches.map(match => {
