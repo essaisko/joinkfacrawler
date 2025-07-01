@@ -1377,11 +1377,7 @@
 
         /* 뉴스 피드 스타일 */
         .newsfeed-hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 3rem 0;
-            margin: -2rem -15px 2rem -15px;
-            border-radius: 0 0 20px 20px;
+            display:none; /* 상단 K리그 뉴스센터 섹션 제거 */
         }
 
         .newsfeed-hero h1 {
@@ -1770,14 +1766,17 @@
 
         /* === NEW: Upcoming matches table layout === */
         #upcomingMatchesSection { 
+            width: 100vw; /* 페이지 전체 폭 사용 */
+            max-width: none;
+            margin-left: calc(-50vw + 50%); /* 컨테이너 padding 제거 효과 */
             max-height: none; 
             min-height: 80vh; 
-            padding: 0.5rem; /* 좌우 여백 축소로 가로 공간 확보 */
+            padding: 0.5rem 1rem; 
             display: flex; 
-            gap: 1rem; /* 칼럼 사이 여백 살짝 축소 */
+            gap: 1rem; 
         }
         .weekend-column { 
-            flex: 1 1 50%; /* 각 주말 칼럼이 가로 영역 50% 이상 차지 */
+            flex: 1 1 50%;
             max-height: 85vh; 
             overflow-y: auto; 
         }
@@ -2529,7 +2528,11 @@
             const renderRows = arr => arr.map(match => {
                 const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
                 const d = new Date(matchDateField);
-                const time = (match.MATCH_TIME_FORMATTED || match.TIME || match.time || '').slice(0,5) || d.toTimeString().substring(0,5);
+                let rawTime = match.MATCH_TIME_FORMATTED || match.TIME || match.time || '';
+                // TIME 필드가 HHMM 형태면 콜론 추가
+                if (/^\d{4}$/.test(rawTime)) rawTime = rawTime.slice(0,2)+':'+rawTime.slice(2);
+                if (!rawTime.includes(':')) rawTime = d.toTimeString().substring(0,5);
+                const time = rawTime;
                 let league = match.leagueTitle || match.league || match.LEAGUE || '';
                 // K4리그 명칭 수정
                 league = league.replace(/k4리그/gi, 'K4리그');
