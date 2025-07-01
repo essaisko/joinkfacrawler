@@ -2350,19 +2350,39 @@
         async function loadNewsFeed() {
             try {
                 const response = await fetch('/api/newsfeed');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('API 응답 데이터:', data);
                 
                 // 통계 업데이트 (더 시각적으로 강화)
-                updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
-                updateStatCard('completedMatchesStat', data.stats.completedMatches, '✅', 'success');
-                updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
-                updateStatCard('activeTeamsStat', data.stats.activeTeams, '👥', 'info');
+                if (data.stats) {
+                    updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
+                    updateStatCard('completedMatchesStat', data.stats.completedMatches, '✅', 'success');
+                    updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
+                    updateStatCard('activeTeamsStat', data.stats.activeTeams, '👥', 'info');
+                }
                 
                 // 메인 뉴스피드 섹션을 화려하게 구성
                 displayEnhancedNewsFeed(data);
                 
             } catch (error) {
                 console.error('뉴스 피드 로드 실패:', error);
+                
+                // 에러 발생 시 대체 컨텐츠 표시
+                const container = document.getElementById('upcomingMatchesSection');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="error-message text-center p-4">
+                            <h5 class="text-danger">데이터 로딩 실패</h5>
+                            <p class="text-muted">경기 정보를 불러오는 중 오류가 발생했습니다.</p>
+                            <button class="btn btn-primary btn-sm" onclick="loadNewsFeed()">다시 시도</button>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -2381,8 +2401,22 @@
 
         // 강화된 뉴스피드 표시
         function displayEnhancedNewsFeed(data) {
+            // 데이터 구조 확인 및 디버깅
+            console.log('뉴스피드 데이터:', data);
+            
+            // upcomingMatches 데이터 확인
+            let upcomingMatches = data.upcomingMatches || data.matches || data.upcoming || [];
+            
+            // 배열이 아닌 경우 빈 배열로 설정
+            if (!Array.isArray(upcomingMatches)) {
+                console.warn('upcomingMatches가 배열이 아닙니다:', upcomingMatches);
+                upcomingMatches = [];
+            }
+            
+            console.log('다가오는 경기 데이터:', upcomingMatches);
+            
             // 좌측: 다가오는 최근 일정
-            displayUpcomingMatchesEnhanced(data.upcomingMatches);
+            displayUpcomingMatchesEnhanced(upcomingMatches);
             
             // 다가오는 경기만 표시 (순위표 제거)
         }
@@ -2391,18 +2425,38 @@
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
 
+            // 입력 데이터 검증
+            if (!matches || !Array.isArray(matches)) {
+                console.warn('matches 데이터가 유효하지 않습니다:', matches);
+                container.innerHTML = '<p class="upcoming-matches-empty text-muted">경기 데이터를 불러올 수 없습니다</p>';
+                return;
+            }
+
+            console.log('처리할 경기 수:', matches.length);
+
             // 대상 기간: 오늘~4주 후까지 (모든 경기 표시)
             const now = new Date();
             const rangeEnd = new Date(now);
             rangeEnd.setDate(now.getDate() + 28);
 
+            // 다양한 날짜 필드명 지원
             const forthcoming = matches
-                .filter(m => m.MATCH_DATE)
                 .filter(m => {
-                    const d = new Date(m.MATCH_DATE);
+                    const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
+                    return matchDate; // 날짜 필드가 있는 경기만 필터링
+                })
+                .filter(m => {
+                    const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
+                    const d = new Date(matchDate);
                     return d >= now && d <= rangeEnd;
                 })
-                .sort((a,b) => new Date(a.MATCH_DATE) - new Date(b.MATCH_DATE));
+                .sort((a,b) => {
+                    const dateA = new Date(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
+                    const dateB = new Date(b.MATCH_DATE || b.matchDate || b.date || b.DATE);
+                    return dateA - dateB;
+                });
+
+            console.log('필터링된 다가오는 경기 수:', forthcoming.length);
 
             if (forthcoming.length === 0){
                 container.innerHTML = '<p class="upcoming-matches-empty text-muted">예정된 경기가 없습니다</p>';
@@ -2433,20 +2487,22 @@
             const weekend = { Saturday: [], Sunday: [] };
             
             forthcoming.forEach(m => {
-                const matchDate = new Date(m.MATCH_DATE);
+                const matchDateField = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
+                const matchDate = new Date(matchDateField);
                 const day = matchDate.getDay();
                 if(day === 6) weekend.Saturday.push(m);
                 if(day === 0) weekend.Sunday.push(m);
             });
 
             const renderRows = arr => arr.map(match => {
-                const d = new Date(match.MATCH_DATE);
-                const time = (match.MATCH_TIME_FORMATTED || match.TIME || '').slice(0,5) || d.toTimeString().substring(0,5);
-                let league = match.leagueTitle || '';
+                const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
+                const d = new Date(matchDateField);
+                const time = (match.MATCH_TIME_FORMATTED || match.TIME || match.time || '').slice(0,5) || d.toTimeString().substring(0,5);
+                let league = match.leagueTitle || match.league || match.LEAGUE || '';
                 // K4리그 명칭 수정
                 league = league.replace(/k4리그/gi, 'K4리그');
                 
-                const venue = match.VENUE || match.STADIUM || match.경기장 || '경기장 미정';
+                const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장 미정';
                 
                 // 실제 팀명 추출 (다양한 필드명 지원)
                 let homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
