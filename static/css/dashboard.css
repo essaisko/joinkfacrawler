@@ -1772,6 +1772,16 @@ body {
     min-width: 80px;
 }
 
+/* === Compact Table: League-specific Colors === */
+.matches-table .league-col.k1 { background: #e74c3c; color: white; }
+.matches-table .league-col.k2 { background: #d35400; color: white; }
+.matches-table .league-col.k3 { background: #8e44ad; color: white; }
+.matches-table .league-col.k4 { background: #34495e; color: white; }
+.matches-table .league-col.k5 { background: #e67e22; color: white; }
+.matches-table .league-col.k6 { background: #3498db; color: white; }
+.matches-table .league-col.k7 { background: #27ae60; color: white; }
+.matches-table .league-col.other { background: #7f8c8d; color: white; }
+
 /* 반응형 테이블 */
 @media (max-width: 768px) {
     .main-container {

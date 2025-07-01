@@ -350,6 +350,7 @@ const Dashboard = {
                     let league = match.leagueTitle || match.league || match.LEAGUE || '';
                     league = league.replace(/k4리그/gi, 'K4리그');
                     const leagueRank = getLeagueRank(league);
+                    const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
 
                     const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
 
@@ -368,7 +369,7 @@ const Dashboard = {
                             <td class="vs-col">vs</td>
                             <td class="away-team">${awayTeamHtml}</td>
                             <td class="venue-col">${venue}</td>
-                            <td class="league-col">${league}</td>
+                            <td class="league-col ${leagueClass}">${league}</td>
                         </tr>
                     `;
                 }).join('');
