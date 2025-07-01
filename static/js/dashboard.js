@@ -220,40 +220,25 @@ const Dashboard = {
                 }
             };
 
-            // 필터링 및 정렬 로직
+            // 이번주 경기만 필터링
             const now = new Date();
-            const rangeEnd = new Date(now);
-            rangeEnd.setDate(now.getDate() + 84); // 12주로 확장 - 모든 경기 표시
-
-            const todayD = new Date();
-            const thisSat = new Date(todayD);
-            thisSat.setDate(todayD.getDate() + ((6 - todayD.getDay() + 7) % 7));
-            const thisSun = new Date(thisSat);
-            thisSun.setDate(thisSat.getDate() + 1);
-
-            const isSameDate = (d1,d2) => d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth() && d1.getDate()===d2.getDate();
+            const thisWeekEnd = new Date(now);
+            const daysToSunday = 7 - now.getDay(); // 이번주 일요일까지
+            thisWeekEnd.setDate(now.getDate() + daysToSunday);
 
             let filteredMatches = matches
                 .filter(m => {
                     const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
                     if (!matchDate) return false;
                     const d = safeParseDate(matchDate);
-                    return d >= now && d <= rangeEnd;
+                    return d >= now && d <= thisWeekEnd;
                 })
                 .filter(m => {
                     if (!Dashboard.state.upcomingLeagueFilter) return true;
                     const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
                     return leagueTitle === Dashboard.state.upcomingLeagueFilter;
                 })
-
                 .sort((a,b) => {
-                    const leagueA = a.leagueTitle || a.league || a.LEAGUE || '';
-                    const leagueB = b.leagueTitle || b.league || b.LEAGUE || '';
-                    const rankA = getLeagueRank(leagueA);
-                    const rankB = getLeagueRank(leagueB);
-                    
-                    if (rankA !== rankB) return rankA - rankB;
-                    
                     const dateA = safeParseDate(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
                     const dateB = safeParseDate(b.MATCH_DATE || b.matchDate || b.date || b.DATE);
                     
@@ -275,17 +260,31 @@ const Dashboard = {
                 return;
             }
             
-            // 날짜별로 분류 (모든 날짜의 경기 표시)
-            const allMatches = filteredMatches;
+            // 날짜별로 그룹핑
+            const matchesByDate = {};
+            filteredMatches.forEach(match => {
+                const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
+                const matchDate = safeParseDate(matchDateField);
+                const dateKey = matchDate.toLocaleDateString('ko-KR', { 
+                    year: 'numeric',
+                    month: '2-digit', 
+                    day: '2-digit',
+                    weekday: 'short'
+                });
+                
+                if (!matchesByDate[dateKey]) {
+                    matchesByDate[dateKey] = [];
+                }
+                matchesByDate[dateKey].push(match);
+            });
 
-            const renderMatchItems = (matchList) => {
-                return matchList.map(match => {
-                    const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
-                    const matchDate = safeParseDate(matchDateField);
-                    
+            const renderCompactMatchTable = (matchList, dateHeader) => {
+                if (!matchList || matchList.length === 0) return '';
+                
+                const tableRows = matchList.map(match => {
                     const time = Dashboard.utils.parseMatchTime(
                         match.formattedTime || match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '',
-                        matchDate
+                        safeParseDate(match.MATCH_DATE || match.matchDate || match.date || match.DATE)
                     );
                     
                     let league = match.leagueTitle || match.league || match.LEAGUE || '';
@@ -293,61 +292,83 @@ const Dashboard = {
                     
                     const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
                     
-                    let rawHome = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
+                    let homeTeam = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
                                    match.homeTeam || match.home_team || match.HOME || match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
-                    let rawAway = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
+                    let awayTeam = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
                                    match.awayTeam || match.away_team || match.AWAY || match.TA_CLUB_NAME || match.TEAM_AWAY || '원정팀';
 
-                    const leagueRank = getLeagueRank(league);
-
-                    // 경기 날짜 포맷팅
-                    const formattedDate = matchDate.toLocaleDateString('ko-KR', { 
-                        month: 'short', 
-                        day: 'numeric',
-                        weekday: 'short'
-                    });
+                    // 팀명 정리 (지역명 제거)
+                    homeTeam = homeTeam.replace(/^(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)\s*\w*(시|군|구)?\s*/, '');
+                    awayTeam = awayTeam.replace(/^(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)\s*\w*(시|군|구)?\s*/, '');
 
                     return `
-                        <div class="match-item">
-                            <div class="match-date">${formattedDate}</div>
-                            <div class="match-time">${time}</div>
-                            ${renderTeamHtml(rawHome, leagueRank)}
-                            <div class="vs-text">VS</div>
-                            ${renderTeamHtml(rawAway, leagueRank)}
-                            <div class="venue-text" title="${venue}">${venue}</div>
-                            <div class="league-badge">${league}</div>
-                        </div>
+                        <tr class="match-row">
+                            <td class="time-col">${time}</td>
+                            <td class="home-team">${homeTeam}</td>
+                            <td class="vs-col">vs</td>
+                            <td class="away-team">${awayTeam}</td>
+                            <td class="venue-col">${venue}</td>
+                            <td class="league-col">${league}</td>
+                        </tr>
                     `;
                 }).join('');
+
+                return `
+                    <div class="date-section">
+                        <h4 class="date-header">${dateHeader} (${matchList.length}경기)</h4>
+                        <table class="matches-table">
+                            <thead>
+                                <tr>
+                                    <th>시간</th>
+                                    <th>홈팀</th>
+                                    <th></th>
+                                    <th>원정팀</th>
+                                    <th>경기장</th>
+                                    <th>리그</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             };
 
-            const formatDate = (date) => {
-                return date.toLocaleDateString('ko-KR', { 
-                    month: 'long', 
-                    day: 'numeric',
-                    weekday: 'long'
-                });
-            };
+            if (filteredMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="upcoming-header">
+                        <h2>⚽ 이번주 경기</h2>
+                    </div>
+                    <div class="empty-message">이번주 예정된 경기가 없습니다</div>
+                `;
+                Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches);
+                return;
+            }
 
-
+            // 날짜별 섹션 생성
+            const dateSections = Object.entries(matchesByDate)
+                .sort(([dateA], [dateB]) => {
+                    // 날짜 문자열에서 날짜 부분만 추출하여 정렬
+                    const parseDate = (dateStr) => {
+                        const parts = dateStr.match(/(\d{4})[.-](\d{2})[.-](\d{2})/);
+                        return parts ? new Date(parts[1], parts[2] - 1, parts[3]) : new Date();
+                    };
+                    return parseDate(dateA) - parseDate(dateB);
+                })
+                .map(([dateKey, matches]) => renderCompactMatchTable(matches, dateKey))
+                .join('');
 
             const html = `
                 <button class="fullscreen-toggle" onclick="Dashboard.ui.toggleFullscreen()" title="전체화면 토글">
                     <i class="fas fa-expand"></i>
                 </button>
                 <div class="upcoming-header">
-                    <h2>⚽ 다가오는 경기 (${allMatches.length}경기)</h2>
+                    <h2>⚽ 이번주 경기 (${filteredMatches.length}경기)</h2>
                 </div>
                 
-                <div class="matches-container">
-                    <div class="all-matches-column">
-                        <div class="matches-list">
-                            ${allMatches.length > 0 ? 
-                                renderMatchItems(allMatches) : 
-                                '<div class="empty-message">예정된 경기가 없습니다</div>'
-                            }
-                        </div>
-                    </div>
+                <div class="matches-container compact">
+                    ${dateSections}
                 </div>
             `;
 
@@ -777,38 +798,53 @@ const Dashboard = {
     // === 이벤트 리스너 설정 ===
     events: {
         setupEventListeners() {
-            // 탭 전환 이벤트 리스너 추가
-            const navTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
-            navTabs.forEach(tab => {
-                tab.addEventListener('shown.bs.tab', async (e) => {
-                    const targetId = e.target.getAttribute('data-bs-target');
-                    console.log('탭 전환:', targetId);
-                    
+            // Bootstrap 탭 이벤트 처리 (다양한 방식으로 시도)
+            const handleTabSwitch = async (targetId) => {
+                console.log('탭 전환:', targetId);
+                
+                try {
                     switch (targetId) {
                         case '#newsfeed':
-                            if (!Dashboard.state.rawUpcomingMatches || Dashboard.state.rawUpcomingMatches.length === 0) {
-                                await Dashboard.api.loadNewsFeed();
-                            }
+                            console.log('뉴스피드 탭 로딩...');
+                            await Dashboard.api.loadNewsFeed();
                             break;
                         case '#standings':
-                            if (!Dashboard.state.allStandings || Dashboard.state.allStandings.length === 0) {
-                                await Dashboard.api.loadStandings();
-                            }
+                            console.log('순위표 탭 로딩...');
+                            await Dashboard.api.loadStandings();
                             break;
                         case '#matches':
-                            if (!Dashboard.state.allMatches || Dashboard.state.allMatches.length === 0) {
-                                await Dashboard.api.loadMatches();
-                            }
+                            console.log('경기 탭 로딩...');
+                            await Dashboard.api.loadMatches();
                             break;
                         case '#analytics':
-                            if (!Dashboard.state.allAnalytics) {
-                                await Dashboard.api.loadAnalytics();
-                            }
+                            console.log('분석 탭 로딩...');
+                            await Dashboard.api.loadAnalytics();
                             break;
                         case '#management':
+                            console.log('관리 탭 로딩...');
                             await Dashboard.management.loadStats();
                             break;
                     }
+                } catch (error) {
+                    console.error('탭 로딩 실패:', error);
+                }
+            };
+
+            // 1. Bootstrap 5 이벤트
+            document.addEventListener('shown.bs.tab', async (e) => {
+                const targetId = e.target.getAttribute('data-bs-target') || e.target.getAttribute('href');
+                await handleTabSwitch(targetId);
+            });
+
+            // 2. 클릭 이벤트로도 처리
+            document.querySelectorAll('[data-bs-toggle="tab"], .nav-link').forEach(tab => {
+                tab.addEventListener('click', async (e) => {
+                    setTimeout(async () => {
+                        const targetId = e.target.getAttribute('data-bs-target') || e.target.getAttribute('href');
+                        if (targetId) {
+                            await handleTabSwitch(targetId);
+                        }
+                    }, 100);
                 });
             });
             

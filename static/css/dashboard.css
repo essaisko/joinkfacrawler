@@ -1686,6 +1686,94 @@ body {
 }
 
 /* Team Page Responsive Design */
+/* 컴팩트 테이블 스타일 */
+.matches-container.compact {
+    max-width: 100%;
+    margin: 0;
+}
+
+.date-section {
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.date-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 1rem 1.5rem;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.matches-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.matches-table thead th {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.matches-table tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.matches-table .match-row:hover {
+    background: #f8f9fa;
+}
+
+.matches-table .time-col {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 60px;
+}
+
+.matches-table .home-team,
+.matches-table .away-team {
+    font-weight: 500;
+    min-width: 120px;
+}
+
+.matches-table .vs-col {
+    text-align: center;
+    color: #6c757d;
+    font-weight: 600;
+    width: 30px;
+}
+
+.matches-table .venue-col {
+    color: #6c757d;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.matches-table .league-col {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    background: #e9ecef;
+    color: #495057;
+    text-align: center;
+    min-width: 80px;
+}
+
+/* 반응형 테이블 */
 @media (max-width: 768px) {
     .main-container {
         margin: 1rem;
@@ -1716,5 +1804,23 @@ body {
     .match-info {
         text-align: center;
         width: 100%;
+    }
+
+    .matches-table {
+        font-size: 0.8rem;
+    }
+
+    .matches-table thead th,
+    .matches-table tbody td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .matches-table .venue-col {
+        display: none;
+    }
+
+    .date-header {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
     }
 }

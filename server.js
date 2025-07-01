@@ -1031,9 +1031,10 @@ app.get('/api/newsfeed', async (req, res) => {
       .sort((a, b) => new Date(b.MATCH_DATE || '1970-01-01') - new Date(a.MATCH_DATE || '1970-01-01'))
       .slice(0, 10);
     
-    // 예정된 경기 (다음 4주)
-    const twelveWeeksLater = new Date(now);
-    twelveWeeksLater.setDate(now.getDate() + 84); // 12주로 확장 - 모든 경기 표시
+    // 예정된 경기 (이번주)
+    const thisWeekEnd = new Date(now);
+    const daysToSunday = 7 - now.getDay(); // 이번주 일요일까지
+    thisWeekEnd.setDate(now.getDate() + daysToSunday);
     
     const upcomingMatches = matches
       .filter(m => {
@@ -1061,7 +1062,7 @@ app.get('/api/newsfeed', async (req, res) => {
                            (m.TH_SCORE_FINAL === null && m.TA_SCORE_FINAL === null) ||
                            (!m.homeScore && !m.awayScore));
         
-        return isUpcoming && matchDate >= now && matchDate <= twelveWeeksLater;
+        return isUpcoming && matchDate >= now && matchDate <= thisWeekEnd;
       })
       .map(m => ({
         ...m,
