@@ -12,6 +12,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// EJS 템플릿 엔진 설정
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname));
+
 const PORT = process.env.PORT || 3000;
 
 // === [GLOBAL QUEUES & FLAGS] ===
@@ -23,15 +27,16 @@ let isUploading = false;
 
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
-// 정적 파일(index.html) 제공
+// 정적 파일 제공
 app.use(express.static(path.join(__dirname)));
+app.use('/components', express.static(path.join(__dirname, 'components')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard.html'));
+  res.render('index');
 });
 
 // Health check 엔드포인트 (서버 활성 상태 유지용)

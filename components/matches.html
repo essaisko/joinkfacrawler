@@ -21,12 +21,12 @@
         
         <div class="filter-group">
             <span class="filter-label">
-                <i class="fas fa-calendar-check me-2"></i>경기 상태
+                <i class="fas fa-flag me-2"></i>경기 상태
             </span>
             <div class="filter-buttons" id="matchStatusFilterButtons">
-                <button class="filter-btn active" data-value="">모든 경기</button>
-                <button class="filter-btn" data-value="완료">완료된 경기</button>
-                <button class="filter-btn" data-value="예정">예정된 경기</button>
+                <button class="filter-btn active" data-value="">전체</button>
+                <button class="filter-btn" data-value="완료">완료</button>
+                <button class="filter-btn" data-value="예정">예정</button>
             </div>
         </div>
         
@@ -34,20 +34,8 @@
             <span class="filter-label">
                 <i class="fas fa-users me-2"></i>팀 선택
             </span>
-            <!-- 팀 검색 필드 -->
-            <div class="team-search-container">
-                <i class="fas fa-search team-search-icon"></i>
-                <input type="text" id="teamSearchInput" class="team-search-input" 
-                       placeholder="팀명을 입력하여 검색하세요..." />
-            </div>
-            <!-- 팀 필터 토글 버튼 -->
-            <button class="team-filter-toggle" id="teamFilterToggle" onclick="toggleTeamFilters()">
-                <i class="fas fa-chevron-down"></i>
-                팀 목록 보기 (<span id="teamCount">0</span>개 팀)
-            </button>
-            <!-- 팀 필터 버튼들 (그리드 형태) -->
-            <div class="team-filter-grid" id="teamFilterButtons">
-                <button class="team-filter-btn active" data-value="">모든 팀</button>
+            <div class="filter-buttons" id="matchTeamFilterButtons">
+                <button class="filter-btn active" data-value="">모든 팀</button>
             </div>
         </div>
         
@@ -59,6 +47,11 @@
     </div>
 
     <div id="matchesContainer">
-        <%- include('ui/loading-spinner', { message: '경기 데이터를 불러오는 중...' }) %>
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">경기 데이터를 불러오는 중...</p>
+        </div>
     </div>
 </div>

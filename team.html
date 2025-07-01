@@ -4,306 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>팀 정보 - 아마추어 축구 대시보드</title>
+    
+    <!-- Bootstrap & Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --text-muted: #6c757d;
-            --border-color: #dee2e6;
-        }
-
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .main-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            margin: 2rem auto;
-            max-width: 1200px;
-            overflow: hidden;
-        }
-
-        .team-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .team-logo-large {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 48px;
-            margin: 0 auto 1rem;
-            border: 4px solid rgba(255,255,255,0.3);
-        }
-
-        .team-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-        }
-
-        .region-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin: 0.25rem;
-        }
-
-        .major-region {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .minor-region {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-        }
-
-        .matches-section {
-            padding: 2rem;
-        }
-
-        .month-section {
-            margin-bottom: 2rem;
-        }
-
-        .month-header {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 8px;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid var(--border-color);
-        }
-
-        .month-header:hover {
-            background: linear-gradient(135deg, #e9ecef, #dee2e6);
-        }
-
-        .month-header.active {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-            color: white;
-        }
-
-        .match-item {
-            background: white;
-            border-radius: 12px;
-            margin: 0.5rem 0;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-        }
-
-        .match-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        }
-
-        .match-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .match-teams {
-            display: flex;
-            align-items: center;
-            flex: 1;
-        }
-
-        .team-section {
-            display: flex;
-            align-items: center;
-            flex: 1;
-        }
-
-        .team-logo-small {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-            margin-right: 0.75rem;
-        }
-
-        .team-name {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .match-score {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin: 0 2rem;
-            min-width: 80px;
-            text-align: center;
-        }
-
-        .match-info {
-            text-align: right;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .match-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .status-completed {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .status-upcoming {
-            background: var(--warning-color);
-            color: white;
-        }
-
-        .back-btn {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: rgba(255,255,255,0.3);
-            color: white;
-        }
-
-        .loading-spinner {
-            text-align: center;
-            padding: 3rem;
-        }
-
-        .collapse-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .collapse-content.show {
-            max-height: 2000px;
-        }
-    </style>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
     <div class="main-container">
-        <div class="team-header position-relative">
-            <button class="back-btn" onclick="goBack()">
-                <i class="fas fa-arrow-left me-2"></i>돌아가기
-            </button>
-            
-            <div id="teamInfo">
-                <div class="loading-spinner">
-                    <div class="spinner-border text-light" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-3">팀 정보를 불러오는 중...</p>
-                </div>
-            </div>
-        </div>
+        <!-- Team Header -->
+        <div id="teamHeaderContainer"></div>
 
-        <div class="p-4" id="standingsSection">
-            <h4 class="mb-4">
-                <i class="fas fa-list-ol me-2"></i>리그 순위표
-            </h4>
-            <div id="standingsContainer" class="table-responsive text-center">
-                <div class="loading-spinner">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Team Standings -->
+        <div id="teamStandingsContainer"></div>
 
-        <div class="matches-section">
-            <h4 class="mb-4">
-                <i class="fas fa-calendar-alt me-2"></i>경기 일정 & 결과
-            </h4>
-            <div id="matchesContainer">
-                <!-- 경기 목록이 여기에 로드됩니다 -->
-            </div>
-        </div>
+        <!-- Team Matches -->
+        <div id="teamMatchesContainer"></div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+    
     <script>
         // URL에서 팀명 추출
         const urlParams = new URLSearchParams(window.location.search);
         const teamName = urlParams.get('team');
 
         if (!teamName) {
-            document.getElementById('teamInfo').innerHTML = `
-                <div class="text-center">
-                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                    <h4>팀 정보를 찾을 수 없습니다</h4>
-                    <p>올바른 팀명을 입력해주세요.</p>
+            document.getElementById('teamHeaderContainer').innerHTML = `
+                <div class="team-header">
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h4>팀 정보를 찾을 수 없습니다</h4>
+                        <p>올바른 팀명을 입력해주세요.</p>
+                    </div>
                 </div>
             `;
         } else {
+            loadTeamComponents();
             loadTeamInfo(teamName);
+        }
+
+        // 컴포넌트 로드
+        async function loadTeamComponents() {
+            try {
+                // 헤더 컴포넌트 로드
+                const headerResponse = await fetch('/components/ui/team-header.html');
+                const headerHtml = await headerResponse.text();
+                document.getElementById('teamHeaderContainer').innerHTML = headerHtml;
+
+                // 순위표 컴포넌트 로드
+                const standingsResponse = await fetch('/components/ui/team-standings.html');
+                const standingsHtml = await standingsResponse.text();
+                document.getElementById('teamStandingsContainer').innerHTML = standingsHtml;
+
+                // 경기 목록 컴포넌트 로드
+                const matchesResponse = await fetch('/components/ui/team-matches.html');
+                const matchesHtml = await matchesResponse.text();
+                document.getElementById('teamMatchesContainer').innerHTML = matchesHtml;
+            } catch (error) {
+                console.error('컴포넌트 로드 실패:', error);
+            }
         }
 
         // 팀 정보 로드
@@ -317,23 +81,29 @@
                 loadLeagueStandings(teamData);
             } catch (error) {
                 console.error('팀 정보 로드 실패:', error);
-                document.getElementById('teamInfo').innerHTML = `
-                    <div class="text-center">
-                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                        <h4>팀 정보를 불러올 수 없습니다</h4>
-                        <p>잠시 후 다시 시도해주세요.</p>
-                    </div>
-                `;
+                const teamInfoEl = document.getElementById('teamInfo');
+                if (teamInfoEl) {
+                    teamInfoEl.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                            <h4>팀 정보를 불러올 수 없습니다</h4>
+                            <p>잠시 후 다시 시도해주세요.</p>
+                        </div>
+                    `;
+                }
             }
         }
 
         // 팀 정보 표시
         function displayTeamInfo(teamData) {
+            const teamInfoEl = document.getElementById('teamInfo');
+            if (!teamInfoEl) return;
+
             const teamInitial = teamData.teamName.charAt(0).toUpperCase();
             const winRate = teamData.completedMatches > 0 ? 
                 ((teamData.wins / teamData.completedMatches) * 100).toFixed(1) : 0;
             
-            document.getElementById('teamInfo').innerHTML = `
+            teamInfoEl.innerHTML = `
                 <div class="team-logo-large">${teamInitial}</div>
                 <h2 class="mb-2">${teamData.teamName}</h2>
                 <div class="mb-3">
@@ -383,6 +153,7 @@
         // 경기 목록 표시 (월별 그룹화)
         function displayMatches(matches) {
             const container = document.getElementById('matchesContainer');
+            if (!container) return;
             
             if (matches.length === 0) {
                 container.innerHTML = `
@@ -528,9 +299,8 @@
                 const leagues = await res.json();
                 let leagueStandings = [];
                 let targetLeagueTitle = teamData.leagueTitle || '';
-                // leagues may be array of league objects or plain array of rows
+                
                 if(Array.isArray(leagues)){
-                    // find league containing this team
                     for(const lg of leagues){
                         if(Array.isArray(lg.standings)){
                             if(lg.leagueTitle===targetLeagueTitle || lg.standings.some(s=>s.teamName===teamData.teamName)){
@@ -539,7 +309,6 @@
                             }
                         }
                     }
-                    // fallback if data itself already array of teams
                     if(leagueStandings.length===0 && leagues[0]?.teamName){
                         leagueStandings = leagues.filter(s=>s.leagueTitle===targetLeagueTitle);
                     }
@@ -547,17 +316,22 @@
                 displayStandings(leagueStandings, teamData.teamName);
             }catch(e){
                 console.error('순위표 로드 실패',e);
-                document.getElementById('standingsContainer').innerHTML = '<div class="text-muted">순위표를 불러올 수 없습니다.</div>';
+                const container = document.getElementById('standingsContainer');
+                if (container) {
+                    container.innerHTML = '<div class="text-muted">순위표를 불러올 수 없습니다.</div>';
+                }
             }
         }
 
         function displayStandings(list, focusTeam){
             const container = document.getElementById('standingsContainer');
+            if (!container) return;
+            
             if(!list||list.length===0){
                 container.innerHTML = '<div class="text-muted">순위표 데이터가 없습니다.</div>';
                 return;
             }
-            // 정렬 by rank/points
+            
             list.sort((a,b)=> (a.rank||a.position||a.RANK||0) - (b.rank||b.position||b.RANK||0));
             let rows='';
             list.forEach((row,idx)=>{
@@ -573,15 +347,20 @@
                 rows += `<tr class="${highlight}"><td>${rank}</td><td class="text-start">${name}</td><td>${played}</td><td>${w}</td><td>${d}</td><td>${l}</td><td>${gd}</td><td>${pts}</td></tr>`;
             });
             container.innerHTML = `
-                <table class="table table-sm table-bordered align-middle standings-table"><thead class="table-light"><tr><th>순위</th><th class="text-start">팀</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table>`;
+                <table class="table table-sm table-bordered align-middle standings-table">
+                    <thead class="table-light">
+                        <tr><th>순위</th><th class="text-start">팀</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
         }
 
         // 뒤로가기
         function goBack() {
-            if (document.referrer && document.referrer.includes('dashboard.html')) {
+            if (document.referrer && (document.referrer.includes('dashboard') || document.referrer.includes('/dashboard'))) {
                 window.history.back();
             } else {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard';
             }
         }
     </script>

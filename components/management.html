@@ -1,37 +1,74 @@
 <!-- 데이터 관리 탭 -->
 <div class="tab-pane fade" id="management" role="tabpanel">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-database me-2"></i>데이터 통계</h5>
+    <div class="management-section">
+        <h4>
+            <i class="fas fa-database me-2"></i>데이터 통계
+        </h4>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">총 경기</h5>
+                        <h2 class="text-primary" id="totalMatches">0</h2>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <h4 class="text-primary" id="totalMatches">-</h4>
-                            <p class="text-muted">총 경기 수</p>
-                        </div>
-                        <div class="col-6">
-                            <h4 class="text-success" id="completedMatches">-</h4>
-                            <p class="text-muted">완료된 경기</p>
-                        </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">완료 경기</h5>
+                        <h2 class="text-success" id="completedMatches">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">활성 리그</h5>
+                        <h2 class="text-info" id="activeLeagues">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">참가 팀</h5>
+                        <h2 class="text-warning" id="activeTeams">0</h2>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-tools me-2"></i>데이터 관리</h5>
+    </div>
+
+    <div class="management-section">
+        <h4>
+            <i class="fas fa-tools me-2"></i>데이터 관리
+        </h4>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-sync-alt me-2"></i>데이터 새로고침
+                        </h5>
+                        <p class="card-text">모든 데이터를 서버에서 다시 불러옵니다.</p>
+                        <button class="btn btn-primary" onclick="refreshAllData()">
+                            <i class="fas fa-refresh me-2"></i>전체 새로고침
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <button class="btn btn-primary w-100 mb-2" onclick="refreshAllData()">
-                        <i class="fas fa-sync-alt me-2"></i>전체 데이터 새로고침
-                    </button>
-                    <button class="btn btn-info w-100" onclick="exportData()">
-                        <i class="fas fa-download me-2"></i>데이터 내보내기
-                    </button>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-download me-2"></i>데이터 내보내기
+                        </h5>
+                        <p class="card-text">현재 데이터를 JSON 파일로 다운로드합니다.</p>
+                        <button class="btn btn-success" onclick="exportData()">
+                            <i class="fas fa-file-export me-2"></i>데이터 내보내기
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
