@@ -1766,38 +1766,166 @@
 
         /* === NEW: Upcoming matches table layout === */
         #upcomingMatchesSection { 
-            width: 98vw; /* 페이지 전체 폭 사용 (스크롤바 고려) */
-            max-width: none;
-            margin-left: calc(-50vw + 50%); /* 컨테이너 padding 제거 효과 */
-            max-height: none; 
-            min-height: 80vh; 
-            padding: 1rem 2rem; /* 좌우 여백을 늘려서 내용물 보호 */
-            display: flex; 
-            gap: 2rem; /* 칼럼 사이 여백 확대 */
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 1rem;
             box-sizing: border-box;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            overflow: hidden;
         }
+        
+        .upcoming-header {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .upcoming-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .league-toggle-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .league-toggle-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #3498db;
+            border-radius: 25px;
+            background: white;
+            color: #3498db;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .league-toggle-btn.active {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .matches-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 200px);
+            overflow: hidden;
+        }
+        
         .weekend-column { 
-            flex: 1 1 50%;
-            max-height: 85vh; 
-            overflow-y: auto; 
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        .upcoming-day-group { margin-bottom: 1.25rem; }
+        
         .day-header { 
-            font-size: 1.2rem; font-weight: 600; color: #2c3e50; 
-            margin-bottom: 0.8rem; padding: 0.8rem 0; 
-            border-bottom: 3px solid #3498db; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .matches-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        .match-item {
+            display: grid;
+            grid-template-columns: 80px 1fr 40px 1fr 120px 80px;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+        
+        .match-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .match-time {
+            font-weight: 700;
+            color: #e74c3c;
+            font-size: 0.9rem;
             text-align: center;
         }
-        .upcoming-table { width: 100%; border-collapse: collapse; }
-        .upcoming-table td { 
-            padding: 0.6rem 0.8rem; border-bottom: 1px solid #eee; 
-            font-size: 0.9rem; line-height: 1.4; 
+        
+        .team-name {
+            font-weight: 600;
+            color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .col-time { font-weight: 600; color: #e74c3c; }
-        .col-home, .col-away { font-weight: 500; }
-        .col-vs { text-align: center; color: #7f8c8d; font-weight: 500; }
-        .col-venue { color: #8e44ad; font-size: 0.85rem; }
-        .col-league { color: #27ae60; font-weight: 500; }
+        
+        .vs-text {
+            text-align: center;
+            color: #7f8c8d;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .venue-text {
+            color: #8e44ad;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .league-badge {
+            background: #27ae60;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .empty-message {
+            text-align: center;
+            padding: 3rem;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        /* 전체 페이지 최적화 */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow: hidden;
+        }
+        .container-fluid { padding: 0 !important; }
+        .main-header { display: none !important; }
+        .nav-tabs-container { display: none !important; }
+        .newsfeed-hero { display: none !important; }
     </style>
 </head>
 <body>
@@ -2457,25 +2585,47 @@
             // 다가오는 경기만 표시 (순위표 제거)
         }
 
-        // 강화된 다가오는 경기 표시 (좌우 분할, 실제 팀명 표시, 모든 경기)
+                // 개선된 시간 파싱 함수
+        function parseMatchTime(rawTime, matchDate) {
+            if (!rawTime) return '시간미정';
+            
+            // 한국어 형태 파싱 (서버에서 formatTime으로 변환된 경우)
+            if (rawTime.includes('오전') || rawTime.includes('오후')) {
+                const timeMatch = rawTime.match(/(오전|오후)\s*(\d{1,2})시\s*(\d{1,2})분/);
+                if (timeMatch) {
+                    const period = timeMatch[1];
+                    let hour = parseInt(timeMatch[2]);
+                    const minute = parseInt(timeMatch[3]);
+                    
+                    if (period === '오후' && hour !== 12) hour += 12;
+                    if (period === '오전' && hour === 12) hour = 0;
+                    
+                    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            // 기존 파싱 로직
+            if (/^\d{4}$/.test(rawTime)) {
+                return rawTime.slice(0,2) + ':' + rawTime.slice(2);
+            } else if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
+                return rawTime;
+            } else if (/^\d{1,2}$/.test(rawTime)) {
+                return rawTime.padStart(2, '0') + ':00';
+            }
+            
+            return '시간미정';
+        }
+
+        // 완전히 새로운 다가오는 경기 표시 함수
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
 
-            // 입력 데이터 검증
             if (!matches || !Array.isArray(matches)) {
-                console.warn('matches 데이터가 유효하지 않습니다:', matches);
-                container.innerHTML = '<p class="upcoming-matches-empty text-muted">경기 데이터를 불러올 수 없습니다</p>';
+                container.innerHTML = '<div class="empty-message">경기 데이터를 불러올 수 없습니다</div>';
                 return;
             }
 
             console.log('처리할 경기 수:', matches.length);
-
-            // 선택된 리그 필터 적용
-            const filtered = matches.filter(m => {
-                if (!upcomingLeagueFilter) return true;
-                const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
-                return leagueTitle === upcomingLeagueFilter;
-            });
 
             // 리그 우선순위 정의
             const getLeagueRank = (league='') => {
@@ -2490,21 +2640,22 @@
                 return 99;
             };
 
-            // 대상 기간: 오늘~4주 후까지 (모든 경기 표시)
+            // 필터링 및 정렬
             const now = new Date();
             const rangeEnd = new Date(now);
             rangeEnd.setDate(now.getDate() + 28);
 
-            // 다양한 날짜 필드명 지원
-            const forthcoming = filtered
+            let filteredMatches = matches
                 .filter(m => {
                     const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
-                    return matchDate; // 날짜 필드가 있는 경기만 필터링
-                })
-                .filter(m => {
-                    const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
+                    if (!matchDate) return false;
                     const d = new Date(matchDate);
                     return d >= now && d <= rangeEnd;
+                })
+                .filter(m => {
+                    if (!upcomingLeagueFilter) return true;
+                    const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
+                    return leagueTitle === upcomingLeagueFilter;
                 })
                 .sort((a,b) => {
                     // 1차: 리그 등급 순
@@ -2515,49 +2666,34 @@
                     
                     if (rankA !== rankB) return rankA - rankB;
                     
-                    // 2차: 경기 날짜/시간 순
+                    // 2차: 경기 날짜 순
                     const dateA = new Date(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
                     const dateB = new Date(b.MATCH_DATE || b.matchDate || b.date || b.DATE);
                     
                     if (dateA.getTime() !== dateB.getTime()) return dateA - dateB;
                     
                     // 3차: 경기 시간 순
-                    const timeA = a.MATCH_TIME_FORMATTED || a.TIME || a.time || '0000';
-                    const timeB = b.MATCH_TIME_FORMATTED || b.TIME || b.time || '0000';
+                    const timeA = parseMatchTime(a.formattedTime || a.MATCH_TIME_FORMATTED || a.TIME || a.time || '');
+                    const timeB = parseMatchTime(b.formattedTime || b.MATCH_TIME_FORMATTED || b.TIME || b.time || '');
                     return timeA.localeCompare(timeB);
                 });
 
-            console.log('필터링된 다가오는 경기 수:', forthcoming.length);
+            console.log('필터링된 다가오는 경기 수:', filteredMatches.length);
 
-            if (forthcoming.length === 0){
-                container.innerHTML = '<p class="upcoming-matches-empty text-muted">예정된 경기가 없습니다</p>';
+            if (filteredMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="upcoming-header">
+                        <h2>⚽ 다가오는 경기</h2>
+                    </div>
+                    <div class="empty-message">예정된 경기가 없습니다</div>
+                `;
                 return;
             }
 
-            // 토요일과 일요일 날짜 계산 (여러 주말 포함)
-            const getWeekendDates = () => {
-                const weekends = [];
-                const today = new Date();
-                
-                for (let week = 0; week < 4; week++) {
-                    const saturday = new Date(today);
-                    saturday.setDate(today.getDate() + (6 - today.getDay()) + (week * 7));
-                    if (saturday.getDay() !== 6) {
-                        saturday.setDate(saturday.getDate() + (6 - saturday.getDay()));
-                    }
-                    
-                    const sunday = new Date(saturday);
-                    sunday.setDate(saturday.getDate() + 1);
-                    
-                    weekends.push({ saturday, sunday });
-                }
-                return weekends;
-            };
-
-            const weekendDates = getWeekendDates();
+            // 토요일/일요일 분류
             const weekend = { Saturday: [], Sunday: [] };
             
-            forthcoming.forEach(m => {
+            filteredMatches.forEach(m => {
                 const matchDateField = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
                 const matchDate = new Date(matchDateField);
                 const day = matchDate.getDay();
@@ -2565,121 +2701,102 @@
                 if(day === 0) weekend.Sunday.push(m);
             });
 
-            const renderRows = arr => arr.map(match => {
-                const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
-                const d = new Date(matchDateField);
-                
-                // 시간 파싱 개선
-                let time = '시간 미정';
-                const rawTime = match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '';
-                
-                if (rawTime) {
-                    if (/^\d{4}$/.test(rawTime)) {
-                        // HHMM 형태 (예: "1430" -> "14:30")
-                        time = rawTime.slice(0,2) + ':' + rawTime.slice(2);
-                    } else if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
-                        // 이미 HH:MM 형태
-                        time = rawTime;
-                    } else if (/^\d{1,2}$/.test(rawTime)) {
-                        // 시간만 있는 경우 (예: "14" -> "14:00")
-                        time = rawTime.padStart(2, '0') + ':00';
-                    } else {
-                        // 기타 경우 날짜에서 시간 추출
-                        const timeFromDate = d.toTimeString().substring(0,5);
-                        time = timeFromDate !== '00:00' ? timeFromDate : '시간 미정';
-                    }
-                }
-                
-                let league = match.leagueTitle || match.league || match.LEAGUE || '';
-                // K4리그 명칭 수정
-                league = league.replace(/k4리그/gi, 'K4리그');
-                
-                const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장 미정';
-                
-                // 실제 팀명 추출 (다양한 필드명 지원)
-                let homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
-                               match.homeTeam || match.home_team || match.HOME || '홈팀';
-                let awayTeam = match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
-                               match.awayTeam || match.away_team || match.AWAY || '원정팀';
-                
-                // 팀명에서 불필요한 텍스트 제거
-                homeTeam = homeTeam.replace(/홈팀|home/gi, '').trim() || '홈팀';
-                awayTeam = awayTeam.replace(/원정팀|away/gi, '').trim() || '원정팀';
-                
-                return `<tr>
-                            <td class="col-time" style="white-space: nowrap;">${time}</td>
-                            <td class="col-home" title="${homeTeam}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${homeTeam}</td>
-                            <td class="col-vs" style="white-space: nowrap;">vs</td>
-                            <td class="col-away" title="${awayTeam}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${awayTeam}</td>
-                            <td class="col-venue" title="${venue}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${venue}</td>
-                            <td class="col-league" style="white-space: nowrap;">${league}</td>
-                         </tr>`;
-            }).join('');
+            // 경기 아이템 렌더링 함수
+            const renderMatchItems = (matchList) => {
+                return matchList.map(match => {
+                    const matchDateField = match.MATCH_DATE || match.matchDate || match.date || match.DATE;
+                    const matchDate = new Date(matchDateField);
+                    
+                    // 시간 파싱
+                    const time = parseMatchTime(
+                        match.formattedTime || match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '',
+                        matchDate
+                    );
+                    
+                    // 리그명 정리
+                    let league = match.leagueTitle || match.league || match.LEAGUE || '';
+                    league = league.replace(/k4리그/gi, 'K4리그');
+                    
+                    // 경기장
+                    const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
+                    
+                    // 팀명 추출
+                    let homeTeam = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
+                                   match.homeTeam || match.home_team || match.HOME || match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
+                    let awayTeam = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
+                                   match.awayTeam || match.away_team || match.AWAY || match.TA_CLUB_NAME || match.TEAM_AWAY || '원정팀';
+                    
+                    // 팀명 정리
+                    homeTeam = homeTeam.replace(/홈팀|home/gi, '').trim() || '홈팀';
+                    awayTeam = awayTeam.replace(/원정팀|away/gi, '').trim() || '원정팀';
+                    
+                    return `
+                        <div class="match-item">
+                            <div class="match-time">${time}</div>
+                            <div class="team-name" title="${homeTeam}">${homeTeam}</div>
+                            <div class="vs-text">VS</div>
+                            <div class="team-name" title="${awayTeam}">${awayTeam}</div>
+                            <div class="venue-text" title="${venue}">${venue}</div>
+                            <div class="league-badge">${league}</div>
+                        </div>
+                    `;
+                }).join('');
+            };
 
-            // 좌우 분할 레이아웃
-            let html = '';
-            
-            // 토요일 컬럼 (왼쪽)
-            let saturdayHtml = '';
-            if(weekend.Saturday.length > 0){
-                const saturdayDateStr = weekendDates[0].saturday.toLocaleDateString('ko-KR', { 
+            // 날짜 포맷팅
+            const formatDate = (date) => {
+                return date.toLocaleDateString('ko-KR', { 
                     month: 'long', 
-                    day: 'numeric' 
+                    day: 'numeric',
+                    weekday: 'long'
                 });
-                saturdayHtml = `<div class="upcoming-day-group">
-                                <div class="day-header">🏟️ 토요일 ${saturdayDateStr}<br><small>(${weekend.Saturday.length}경기)</small></div>
-                                <table class="upcoming-table" style="width: 100%; table-layout: fixed;">
-                                    <thead>
-                                        <tr style="background:#f8f9fa; font-weight:600;">
-                                            <td class="col-time" style="width: 12%;">시간</td>
-                                            <td class="col-home" style="width: 26%;">홈팀</td>
-                                            <td class="col-vs" style="width: 6%;">VS</td>
-                                            <td class="col-away" style="width: 26%;">원정팀</td>
-                                            <td class="col-venue" style="width: 18%;">경기장</td>
-                                            <td class="col-league" style="width: 12%;">리그</td>
-                                         </tr>
-                                     </thead>
-                                     <tbody>${renderRows(weekend.Saturday)}</tbody>
-                                 </table>
-                             </div>`;
-            } else {
-                saturdayHtml = '<div class="upcoming-day-group"><div class="day-header">🏟️ 토요일</div><p class="text-muted text-center">예정된 경기가 없습니다</p></div>';
-            }
-            
-            // 일요일 컬럼 (오른쪽)
-            let sundayHtml = '';
-            if(weekend.Sunday.length > 0){
-                const sundayDateStr = weekendDates[0].sunday.toLocaleDateString('ko-KR', { 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
-                sundayHtml = `<div class="upcoming-day-group">
-                                <div class="day-header">⚽ 일요일 ${sundayDateStr}<br><small>(${weekend.Sunday.length}경기)</small></div>
-                                <table class="upcoming-table" style="width: 100%; table-layout: fixed;">
-                                    <thead>
-                                        <tr style="background:#f8f9fa; font-weight:600;">
-                                            <td class="col-time" style="width: 12%;">시간</td>
-                                            <td class="col-home" style="width: 26%;">홈팀</td>
-                                            <td class="col-vs" style="width: 6%;">VS</td>
-                                            <td class="col-away" style="width: 26%;">원정팀</td>
-                                            <td class="col-venue" style="width: 18%;">경기장</td>
-                                            <td class="col-league" style="width: 12%;">리그</td>
-                                         </tr>
-                                     </thead>
-                                     <tbody>${renderRows(weekend.Sunday)}</tbody>
-                                 </table>
-                             </div>`;
-            } else {
-                sundayHtml = '<div class="upcoming-day-group"><div class="day-header">⚽ 일요일</div><p class="text-muted text-center">예정된 경기가 없습니다</p></div>';
-            }
+            };
 
-            // 좌우 분할 HTML 구성
-            html = `
-                <div class="weekend-column">
-                    ${saturdayHtml}
+            // 다음 토요일/일요일 날짜 계산
+            const getNextWeekend = () => {
+                const today = new Date();
+                const saturday = new Date(today);
+                const daysUntilSaturday = (6 - today.getDay()) % 7;
+                saturday.setDate(today.getDate() + daysUntilSaturday);
+                
+                const sunday = new Date(saturday);
+                sunday.setDate(saturday.getDate() + 1);
+                
+                return { saturday, sunday };
+            };
+
+            const nextWeekend = getNextWeekend();
+
+            // HTML 구성
+            const html = `
+                <div class="upcoming-header">
+                    <h2>⚽ 다가오는 경기</h2>
                 </div>
-                <div class="weekend-column">
-                    ${sundayHtml}
+                
+                <div class="matches-container">
+                    <div class="weekend-column">
+                        <div class="day-header">
+                            🏟️ ${formatDate(nextWeekend.saturday)} (${weekend.Saturday.length}경기)
+                        </div>
+                        <div class="matches-list">
+                            ${weekend.Saturday.length > 0 ? 
+                                renderMatchItems(weekend.Saturday) : 
+                                '<div class="empty-message">예정된 경기가 없습니다</div>'
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="weekend-column">
+                        <div class="day-header">
+                            ⚽ ${formatDate(nextWeekend.sunday)} (${weekend.Sunday.length}경기)
+                        </div>
+                        <div class="matches-list">
+                            ${weekend.Sunday.length > 0 ? 
+                                renderMatchItems(weekend.Sunday) : 
+                                '<div class="empty-message">예정된 경기가 없습니다</div>'
+                            }
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -3641,10 +3758,10 @@
             if(!container) return;
 
             // 기존 토글 제거 후 재생성
-            container.querySelector('#upcomingLeagueToggle')?.remove();
+            container.querySelector('.league-toggle-container')?.remove();
 
-            const uniqueLeagues = [...new Set(matches.map(m=> (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그')))].sort((a,b)=>{
-                // 같은 순위를 위해 getLeagueRank 사용
+            const uniqueLeagues = [...new Set(matches.map(m=> (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그')))].filter(Boolean).sort((a,b)=>{
+                // 리그 순위 정렬
                 const getRank = l=>{
                     if(!l) return 99;
                     const u=l.toUpperCase();
@@ -3659,29 +3776,42 @@
                 return getRank(a)-getRank(b);
             });
 
+            if (uniqueLeagues.length === 0) return;
+
             const toggleDiv = document.createElement('div');
-            toggleDiv.id = 'upcomingLeagueToggle';
-            toggleDiv.style.display='flex';
-            toggleDiv.style.flexWrap='wrap';
-            toggleDiv.style.gap='0.5rem';
-            toggleDiv.style.margin='0.5rem 0 1rem';
+            toggleDiv.className = 'league-toggle-container';
 
             // 전체 버튼
             const allBtn = document.createElement('button');
-            allBtn.className='btn btn-sm '+(upcomingLeagueFilter===''?'btn-primary':'btn-outline-primary');
-            allBtn.textContent='전체';
-            allBtn.onclick=()=>{upcomingLeagueFilter=''; renderUpcomingLeagueToggle(rawUpcomingMatches); displayUpcomingMatchesEnhanced(rawUpcomingMatches);} ;
+            allBtn.className = 'league-toggle-btn' + (upcomingLeagueFilter === '' ? ' active' : '');
+            allBtn.textContent = '전체';
+            allBtn.onclick = () => {
+                upcomingLeagueFilter = ''; 
+                renderUpcomingLeagueToggle(rawUpcomingMatches); 
+                displayUpcomingMatchesEnhanced(rawUpcomingMatches);
+            };
             toggleDiv.appendChild(allBtn);
 
-            uniqueLeagues.forEach(lg=>{
-                const btn=document.createElement('button');
-                btn.className='btn btn-sm '+(upcomingLeagueFilter===lg?'btn-primary':'btn-outline-primary');
-                btn.textContent=lg;
-                btn.onclick=()=>{upcomingLeagueFilter=lg; renderUpcomingLeagueToggle(rawUpcomingMatches); displayUpcomingMatchesEnhanced(rawUpcomingMatches);} ;
+            // 각 리그 버튼
+            uniqueLeagues.forEach(lg => {
+                const btn = document.createElement('button');
+                btn.className = 'league-toggle-btn' + (upcomingLeagueFilter === lg ? ' active' : '');
+                btn.textContent = lg;
+                btn.onclick = () => {
+                    upcomingLeagueFilter = lg; 
+                    renderUpcomingLeagueToggle(rawUpcomingMatches); 
+                    displayUpcomingMatchesEnhanced(rawUpcomingMatches);
+                };
                 toggleDiv.appendChild(btn);
             });
 
-            container.prepend(toggleDiv);
+            // 헤더 다음에 삽입
+            const header = container.querySelector('.upcoming-header');
+            if (header) {
+                header.insertAdjacentElement('afterend', toggleDiv);
+            } else {
+                container.prepend(toggleDiv);
+            }
         }
     </script>
 </body>
