@@ -518,11 +518,13 @@ async function initializeServer() {
 
 // 팀명에서 지역명 분리 함수 (대분류 + 중분류)
 function parseTeamName(fullTeamName) {
-  if (!fullTeamName) return { majorRegion: '', minorRegion: '', teamName: fullTeamName || '', fullRegion: '' };
-  
+  if (!fullTeamName) {
+    return { majorRegion: '', minorRegion: '', teamName: fullTeamName || '', fullRegion: '' };
+  }
+
   // 대분류 지역 패턴
   const majorRegionPatterns = ['경남', '부산', '울산', '대구', '대전', '광주', '인천', '서울', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '제주'];
-  
+
   // 중분류 지역 패턴 (시/군/구)
   const minorRegionPatterns = [
     // 경남 지역
@@ -532,39 +534,41 @@ function parseTeamName(fullTeamName) {
     // 기타 주요 시/군/구
     '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
   ];
-  
+
   let majorRegion = '';
   let remainingName = fullTeamName;
-  
-  // 대분류 지역 찾기
+
+  // 대분류 지역 찾기 (지역명 뒤에 공백이 있는 경우에만 분리)
   for (const region of majorRegionPatterns) {
-    if (fullTeamName.startsWith(region)) {
+    const prefix = region + ' ';
+    if (fullTeamName.startsWith(prefix)) {
       majorRegion = region;
-      remainingName = fullTeamName.substring(region.length);
+      remainingName = fullTeamName.substring(prefix.length);
       break;
     }
   }
-  
+
   let minorRegion = '';
   let teamName = remainingName;
-  
-  // 중분류 지역 찾기
+
+  // 중분류 지역 찾기 (역시 공백이 있어야 분리)
   for (const region of minorRegionPatterns) {
-    if (remainingName.startsWith(region)) {
+    const prefix = region + ' ';
+    if (remainingName.startsWith(prefix)) {
       minorRegion = region;
-      teamName = remainingName.substring(region.length).trim();
+      teamName = remainingName.substring(prefix.length).trim();
       break;
     }
   }
-  
+
   // 팀명이 비어있으면 원본 사용
   if (!teamName.trim()) {
     teamName = fullTeamName;
   }
-  
-  return { 
-    majorRegion, 
-    minorRegion, 
+
+  return {
+    majorRegion,
+    minorRegion,
     teamName: teamName.trim(),
     fullRegion: majorRegion + minorRegion
   };

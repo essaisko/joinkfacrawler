@@ -1772,16 +1772,16 @@
         #upcomingMatchesSection { 
             max-height: none; 
             min-height: 80vh; 
-            padding: 1rem; 
+            padding: 0.5rem; /* 좌우 여백 축소로 가로 공간 확보 */
             display: flex; 
-            gap: 2rem; 
+            gap: 1rem; /* 칼럼 사이 여백 살짝 축소 */
         }
         .weekend-column { 
-            flex: 1; 
+            flex: 1 1 50%; /* 각 주말 칼럼이 가로 영역 50% 이상 차지 */
             max-height: 85vh; 
             overflow-y: auto; 
         }
-        .upcoming-day-group { margin-bottom: 1.5rem; }
+        .upcoming-day-group { margin-bottom: 1.25rem; }
         .day-header { 
             font-size: 1.2rem; font-weight: 600; color: #2c3e50; 
             margin-bottom: 0.8rem; padding: 0.8rem 0; 
@@ -1790,14 +1790,14 @@
         }
         .upcoming-table { width: 100%; border-collapse: collapse; }
         .upcoming-table td { 
-            padding: 0.5rem 0.7rem; border-bottom: 1px solid #eee; 
-            font-size: 0.8rem; line-height: 1.3; 
+            padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; 
+            font-size: 0.85rem; line-height: 1.3; white-space: nowrap; /* 줄바꿈 방지 */
         }
-        .col-time { width: 15%; font-weight: 600; color: #e74c3c; }
-        .col-home, .col-away { width: 25%; font-weight: 500; }
-        .col-vs { width: 8%; text-align: center; color: #7f8c8d; font-weight: 500; }
-        .col-venue { width: 20%; color: #8e44ad; font-size: 0.75rem; }
-        .col-league { width: 17%; color: #27ae60; font-weight: 500; }
+        .col-time { width: 10%; font-weight: 600; color: #e74c3c; }
+        .col-home, .col-away { width: 28%; font-weight: 500; }
+        .col-vs { width: 4%; text-align: center; color: #7f8c8d; font-weight: 500; }
+        .col-venue { width: 18%; color: #8e44ad; font-size: 0.8rem; }
+        .col-league { width: 12%; color: #27ae60; font-weight: 500; }
     </style>
 </head>
 <body>
