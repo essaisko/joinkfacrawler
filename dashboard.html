@@ -2174,6 +2174,10 @@
         let allTeams = [];
         let filteredTeams = [];
 
+        // 다가오는 경기 전용 전역 변수
+        let upcomingLeagueFilter = ''; // '' = 모든 리그
+        let rawUpcomingMatches = [];   // API 로드 후 원본 보관
+
         // 날짜와 요일을 포맷하는 함수
         function formatDateWithWeekday(dateString) {
             if (!dateString) return '날짜 미정';
@@ -3570,6 +3574,55 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadGitInfoDashboard();
         });
+
+        // ==== 리그 토글 버튼 렌더링 ====
+        function renderUpcomingLeagueToggle(matches){
+            const container = document.getElementById('upcomingMatchesSection');
+            if(!container) return;
+
+            // 기존 토글 제거 후 재생성
+            container.querySelector('#upcomingLeagueToggle')?.remove();
+
+            const uniqueLeagues = [...new Set(matches.map(m=> (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그')))].sort((a,b)=>{
+                // 같은 순위를 위해 getLeagueRank 사용
+                const getRank = l=>{
+                    if(!l) return 99;
+                    const u=l.toUpperCase();
+                    if(u.includes('K리그1')||u.includes('K1')) return 1;
+                    if(u.includes('K리그2')||u.includes('K2')) return 2;
+                    if(u.includes('K3')) return 3;
+                    if(u.includes('K4')) return 4;
+                    if(u.includes('K5')) return 5;
+                    if(u.includes('K6')) return 6;
+                    if(u.includes('K7')) return 7;
+                    return 99;};
+                return getRank(a)-getRank(b);
+            });
+
+            const toggleDiv = document.createElement('div');
+            toggleDiv.id = 'upcomingLeagueToggle';
+            toggleDiv.style.display='flex';
+            toggleDiv.style.flexWrap='wrap';
+            toggleDiv.style.gap='0.5rem';
+            toggleDiv.style.margin='0.5rem 0 1rem';
+
+            // 전체 버튼
+            const allBtn = document.createElement('button');
+            allBtn.className='btn btn-sm '+(upcomingLeagueFilter===''?'btn-primary':'btn-outline-primary');
+            allBtn.textContent='전체';
+            allBtn.onclick=()=>{upcomingLeagueFilter=''; renderUpcomingLeagueToggle(rawUpcomingMatches); displayUpcomingMatchesEnhanced(rawUpcomingMatches);} ;
+            toggleDiv.appendChild(allBtn);
+
+            uniqueLeagues.forEach(lg=>{
+                const btn=document.createElement('button');
+                btn.className='btn btn-sm '+(upcomingLeagueFilter===lg?'btn-primary':'btn-outline-primary');
+                btn.textContent=lg;
+                btn.onclick=()=>{upcomingLeagueFilter=lg; renderUpcomingLeagueToggle(rawUpcomingMatches); displayUpcomingMatchesEnhanced(rawUpcomingMatches);} ;
+                toggleDiv.appendChild(btn);
+            });
+
+            container.prepend(toggleDiv);
+        }
     </script>
 </body>
 </html> 
