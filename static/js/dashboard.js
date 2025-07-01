@@ -231,7 +231,9 @@ const Dashboard = {
                     const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
                     if (!matchDate) return false;
                     const d = safeParseDate(matchDate);
-                    return d >= now && d <= thisWeekEnd;
+                    const thisWeekStart = new Date(now);
+                    thisWeekStart.setDate(now.getDate() - now.getDay());
+                    return d >= thisWeekStart && d <= thisWeekEnd;
                 })
                 .filter(m => {
                     if (!Dashboard.state.upcomingLeagueFilter) return true;

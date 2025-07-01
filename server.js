@@ -1057,12 +1057,14 @@ app.get('/api/newsfeed', async (req, res) => {
         
         if (isNaN(matchDate.getTime())) return false;
         
-        // 예정된 경기 조건: 완료되지 않은 경기 + 날짜 범위 내
+        // 이번주 모든 경기 (완료/예정 포함)
         const isUpcoming = (m.matchStatus === '예정' || !m.matchStatus || 
                            (m.TH_SCORE_FINAL === null && m.TA_SCORE_FINAL === null) ||
                            (!m.homeScore && !m.awayScore));
         
-        return isUpcoming && matchDate >= now && matchDate <= thisWeekEnd;
+        const thisWeekStart = new Date(now);
+        thisWeekStart.setDate(now.getDate() - now.getDay());
+        return matchDate >= thisWeekStart && matchDate <= thisWeekEnd;
       })
       .map(m => ({
         ...m,
