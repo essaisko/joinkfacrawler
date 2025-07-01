@@ -1,0 +1,42 @@
+<!-- 탭 네비게이션 컨테이너 -->
+<div class="nav-tabs-container">
+    <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="newsfeed-tab" data-bs-toggle="tab" data-bs-target="#newsfeed" type="button" role="tab">
+                <i class="fas fa-newspaper me-2"></i>뉴스 피드
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">
+                <i class="fas fa-trophy me-2"></i>리그 순위표
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches" type="button" role="tab">
+                <i class="fas fa-calendar-alt me-2"></i>경기 기록 & 일정
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                <i class="fas fa-chart-bar me-2"></i>통계 분석
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab">
+                <i class="fas fa-cog me-2"></i>데이터 관리
+            </button>
+        </li>
+    </ul>
+    
+    <!-- 팀 검색 필드 -->
+    <div class="team-search-header">
+        <div class="team-search-container-header">
+            <i class="fas fa-search team-search-icon-header"></i>
+            <input type="text" id="teamSearchHeader" class="team-search-input-header" 
+                   placeholder="팀명을 입력하고 Enter를 눌러 팀 페이지로 이동..." />
+            <button class="team-search-btn-header">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>

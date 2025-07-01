@@ -1,0 +1,73 @@
+<!-- 통계 분석 탭 -->
+<div class="tab-pane fade" id="analytics" role="tabpanel">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="fas fa-chart-bar me-2"></i>축구 통계 분석
+            </h4>
+            <p class="text-muted">각종 축구 기록과 팀별 성과를 한눈에 확인하세요</p>
+        </div>
+    </div>
+    
+    <!-- 기본 통계 카드 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-futbol fa-2x text-primary mb-3"></i>
+                    <h5 class="card-title">평균 득점</h5>
+                    <h3 class="text-primary" id="avgGoals">-</h3>
+                    <small class="text-muted">경기당 평균</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-trophy fa-2x text-warning mb-3"></i>
+                    <h5 class="card-title">최고 득점</h5>
+                    <h3 class="text-warning" id="highestScore">-</h3>
+                    <small class="text-muted">단일 경기 최고</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-fire fa-2x text-danger mb-3"></i>
+                    <h5 class="card-title">최활성 리그</h5>
+                    <h6 class="text-danger" id="mostActiveLeague">-</h6>
+                    <small class="text-muted">경기 수 기준</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-calendar fa-2x text-success mb-3"></i>
+                    <h5 class="card-title">총 경기 수</h5>
+                    <h3 class="text-success" id="totalMatchesAnalytics">-</h3>
+                    <small class="text-muted">완료된 경기</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 주요 기록 섹션 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>주요 축구 기록
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="recordsContent">
+                        <!-- 주요 기록들이 여기에 로드됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

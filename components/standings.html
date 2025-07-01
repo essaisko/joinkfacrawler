@@ -1,0 +1,14 @@
+<!-- 리그 순위표 탭 -->
+<div class="tab-pane fade" id="standings" role="tabpanel">
+    <%- include('ui/filter-section', { 
+        title: '순위표 필터',
+        filters: [
+            { type: 'region', id: 'standingRegionFilterButtons' },
+            { type: 'league', id: 'standingLeagueFilterButtons' }
+        ]
+    }) %>
+
+    <div id="standingsContainer">
+        <%- include('ui/loading-spinner', { message: '순위표를 불러오는 중...' }) %>
+    </div>
+</div>
