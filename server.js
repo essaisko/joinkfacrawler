@@ -14,8 +14,12 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-
-
+// === [GLOBAL QUEUES & FLAGS] ===
+// 전역 큐 및 상태 플래그 (모든 소켓에서 공유)
+const crawlQueue = [];
+const uploadQueue = [];
+let isCrawling = false;
+let isUploading = false;
 
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
@@ -223,10 +227,7 @@ io.on('connection', (socket) => {
   }
 
   // ====== 크롤링 큐 시스템 ======
-  const crawlQueue = [];
-  const uploadQueue = [];
-  let isCrawling = false;
-  let isUploading = false;
+  // (전역 큐/플래그를 사용하므로 별도의 지역 변수 선언 제거)
 
   function emitQueueStatus() {
     const runningCrawl = Array.from(runningProcesses.values()).find(p => p.type === 'crawling');
@@ -238,6 +239,9 @@ io.on('connection', (socket) => {
       waitingUpload: uploadQueue.map(i => i.options)
     });
   }
+
+  // 새로 연결된 클라이언트에게 현재 큐 상태 전달
+  emitQueueStatus();
 
   function maybeStartNextUpload() {
     // 업로드는 크롤링이 모두 끝난 뒤 순차 진행
@@ -304,7 +308,8 @@ io.on('connection', (socket) => {
       const processInfo = runningProcesses.get(processId);
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
-      io.emit('process-ended', { processId, type: 'crawling', options: processInfo ? processInfo.options : null });
+      // options 파라미터를 직접 전달하여 누락 방지
+      io.emit('process-ended', { processId, type: 'crawling', options });
 
       // 다음 큐 실행
       if (crawlQueue.length > 0) {
@@ -370,6 +375,7 @@ io.on('connection', (socket) => {
 
       runningProcesses.delete(processId);
       socket.runningProcesses.delete(processId);
+      // options 직접 전달
       io.emit('process-ended', { processId, type: 'uploading', options });
 
       if (uploadQueue.length > 0) {
@@ -406,7 +412,7 @@ io.on('connection', (socket) => {
         console.log(`✅ 프로세스 ${processId} 중단 신호 전송`);
         socket.emit('log', `🛑 ${processInfo.type} 프로세스를 중단합니다...\n`);
         
-        // === 개선: 크롤링 중단 시 대기열도 함께 비우기 ===
+        // === 개선: 크롤링 중단 시 대기열도 함께 비우기 (전역 큐 사용) ===
         if (processInfo.type === 'crawling') {
           crawlQueue.length = 0;
           socket.emit('log', `🧹 크롤링 대기열을 모두 비웠습니다.\n`);
@@ -495,11 +501,6 @@ async function initializeServer() {
     }
   });
 }
-
-
-
-
-
 
 // 팀명에서 지역명 분리 함수 (대분류 + 중분류)
 function parseTeamName(fullTeamName) {
