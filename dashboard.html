@@ -1769,7 +1769,7 @@
         .upcoming-match-card .next-match-indicator { font-size: 0.7rem; margin-top: 0.25rem; }
 
         /* === NEW: Upcoming matches table layout === */
-        #upcomingMatchesSection { max-height: 1400px; overflow-y: auto; padding: 1rem; }
+        #upcomingMatchesSection { max-height: 3000px; overflow-y: auto; padding: 1rem; }
         .upcoming-day-group { margin-bottom: 1.5rem; }
         .day-header { 
             font-size: 1.1rem; font-weight: 600; color: #2c3e50; 
@@ -1905,8 +1905,8 @@
                 <!-- 메인 컨텐츠 영역 -->
                 <div class="container-fluid">
                     <div class="row">
-                        <!-- 좌측: 다가오는 경기 (확장) -->
-                        <div class="col-lg-8">
+                        <!-- 전체: 다가오는 경기 (전면 확장) -->
+                        <div class="col-12">
                             <div class="newsfeed-section">
                                 <h2 class="section-title-enhanced">
                                     ⚽ 다가오는 경기
@@ -1921,71 +1921,9 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 우측: 순위표 미리보기 -->
-                        <div class="col-lg-4">
-                            <div class="newsfeed-section">
-                                <h2 class="section-title-enhanced">
-                                    🏆 리그 순위
-                                </h2>
-                                <div id="standingsPreview">
-                                    <div class="loading-spinner-enhanced">
-                                        <div class="spinner-border text-success" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="mt-3">순위표를 불러오는 중...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- 추가 섹션들 -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="additional-stats-section">
-                                <h3 class="section-title-enhanced">📊 실시간 통계</h3>
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="stat-card-modern">
-                                            <div class="stat-icon-large">⚽</div>
-                                            <div class="stat-content">
-                                                <div class="stat-value-large" id="todayMatches">0</div>
-                                                <div class="stat-label-modern">오늘의 경기</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-card-modern">
-                                            <div class="stat-icon-large">🔥</div>
-                                            <div class="stat-content">
-                                                <div class="stat-value-large" id="hotMatchups">0</div>
-                                                <div class="stat-label-modern">주목할 대결</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-card-modern">
-                                            <div class="stat-icon-large">⚡</div>
-                                            <div class="stat-content">
-                                                <div class="stat-value-large" id="liveMatches">0</div>
-                                                <div class="stat-label-modern">진행 중인 경기</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-card-modern">
-                                            <div class="stat-icon-large">🎯</div>
-                                            <div class="stat-content">
-                                                <div class="stat-value-large" id="totalGoalsToday">0</div>
-                                                <div class="stat-label-modern">오늘 총 득점</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
@@ -2434,15 +2372,14 @@
             // 좌측: 다가오는 최근 일정
             displayUpcomingMatchesEnhanced(data.upcomingMatches);
             
-            // 우측: 순위표
-            displayStandingsPreview(data.standings);
+            // 다가오는 경기만 표시 (순위표 제거)
         }
 
-        // 강화된 다가오는 경기 표시 (확장된 기간, 경기장 정보 포함)
+        // 강화된 다가오는 경기 표시 (전체 경기, 날짜 표시, K4리그 수정)
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
 
-            // 대상 기간: 오늘~4주 후까지 (더 많은 경기 표시)
+            // 대상 기간: 오늘~4주 후까지 (모든 경기 표시)
             const now = new Date();
             const rangeEnd = new Date(now);
             rangeEnd.setDate(now.getDate() + 28);
@@ -2460,6 +2397,26 @@
                 return;
             }
 
+            // 토요일과 일요일 날짜 계산
+            const getNextSaturday = () => {
+                const today = new Date();
+                const daysUntilSaturday = (6 - today.getDay() + 7) % 7;
+                const saturday = new Date(today);
+                saturday.setDate(today.getDate() + (daysUntilSaturday === 0 ? 7 : daysUntilSaturday));
+                return saturday;
+            };
+
+            const getNextSunday = () => {
+                const today = new Date();
+                const daysUntilSunday = (7 - today.getDay()) % 7;
+                const sunday = new Date(today);
+                sunday.setDate(today.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
+                return sunday;
+            };
+
+            const nextSaturday = getNextSaturday();
+            const nextSunday = getNextSunday();
+
             const weekend = { Saturday: [], Sunday: [] };
             forthcoming.forEach(m => {
                 const day = new Date(m.MATCH_DATE).getDay();
@@ -2470,10 +2427,13 @@
             const renderRows = arr => arr.map(match => {
                 const d = new Date(match.MATCH_DATE);
                 const time = (match.MATCH_TIME_FORMATTED || match.TIME || '').slice(0,5) || d.toTimeString().substring(0,5);
-                const league = match.leagueTitle || '';
+                let league = match.leagueTitle || '';
+                // K4리그 명칭 수정
+                league = league.replace(/k4리그/gi, 'K4리그');
+                
                 const venue = match.VENUE || match.STADIUM || '경기장 미정';
-                const homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || '홈팀';
-                const awayTeam = match.AWAY_TEAM_NAME || match.AWAY_TEAM || '원정팀';
+                const homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || '홈팀';
+                const awayTeam = match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || '원정팀';
                 
                 return `<tr>
                             <td class="col-time">${time}</td>
@@ -2486,9 +2446,15 @@
             }).join('');
 
             let html = '';
+            
+            // 토요일 경기 (날짜 포함)
             if(weekend.Saturday.length){
+                const saturdayDateStr = nextSaturday.toLocaleDateString('ko-KR', { 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
                 html += `<div class="upcoming-day-group">
-                            <div class="day-header">🏟️ 토요일 경기 (${weekend.Saturday.length}경기)</div>
+                            <div class="day-header">🏟️ 토요일 ${saturdayDateStr} (${weekend.Saturday.length}경기)</div>
                             <table class="upcoming-table">
                                 <thead>
                                     <tr style="background:#f8f9fa; font-weight:600;">
@@ -2504,9 +2470,15 @@
                             </table>
                         </div>`;
             }
+            
+            // 일요일 경기 (날짜 포함)
             if(weekend.Sunday.length){
+                const sundayDateStr = nextSunday.toLocaleDateString('ko-KR', { 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
                 html += `<div class="upcoming-day-group">
-                            <div class="day-header">⚽ 일요일 경기 (${weekend.Sunday.length}경기)</div>
+                            <div class="day-header">⚽ 일요일 ${sundayDateStr} (${weekend.Sunday.length}경기)</div>
                             <table class="upcoming-table">
                                 <thead>
                                     <tr style="background:#f8f9fa; font-weight:600;">
@@ -2521,6 +2493,11 @@
                                 <tbody>${renderRows(weekend.Sunday)}</tbody>
                             </table>
                         </div>`;
+            }
+
+            // 토요일, 일요일 모두 경기가 없는 경우
+            if (!weekend.Saturday.length && !weekend.Sunday.length) {
+                html = '<p class="upcoming-matches-empty text-muted">이번 주말 예정된 경기가 없습니다</p>';
             }
 
             container.innerHTML = html;
@@ -2545,99 +2522,7 @@
 
 
 
-        // 순위표 미리보기 표시 (리그 토글 기능 포함)
-        function displayStandingsPreview(standings) {
-            const container = document.getElementById('standingsPreview');
-            
-            if (!standings || standings.length === 0) {
-                container.innerHTML = `
-                    <div class="standings-empty">
-                        <i class="fas fa-trophy"></i>
-                        <p>순위표 정보가 없습니다</p>
-                    </div>
-                `;
-                return;
-            }
 
-            // 리그별로 그룹화
-            const leagueGroups = {};
-            standings.forEach(leagueStanding => {
-                if (leagueStanding.standings && leagueStanding.standings.length > 0) {
-                    const leagueKey = leagueStanding.league || '기타 리그';
-                    leagueGroups[leagueKey] = leagueStanding.standings;
-                }
-            });
-
-            const leagueKeys = Object.keys(leagueGroups);
-            if (leagueKeys.length === 0) {
-                container.innerHTML = `
-                    <div class="standings-empty">
-                        <i class="fas fa-trophy"></i>
-                        <p>순위표 정보가 없습니다</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '<div class="standings-preview-enhanced">';
-            
-            // 헤더에 리그 토글 버튼들 추가
-            html += '<div class="standings-preview-header">';
-            html += '<div class="standings-title">🏆 리그 순위</div>';
-            html += '<div class="league-toggle-buttons">';
-            leagueKeys.forEach((leagueKey, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                const category = getLeagueCategory(leagueKey);
-                const categoryLabel = category.toUpperCase();
-                html += `<button class="league-toggle-btn ${isActive} ${category}" data-league="${leagueKey}">
-                    <span class="league-color-label ${category}">${categoryLabel}</span>
-                    ${leagueKey}
-                </button>`;
-            });
-            html += '</div>';
-            html += '</div>';
-            
-            // 각 리그별 순위표 생성
-            leagueKeys.forEach((leagueKey, index) => {
-                const teams = leagueGroups[leagueKey];
-                const isVisible = index === 0 ? 'active' : '';
-                
-                html += `<div class="standings-league-content ${isVisible}" data-league="${leagueKey}">`;
-                
-                teams.slice(0, 6).forEach((team, teamIndex) => {
-                    const position = teamIndex + 1;
-                    let positionClass = '';
-                    
-                    if (position <= 3) positionClass = 'top-position';
-                    else if (position <= 6) positionClass = 'good-position';
-                    
-                    html += `
-                        <div class="standings-preview-item ${positionClass}">
-                            <div class="position-num">${position}</div>
-                            <div class="team-info-preview">
-                                <div class="team-logo-small">${(team.teamName || '팀').charAt(0)}</div>
-                                <div class="team-details">
-                                    <div class="team-name-small">
-                                        <a href="team.html?team=${encodeURIComponent(team.teamName)}" class="team-name-clickable">
-                                            ${team.teamName || '팀명 없음'}
-                                        </a>
-                                    </div>
-                                    <div class="team-stats-small">${team.played || 0}경기 ${team.points || 0}점</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += '</div>';
-            });
-            
-            html += '</div>';
-            container.innerHTML = html;
-            
-            // 리그 토글 이벤트 리스너 추가
-            setupLeagueToggle();
-        }
 
         // 리그 토글 기능 설정
         function setupLeagueToggle() {
