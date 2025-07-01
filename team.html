@@ -265,6 +265,19 @@
             </div>
         </div>
 
+        <div class="p-4" id="standingsSection">
+            <h4 class="mb-4">
+                <i class="fas fa-list-ol me-2"></i>리그 순위표
+            </h4>
+            <div id="standingsContainer" class="table-responsive text-center">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="matches-section">
             <h4 class="mb-4">
                 <i class="fas fa-calendar-alt me-2"></i>경기 일정 & 결과
@@ -301,6 +314,7 @@
                 
                 displayTeamInfo(teamData);
                 displayMatches(teamData.matches);
+                loadLeagueStandings(teamData);
             } catch (error) {
                 console.error('팀 정보 로드 실패:', error);
                 document.getElementById('teamInfo').innerHTML = `
@@ -397,7 +411,7 @@
             });
 
             let html = '';
-            Object.keys(monthGroups).sort().reverse().forEach(monthKey => {
+            Object.keys(monthGroups).sort().forEach(monthKey => {
                 const group = monthGroups[monthKey];
                 const monthId = `month-${monthKey}`;
                 
@@ -417,6 +431,8 @@
                         <div class="collapse-content" id="${monthId}">
                 `;
                 
+                // 경기일 기준 오름차순 정렬
+                group.matches.sort((a,b)=> new Date(a.MATCH_DATE||a.matchDate||a.date||0) - new Date(b.MATCH_DATE||b.matchDate||b.date||0));
                 group.matches.forEach(match => {
                     const isCompleted = match.matchStatus === '완료';
                     const statusClass = isCompleted ? 'status-completed' : 'status-upcoming';
@@ -503,6 +519,61 @@
                 icon.classList.add('fa-chevron-up');
                 header.classList.add('active');
             }
+        }
+
+        // 리그 순위 로드 및 표시
+        async function loadLeagueStandings(teamData){
+            try{
+                const res = await fetch('/api/standings');
+                const leagues = await res.json();
+                let leagueStandings = [];
+                let targetLeagueTitle = teamData.leagueTitle || '';
+                // leagues may be array of league objects or plain array of rows
+                if(Array.isArray(leagues)){
+                    // find league containing this team
+                    for(const lg of leagues){
+                        if(Array.isArray(lg.standings)){
+                            if(lg.leagueTitle===targetLeagueTitle || lg.standings.some(s=>s.teamName===teamData.teamName)){
+                                leagueStandings = lg.standings;
+                                break;
+                            }
+                        }
+                    }
+                    // fallback if data itself already array of teams
+                    if(leagueStandings.length===0 && leagues[0]?.teamName){
+                        leagueStandings = leagues.filter(s=>s.leagueTitle===targetLeagueTitle);
+                    }
+                }
+                displayStandings(leagueStandings, teamData.teamName);
+            }catch(e){
+                console.error('순위표 로드 실패',e);
+                document.getElementById('standingsContainer').innerHTML = '<div class="text-muted">순위표를 불러올 수 없습니다.</div>';
+            }
+        }
+
+        function displayStandings(list, focusTeam){
+            const container = document.getElementById('standingsContainer');
+            if(!list||list.length===0){
+                container.innerHTML = '<div class="text-muted">순위표 데이터가 없습니다.</div>';
+                return;
+            }
+            // 정렬 by rank/points
+            list.sort((a,b)=> (a.rank||a.position||a.RANK||0) - (b.rank||b.position||b.RANK||0));
+            let rows='';
+            list.forEach((row,idx)=>{
+                const rank=row.rank||row.position||row.RANK||idx+1;
+                const pts=row.points||row.PTS||row.POINTS||0;
+                const played=row.played||row.P||row.PLD||row.GP||0;
+                const gd=row.goalDifference||row.GD||0;
+                const w=row.wins||row.W||0;
+                const d=row.draws||row.D||0;
+                const l=row.losses||row.L||0;
+                const name=row.teamName||row.TEAM||row.TEAM_NAME||'';
+                const highlight = name===focusTeam ? 'table-primary fw-bold' : '';
+                rows += `<tr class="${highlight}"><td>${rank}</td><td class="text-start">${name}</td><td>${played}</td><td>${w}</td><td>${d}</td><td>${l}</td><td>${gd}</td><td>${pts}</td></tr>`;
+            });
+            container.innerHTML = `
+                <table class="table table-sm table-bordered align-middle standings-table"><thead class="table-light"><tr><th>순위</th><th class="text-start">팀</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table>`;
         }
 
         // 뒤로가기
