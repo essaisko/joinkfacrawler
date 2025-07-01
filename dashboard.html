@@ -1973,6 +1973,8 @@
 
         .region-label{font-size:0.7rem;color:#555;line-height:1;}
         .team-wrapper{display:flex;flex-direction:column;align-items:flex-start;}
+        .team-name-link{color:#2c3e50;text-decoration:none;font-weight:600;}
+        .team-name-link:hover{color:#e67e22;text-decoration:underline;}
     </style>
 </head>
 <body>
@@ -2791,7 +2793,8 @@
 
                     const renderTeamHtml = (parsed)=>{
                         const regionLabel = parsed.major ? `<div class="region-label">${parsed.major}${parsed.minor? ' '+parsed.minor:''}</div>` : '';
-                        return `<div class="team-wrapper">${regionLabel}<div class="team-name" title="${parsed.teamName}">${parsed.teamName}</div></div>`;
+                        const encoded = encodeURIComponent(parsed.teamName);
+                        return `<div class="team-wrapper"><a href="team.html?team=${encoded}" class="team-name-link" title="${parsed.teamName}">${parsed.teamName}</a></div>`;
                     };
 
                     return `
@@ -3896,7 +3899,7 @@
             // 헤더 다음에 삽입
             const header = container.querySelector('.upcoming-header');
             if (header) {
-                header.insertAdjacentElement('afterend', toggleDiv);
+                header.appendChild(toggleDiv);
             } else {
                 container.prepend(toggleDiv);
             }
