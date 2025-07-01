@@ -306,21 +306,7 @@ io.on('connection', (socket) => {
       io.emit('log', msg);
 
       const processInfo = runningProcesses.get(processId);
-      runningProcesses.delete(processId);
-      socket.runningProcesses.delete(processId);
-      // options 파라미터를 직접 전달하여 누락 방지
-      io.emit('process-ended', { processId, type: 'crawling', options });
-
-      // 다음 큐 실행
-      if (crawlQueue.length > 0) {
-        const next = crawlQueue.shift();
-        launchCrawler(next.options, next.socket);
-      } else {
-        isCrawling = false;
-        // 크롤링이 모두 끝났으니 대기 중인 업로드가 있으면 시작
-        maybeStartNextUpload();
-      }
-      emitQueueStatus();
+      finalizeProcess(processId, 'crawling', processInfo.options);
     });
   }
 
@@ -373,18 +359,8 @@ io.on('connection', (socket) => {
       addToLogHistory(msg);
       io.emit('log', msg);
 
-      runningProcesses.delete(processId);
-      socket.runningProcesses.delete(processId);
-      // options 직접 전달
-      io.emit('process-ended', { processId, type: 'uploading', options });
-
-      if (uploadQueue.length > 0) {
-        const next = uploadQueue.shift();
-        launchUploader(next.options, next.socket);
-      } else {
-        isUploading = false;
-      }
-      emitQueueStatus();
+      const processInfo = runningProcesses.get(processId);
+      finalizeProcess(processId, 'uploading', processInfo.options);
     });
   }
 
@@ -432,6 +408,7 @@ io.on('connection', (socket) => {
             processInfo.process.kill('SIGKILL');
             console.log(`💀 프로세스 ${processId} 강제 종료`);
             socket.emit('log', `💀 프로세스가 강제 종료되었습니다.\n`);
+            finalizeProcess(processId, processInfo.type, processInfo.options);
           }
         }, 3000);
         
@@ -468,6 +445,43 @@ io.on('connection', (socket) => {
       });
     }
   });
+
+  // ===== 프로세스 종료 공통 처리 (소켓 범위) =====
+  function finalizeProcess(processId, type, options) {
+    if (!runningProcesses.has(processId)) return;
+
+    const procInfo = runningProcesses.get(processId);
+    runningProcesses.delete(processId);
+
+    // 소켓별 추적 세트 정리
+    const targetSocket = io.sockets.sockets.get(procInfo.socket);
+    if (targetSocket && targetSocket.runningProcesses) {
+      targetSocket.runningProcesses.delete(processId);
+    }
+
+    if (type === 'crawling') {
+      isCrawling = false;
+      // 크롤링이 끝났으니 대기중인 업로드 실행 시도
+      maybeStartNextUpload();
+    }
+    if (type === 'uploading') {
+      isUploading = false;
+    }
+
+    io.emit('process-ended', { processId, type, options });
+    emitQueueStatus();
+
+    // 크롤링이 끝났고 대기열에 다음 크롤링이 있으면 실행
+    if (!isCrawling && crawlQueue.length > 0) {
+      const next = crawlQueue.shift();
+      launchCrawler(next.options, next.socket);
+    }
+    // 업로드도 동일하게 처리 (업로드 종료 후 다른 업로드가 남아있으면)
+    if (!isUploading && uploadQueue.length > 0) {
+      const next = uploadQueue.shift();
+      launchUploader(next.options, next.socket);
+    }
+  }
 });
 
 // 자동 Keep-Alive 함수 (Render 서버 자동 종료 방지)
