@@ -1,0 +1,1086 @@
+/* ===============================================
+   K-League Dashboard CSS
+   리팩토링된 모듈화 스타일시트
+   =============================================== */
+
+/* === CSS 변수 정의 === */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --light-bg: #f8f9fa;
+    --border-color: #dee2e6;
+    --text-muted: #6c757d;
+    --champions-league: #0066cc;
+    --europa-league: #ff6600;
+    --relegation: #dc3545;
+    --promotion: #28a745;
+}
+
+/* === 기본 레이아웃 === */
+body {
+    background-color: var(--light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+}
+
+/* === 헤더 컴포넌트 === */
+.main-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.git-info-display {
+    background-color: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+}
+
+.git-info-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.git-info-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.git-commit-hash {
+    font-family: monospace;
+    background: rgba(255,255,255,0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.git-refresh-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.git-commit-message {
+    margin-top: 8px;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* === 네비게이션 탭 === */
+.nav-tabs-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 2rem;
+}
+
+.nav-tabs {
+    border-bottom: 3px solid var(--border-color);
+    margin-bottom: 2rem;
+    flex: 1;
+}
+
+.nav-tabs .nav-link {
+    color: #495057;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 0;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--secondary-color);
+    background-color: rgba(52, 152, 219, 0.1);
+    border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--secondary-color);
+    background-color: white;
+    border-color: var(--secondary-color) var(--secondary-color) white;
+    border-width: 0 0 3px 0;
+}
+
+/* === 팀 검색 헤더 === */
+.team-search-header {
+    min-width: 300px;
+}
+
+.team-search-container-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    overflow: visible;
+    transition: all 0.3s ease;
+}
+
+.team-search-container-header:focus-within {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.team-search-icon-header {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-muted);
+    z-index: 2;
+}
+
+.team-search-input-header {
+    flex: 1;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: none;
+    outline: none;
+    font-size: 0.9rem;
+    background: transparent;
+}
+
+.team-search-btn-header {
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 45px;
+}
+
+.team-search-btn-header:hover {
+    background: var(--primary-color);
+}
+
+/* === 팀 검색 자동완성 === */
+.team-suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-top: none;
+    border-radius: 0 0 15px 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.team-suggestion-item {
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.team-suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.team-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-team-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.suggestion-team-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.suggestion-team-details {
+    flex: 1;
+}
+
+.suggestion-team-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 2px;
+}
+
+.suggestion-team-region {
+    display: flex;
+    gap: 0.25rem;
+}
+
+/* === 공통 카드 스타일 === */
+.card-enhanced {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card-enhanced:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.card-header-enhanced {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* === 뉴스피드 섹션 === */
+.newsfeed-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #f1f3f4;
+    transition: all 0.3s ease;
+}
+
+.newsfeed-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.section-title-enhanced {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f1f3f4;
+}
+
+/* === 다가오는 경기 스타일 === */
+#upcomingMatchesSection {
+    width: 100%;
+    height: auto;
+    min-height: 80vh;
+    margin: 0;
+    padding: 1rem;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    overflow: auto;
+}
+
+.upcoming-header {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.upcoming-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.fullscreen-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.fullscreen-toggle:hover {
+    background: #2980b9;
+    transform: scale(1.1);
+}
+
+.matches-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    height: auto;
+    min-height: 60vh;
+    overflow: visible;
+}
+
+.weekend-column {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.day-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.matches-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.match-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 40px 1fr 160px 60px;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.match-item:hover {
+    background: #f8f9fa;
+}
+
+.match-time {
+    font-weight: 700;
+    color: #e74c3c;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.team-name {
+    font-weight: 600;
+    color: #2c3e50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vs-text {
+    text-align: center;
+    color: #7f8c8d;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.venue-text {
+    color: #8e44ad;
+    font-size: 0.8rem;
+    white-space: normal;
+    overflow: visible;
+}
+
+.league-badge {
+    background: #27ae60;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.empty-message {
+    text-align: center;
+    padding: 3rem;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* === 리그 토글 버튼 === */
+.league-toggle-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1001;
+}
+
+.league-toggle-btn {
+    display: block;
+    width: 100%;
+    padding: 6px 4px;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.6;
+}
+
+.league-toggle-btn:hover {
+    opacity: 0.85;
+}
+
+.league-toggle-btn.active {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+/* 리그별 색상 */
+.btn-k1 { background: #e74c3c; }
+.btn-k2 { background: #d35400; }
+.btn-k3 { background: #8e44ad; }
+.btn-k4 { background: #34495e; }
+.btn-k5 { background: #e67e22; }
+.btn-k6 { background: #3498db; }
+.btn-k7 { background: #27ae60; }
+.btn-other { background: #7f8c8d; }
+
+/* Active 버튼 배경 유지 */
+.league-toggle-container .league-toggle-btn.active.btn-k1 { background: #e74c3c; }
+.league-toggle-container .league-toggle-btn.active.btn-k2 { background: #d35400; }
+.league-toggle-container .league-toggle-btn.active.btn-k3 { background: #8e44ad; }
+.league-toggle-container .league-toggle-btn.active.btn-k4 { background: #34495e; }
+.league-toggle-container .league-toggle-btn.active.btn-k5 { background: #e67e22; }
+.league-toggle-container .league-toggle-btn.active.btn-k6 { background: #3498db; }
+.league-toggle-container .league-toggle-btn.active.btn-k7 { background: #27ae60; }
+.league-toggle-container .league-toggle-btn.active.btn-other { background: #7f8c8d; }
+
+/* === 팀 정보 스타일 === */
+.region-label {
+    font-size: 0.7rem;
+    color: #555;
+    line-height: 1;
+}
+
+.team-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.team-name-link {
+    color: #2c3e50;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.team-name-link:hover {
+    color: #e67e22;
+    text-decoration: underline;
+}
+
+/* === 전체 화면 모드 === */
+#newsfeed.fullscreen-mode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    background: white;
+}
+
+#newsfeed.fullscreen-mode #upcomingMatchesSection {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#newsfeed.fullscreen-mode .matches-container {
+    height: calc(100vh - 200px);
+    overflow: hidden;
+}
+
+/* === 순위표 스타일 === */
+.standings-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.standings-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.standings-table {
+    margin: 0;
+}
+
+.standings-table th {
+    background-color: #f8f9fa;
+    border: none;
+    padding: 1rem 0.75rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+}
+
+.standings-table td {
+    border: none;
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.standings-table tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.standings-table tbody tr:first-child {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7) !important;
+    border-left: 4px solid #f39c12;
+}
+
+.standings-table tbody tr:last-child {
+    background: linear-gradient(135deg, #f8d7da, #fab1a0) !important;
+    border-left: 4px solid #e74c3c;
+}
+
+.standings-table tbody tr:first-child:hover {
+    background: linear-gradient(135deg, #ffeaa7, #fdcb6e) !important;
+}
+
+.standings-table tbody tr:last-child:hover {
+    background: linear-gradient(135deg, #fab1a0, #e17055) !important;
+}
+
+.team-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    margin-right: 12px;
+}
+
+.team-info {
+    display: flex;
+    align-items: center;
+}
+
+.team-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.region-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+.major-region {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.minor-region {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.position-number {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #495057;
+    min-width: 30px;
+    text-align: center;
+}
+
+.points-cell {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.stats-number {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* === 필터 섹션 === */
+.filter-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.filter-group {
+    margin-bottom: 1.5rem;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e9ecef;
+    background: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-btn:hover {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+    transform: translateY(-1px);
+}
+
+.filter-btn.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* === 리그 색상 라벨 === */
+.league-color-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 16px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+
+.league-color-label.k1 {
+    background: linear-gradient(135deg, #e74c3c, #ff6b6b);
+    border: 1px solid #e74c3c;
+}
+
+.league-color-label.k5 {
+    background: linear-gradient(135deg, #f39c12, #f5b041);
+    border: 1px solid #f39c12;
+}
+
+.league-color-label.k6 {
+    background: linear-gradient(135deg, #3498db, #5dade2);
+    border: 1px solid #2980b9;
+}
+
+.league-color-label.k7 {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: 1px solid #27ae60;
+}
+
+.league-color-label.other {
+    background: linear-gradient(135deg, #95a5a6, #bdc3c7);
+    border: 1px solid #7f8c8d;
+}
+
+/* === 팀 검색 및 필터 === */
+.team-search-container {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.team-search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.team-search-input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.team-search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.team-filter-toggle {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.team-filter-toggle:hover {
+    background: linear-gradient(135deg, #2980b9, #3498db);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.team-filter-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.team-filter-toggle.expanded i {
+    transform: rotate(180deg);
+}
+
+.team-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease;
+}
+
+.team-filter-grid.expanded {
+    max-height: 2000px;
+}
+
+.team-filter-btn {
+    position: relative;
+    padding: 0;
+    border: 2px solid #e9ecef;
+    background: white;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #495057;
+    overflow: hidden;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.team-filter-btn:hover {
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.team-filter-btn.active {
+    border-color: var(--secondary-color);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+    transform: translateY(-2px);
+}
+
+/* === 경기 카드 스타일 === */
+.epl-match-card {
+    background: white;
+    border-radius: 12px;
+    margin: 0.75rem 0;
+    padding: 0;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.epl-match-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.epl-match-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.epl-match-content {
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.epl-team-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 180px;
+    flex: 1;
+    justify-content: center;
+}
+
+.epl-team-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.epl-team-info {
+    width: 100%;
+}
+
+.epl-team-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.epl-score-section {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    text-align: center;
+    min-width: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.epl-vs-text {
+    font-size: 2rem;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.epl-match-info {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.epl-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.epl-status-completed {
+    background: var(--success-color);
+    color: white;
+}
+
+.epl-status-upcoming {
+    background: var(--warning-color);
+    color: white;
+}
+
+/* === 월별 그룹화 === */
+.month-group {
+    margin-bottom: 2rem;
+}
+
+.month-toggle {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: none;
+    border-radius: 8px;
+    padding: 1rem;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.month-toggle:hover {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    transform: translateY(-1px);
+}
+
+.month-toggle.active {
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    color: white;
+}
+
+.month-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease;
+}
+
+.month-content.show {
+    max-height: 3000px;
+}
+
+/* === 로딩 및 빈 상태 === */
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+
+.loading-spinner-enhanced {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* === 반응형 디자인 === */
+@media (max-width: 768px) {
+    .standings-table {
+        font-size: 0.85rem;
+    }
+    
+    .team-logo {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .match-teams {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .matches-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav-tabs-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .team-search-header {
+        min-width: auto;
+        width: 100%;
+    }
+}
+
+/* === 유틸리티 클래스 === */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mt-3 { margin-top: 1rem; }
+.p-4 { padding: 1.5rem; }
+.d-flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 1rem; }

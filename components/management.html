@@ -1,0 +1,39 @@
+<!-- 데이터 관리 탭 -->
+<div class="tab-pane fade" id="management" role="tabpanel">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-database me-2"></i>데이터 통계</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary" id="totalMatches">-</h4>
+                            <p class="text-muted">총 경기 수</p>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success" id="completedMatches">-</h4>
+                            <p class="text-muted">완료된 경기</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools me-2"></i>데이터 관리</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary w-100 mb-2" onclick="refreshAllData()">
+                        <i class="fas fa-sync-alt me-2"></i>전체 데이터 새로고침
+                    </button>
+                    <button class="btn btn-info w-100" onclick="exportData()">
+                        <i class="fas fa-download me-2"></i>데이터 내보내기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

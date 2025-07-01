@@ -1,0 +1,20 @@
+<div class="card-enhanced">
+    <% if (locals.header) { %>
+    <div class="card-header-enhanced">
+        <% if (locals.icon) { %>
+        <i class="<%= locals.icon %> me-2"></i>
+        <% } %>
+        <%= locals.header %>
+    </div>
+    <% } %>
+    
+    <div class="card-body">
+        <%- locals.content || '' %>
+    </div>
+    
+    <% if (locals.footer) { %>
+    <div class="card-footer">
+        <%- locals.footer %>
+    </div>
+    <% } %>
+</div>

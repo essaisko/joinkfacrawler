@@ -1,0 +1,17 @@
+<button 
+    class="filter-btn <%= locals.active ? 'active' : '' %>" 
+    data-value="<%= locals.value || '' %>"
+    <% if (locals.onclick) { %>onclick="<%= locals.onclick %>"<% } %>
+>
+    <% if (locals.icon) { %>
+    <i class="<%= locals.icon %> me-1"></i>
+    <% } %>
+    
+    <% if (locals.badge) { %>
+    <span class="league-color-label <%= locals.badge.class %>">
+        <%= locals.badge.text %>
+    </span>
+    <% } %>
+    
+    <%= locals.text || locals.label || '버튼' %>
+</button>
