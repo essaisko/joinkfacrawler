@@ -1814,6 +1814,8 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+            z-index: 1001;
         }
         
         .league-toggle-btn {
@@ -1968,6 +1970,9 @@
             min-height: 60vh;
             overflow: visible;
         }
+
+        .region-label{font-size:0.7rem;color:#555;line-height:1;}
+        .team-wrapper{display:flex;flex-direction:column;align-items:flex-start;}
     </style>
 </head>
 <body>
@@ -2763,21 +2768,38 @@
                     const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
                     
                     // 팀명 추출
-                    let homeTeam = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
+                    let rawHome = match.homeTeam?.teamName || match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
                                    match.homeTeam || match.home_team || match.HOME || match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
-                    let awayTeam = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
+                    let rawAway = match.awayTeam?.teamName || match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
                                    match.awayTeam || match.away_team || match.AWAY || match.TA_CLUB_NAME || match.TEAM_AWAY || '원정팀';
                     
-                    // 팀명 정리
-                    homeTeam = homeTeam.replace(/홈팀|home/gi, '').trim() || '홈팀';
-                    awayTeam = awayTeam.replace(/원정팀|away/gi, '').trim() || '원정팀';
-                    
+                    const parseTeam = (str)=>{
+                        const majors = ['경남','부산','울산','대구','대전','광주','인천','서울','경기','강원','충북','충남','전북','전남','경북','제주'];
+                        const tokens = str.split(' ');
+                        if(tokens.length>1 && majors.includes(tokens[0])){
+                            const major = tokens[0];
+                            const minor = tokens[1].match(/(시|군|구)$/) ? tokens[1] : '';
+                            const teamName = minor ? tokens.slice(2).join(' ') : tokens.slice(1).join(' ');
+                            return {teamName, major, minor};
+                        }
+                        return {teamName:str, major:'', minor:''};
+                    };
+
+                    const leagueRank = getLeagueRank(league);
+                    const homeParsed = parseTeam(rawHome);
+                    const awayParsed = parseTeam(rawAway);
+
+                    const renderTeamHtml = (parsed)=>{
+                        const regionLabel = parsed.major ? `<div class="region-label">${parsed.major}${parsed.minor? ' '+parsed.minor:''}</div>` : '';
+                        return `<div class="team-wrapper">${regionLabel}<div class="team-name" title="${parsed.teamName}">${parsed.teamName}</div></div>`;
+                    };
+
                     return `
                         <div class="match-item">
                             <div class="match-time">${time}</div>
-                            <div class="team-name" title="${homeTeam}">${homeTeam}</div>
+                            ${renderTeamHtml(homeParsed)}
                             <div class="vs-text">VS</div>
-                            <div class="team-name" title="${awayTeam}">${awayTeam}</div>
+                            ${renderTeamHtml(awayParsed)}
                             <div class="venue-text" title="${venue}">${venue}</div>
                             <div class="league-badge">${league}</div>
                         </div>
@@ -3877,6 +3899,18 @@
                 header.insertAdjacentElement('afterend', toggleDiv);
             } else {
                 container.prepend(toggleDiv);
+            }
+        }
+
+        // ================= Fetch matches from /api/matches directly to avoid 10-match cap =================
+        async function loadNewsFeed(){
+            try {
+                const resp = await fetch('/api/matches');
+                if(!resp.ok) throw new Error('matches fetch fail');
+                const allMatches = await resp.json();
+                displayEnhancedNewsFeed({upcomingMatches: allMatches});
+            } catch(err){
+                console.error(err);
             }
         }
     </script>
