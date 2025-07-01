@@ -1769,22 +1769,34 @@
         .upcoming-match-card .next-match-indicator { font-size: 0.7rem; margin-top: 0.25rem; }
 
         /* === NEW: Upcoming matches table layout === */
-        #upcomingMatchesSection { max-height: 3000px; overflow-y: auto; padding: 1rem; }
+        #upcomingMatchesSection { 
+            max-height: none; 
+            min-height: 80vh; 
+            padding: 1rem; 
+            display: flex; 
+            gap: 2rem; 
+        }
+        .weekend-column { 
+            flex: 1; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
         .upcoming-day-group { margin-bottom: 1.5rem; }
         .day-header { 
-            font-size: 1.1rem; font-weight: 600; color: #2c3e50; 
-            margin-bottom: 0.5rem; padding: 0.5rem 0; 
-            border-bottom: 2px solid #3498db; 
+            font-size: 1.2rem; font-weight: 600; color: #2c3e50; 
+            margin-bottom: 0.8rem; padding: 0.8rem 0; 
+            border-bottom: 3px solid #3498db; 
+            text-align: center;
         }
         .upcoming-table { width: 100%; border-collapse: collapse; }
         .upcoming-table td { 
-            padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; 
-            font-size: 0.75rem; line-height: 1.2; white-space: nowrap; 
+            padding: 0.5rem 0.7rem; border-bottom: 1px solid #eee; 
+            font-size: 0.8rem; line-height: 1.3; 
         }
-        .col-time { width: 12%; font-weight: 600; color: #e74c3c; }
-        .col-home, .col-away { width: 22%; }
+        .col-time { width: 15%; font-weight: 600; color: #e74c3c; }
+        .col-home, .col-away { width: 25%; font-weight: 500; }
         .col-vs { width: 8%; text-align: center; color: #7f8c8d; font-weight: 500; }
-        .col-venue { width: 18%; color: #8e44ad; font-size: 0.7rem; }
+        .col-venue { width: 20%; color: #8e44ad; font-size: 0.75rem; }
         .col-league { width: 17%; color: #27ae60; font-weight: 500; }
     </style>
 </head>
@@ -2375,7 +2387,7 @@
             // 다가오는 경기만 표시 (순위표 제거)
         }
 
-        // 강화된 다가오는 경기 표시 (전체 경기, 날짜 표시, K4리그 수정)
+        // 강화된 다가오는 경기 표시 (좌우 분할, 실제 팀명 표시, 모든 경기)
         function displayUpcomingMatchesEnhanced(matches) {
             const container = document.getElementById('upcomingMatchesSection');
 
@@ -2397,29 +2409,32 @@
                 return;
             }
 
-            // 토요일과 일요일 날짜 계산
-            const getNextSaturday = () => {
+            // 토요일과 일요일 날짜 계산 (여러 주말 포함)
+            const getWeekendDates = () => {
+                const weekends = [];
                 const today = new Date();
-                const daysUntilSaturday = (6 - today.getDay() + 7) % 7;
-                const saturday = new Date(today);
-                saturday.setDate(today.getDate() + (daysUntilSaturday === 0 ? 7 : daysUntilSaturday));
-                return saturday;
+                
+                for (let week = 0; week < 4; week++) {
+                    const saturday = new Date(today);
+                    saturday.setDate(today.getDate() + (6 - today.getDay()) + (week * 7));
+                    if (saturday.getDay() !== 6) {
+                        saturday.setDate(saturday.getDate() + (6 - saturday.getDay()));
+                    }
+                    
+                    const sunday = new Date(saturday);
+                    sunday.setDate(saturday.getDate() + 1);
+                    
+                    weekends.push({ saturday, sunday });
+                }
+                return weekends;
             };
 
-            const getNextSunday = () => {
-                const today = new Date();
-                const daysUntilSunday = (7 - today.getDay()) % 7;
-                const sunday = new Date(today);
-                sunday.setDate(today.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
-                return sunday;
-            };
-
-            const nextSaturday = getNextSaturday();
-            const nextSunday = getNextSunday();
-
+            const weekendDates = getWeekendDates();
             const weekend = { Saturday: [], Sunday: [] };
+            
             forthcoming.forEach(m => {
-                const day = new Date(m.MATCH_DATE).getDay();
+                const matchDate = new Date(m.MATCH_DATE);
+                const day = matchDate.getDay();
                 if(day === 6) weekend.Saturday.push(m);
                 if(day === 0) weekend.Sunday.push(m);
             });
@@ -2431,74 +2446,94 @@
                 // K4리그 명칭 수정
                 league = league.replace(/k4리그/gi, 'K4리그');
                 
-                const venue = match.VENUE || match.STADIUM || '경기장 미정';
-                const homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || '홈팀';
-                const awayTeam = match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || '원정팀';
+                const venue = match.VENUE || match.STADIUM || match.경기장 || '경기장 미정';
+                
+                // 실제 팀명 추출 (다양한 필드명 지원)
+                let homeTeam = match.HOME_TEAM_NAME || match.HOME_TEAM || match.홈팀 || 
+                               match.homeTeam || match.home_team || match.HOME || '홈팀';
+                let awayTeam = match.AWAY_TEAM_NAME || match.AWAY_TEAM || match.원정팀 || 
+                               match.awayTeam || match.away_team || match.AWAY || '원정팀';
+                
+                // 팀명에서 불필요한 텍스트 제거
+                homeTeam = homeTeam.replace(/홈팀|home/gi, '').trim() || '홈팀';
+                awayTeam = awayTeam.replace(/원정팀|away/gi, '').trim() || '원정팀';
                 
                 return `<tr>
                             <td class="col-time">${time}</td>
-                            <td class="col-home">${homeTeam}</td>
+                            <td class="col-home" title="${homeTeam}">${homeTeam}</td>
                             <td class="col-vs">vs</td>
-                            <td class="col-away">${awayTeam}</td>
-                            <td class="col-venue">${venue}</td>
+                            <td class="col-away" title="${awayTeam}">${awayTeam}</td>
+                            <td class="col-venue" title="${venue}">${venue}</td>
                             <td class="col-league">${league}</td>
                         </tr>`;
             }).join('');
 
+            // 좌우 분할 레이아웃
             let html = '';
             
-            // 토요일 경기 (날짜 포함)
-            if(weekend.Saturday.length){
-                const saturdayDateStr = nextSaturday.toLocaleDateString('ko-KR', { 
+            // 토요일 컬럼 (왼쪽)
+            let saturdayHtml = '';
+            if(weekend.Saturday.length > 0){
+                const saturdayDateStr = weekendDates[0].saturday.toLocaleDateString('ko-KR', { 
                     month: 'long', 
                     day: 'numeric' 
                 });
-                html += `<div class="upcoming-day-group">
-                            <div class="day-header">🏟️ 토요일 ${saturdayDateStr} (${weekend.Saturday.length}경기)</div>
-                            <table class="upcoming-table">
-                                <thead>
-                                    <tr style="background:#f8f9fa; font-weight:600;">
-                                        <td class="col-time">시간</td>
-                                        <td class="col-home">홈팀</td>
-                                        <td class="col-vs"></td>
-                                        <td class="col-away">원정팀</td>
-                                        <td class="col-venue">경기장</td>
-                                        <td class="col-league">리그</td>
-                                    </tr>
-                                </thead>
-                                <tbody>${renderRows(weekend.Saturday)}</tbody>
-                            </table>
-                        </div>`;
+                saturdayHtml = `<div class="upcoming-day-group">
+                                <div class="day-header">🏟️ 토요일 ${saturdayDateStr}<br><small>(${weekend.Saturday.length}경기)</small></div>
+                                <table class="upcoming-table">
+                                    <thead>
+                                        <tr style="background:#f8f9fa; font-weight:600;">
+                                            <td class="col-time">시간</td>
+                                            <td class="col-home">홈팀</td>
+                                            <td class="col-vs"></td>
+                                            <td class="col-away">원정팀</td>
+                                            <td class="col-venue">경기장</td>
+                                            <td class="col-league">리그</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${renderRows(weekend.Saturday)}</tbody>
+                                </table>
+                            </div>`;
+            } else {
+                saturdayHtml = '<div class="upcoming-day-group"><div class="day-header">🏟️ 토요일</div><p class="text-muted text-center">예정된 경기가 없습니다</p></div>';
             }
             
-            // 일요일 경기 (날짜 포함)
-            if(weekend.Sunday.length){
-                const sundayDateStr = nextSunday.toLocaleDateString('ko-KR', { 
+            // 일요일 컬럼 (오른쪽)
+            let sundayHtml = '';
+            if(weekend.Sunday.length > 0){
+                const sundayDateStr = weekendDates[0].sunday.toLocaleDateString('ko-KR', { 
                     month: 'long', 
                     day: 'numeric' 
                 });
-                html += `<div class="upcoming-day-group">
-                            <div class="day-header">⚽ 일요일 ${sundayDateStr} (${weekend.Sunday.length}경기)</div>
-                            <table class="upcoming-table">
-                                <thead>
-                                    <tr style="background:#f8f9fa; font-weight:600;">
-                                        <td class="col-time">시간</td>
-                                        <td class="col-home">홈팀</td>
-                                        <td class="col-vs"></td>
-                                        <td class="col-away">원정팀</td>
-                                        <td class="col-venue">경기장</td>
-                                        <td class="col-league">리그</td>
-                                    </tr>
-                                </thead>
-                                <tbody>${renderRows(weekend.Sunday)}</tbody>
-                            </table>
-                        </div>`;
+                sundayHtml = `<div class="upcoming-day-group">
+                                <div class="day-header">⚽ 일요일 ${sundayDateStr}<br><small>(${weekend.Sunday.length}경기)</small></div>
+                                <table class="upcoming-table">
+                                    <thead>
+                                        <tr style="background:#f8f9fa; font-weight:600;">
+                                            <td class="col-time">시간</td>
+                                            <td class="col-home">홈팀</td>
+                                            <td class="col-vs"></td>
+                                            <td class="col-away">원정팀</td>
+                                            <td class="col-venue">경기장</td>
+                                            <td class="col-league">리그</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${renderRows(weekend.Sunday)}</tbody>
+                                </table>
+                            </div>`;
+            } else {
+                sundayHtml = '<div class="upcoming-day-group"><div class="day-header">⚽ 일요일</div><p class="text-muted text-center">예정된 경기가 없습니다</p></div>';
             }
 
-            // 토요일, 일요일 모두 경기가 없는 경우
-            if (!weekend.Saturday.length && !weekend.Sunday.length) {
-                html = '<p class="upcoming-matches-empty text-muted">이번 주말 예정된 경기가 없습니다</p>';
-            }
+            // 좌우 분할 HTML 구성
+            html = `
+                <div class="weekend-column">
+                    ${saturdayHtml}
+                </div>
+                <div class="weekend-column">
+                    ${sundayHtml}
+                </div>
+            `;
 
             container.innerHTML = html;
         }
