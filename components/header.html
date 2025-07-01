@@ -9,7 +9,7 @@
                 <p class="mb-0 mt-2 opacity-75">실시간 순위표, 경기 기록 및 통계 분석</p>
             </div>
             <div class="col-md-4 text-end">
-                <a href="index.html" class="btn btn-light">
+                <a href="/" class="btn btn-light">
                     <i class="fas fa-home me-2"></i>메인 페이지
                 </a>
             </div>
@@ -18,18 +18,16 @@
         <!-- Git 커밋 정보 표시 -->
         <div class="row mt-3">
             <div class="col-12">
-                <div class="git-info-display">
-                    <div class="git-info-content">
-                        <div class="git-info-left">
+                <div style="background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 12px; font-size: 13px; color: rgba(255,255,255,0.9);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                             <span style="font-weight: bold;">🔄 현재 버전:</span>
-                            <span id="gitCommitHashDashboard" class="git-commit-hash">로딩중...</span>
+                            <span id="gitCommitHashDashboard" style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">로딩중...</span>
                             <span id="gitCommitDateDashboard" style="opacity: 0.8;">로딩중...</span>
                         </div>
-                        <button id="refreshGitInfoDashboard" class="git-refresh-btn">
-                            🔄 새로고침
-                        </button>
+                        <button id="refreshGitInfoDashboard" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 새로고침</button>
                     </div>
-                    <div id="gitCommitMessageDashboard" class="git-commit-message">로딩중...</div>
+                    <div id="gitCommitMessageDashboard" style="margin-top: 8px; font-style: italic; opacity: 0.8;">로딩중...</div>
                 </div>
             </div>
         </div>

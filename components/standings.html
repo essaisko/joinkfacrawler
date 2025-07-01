@@ -1,14 +1,31 @@
 <!-- 리그 순위표 탭 -->
 <div class="tab-pane fade" id="standings" role="tabpanel">
-    <%- include('ui/filter-section', { 
-        title: '순위표 필터',
-        filters: [
-            { type: 'region', id: 'standingRegionFilterButtons' },
-            { type: 'league', id: 'standingLeagueFilterButtons' }
-        ]
-    }) %>
+    <div class="filter-section">
+        <div class="filter-group">
+            <span class="filter-label">
+                <i class="fas fa-map-marker-alt me-2"></i>지역 선택
+            </span>
+            <div class="filter-buttons" id="standingRegionFilterButtons">
+                <button class="filter-btn active" data-value="">모든 지역</button>
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <span class="filter-label">
+                <i class="fas fa-trophy me-2"></i>리그 선택
+            </span>
+            <div class="filter-buttons" id="standingLeagueFilterButtons">
+                <button class="filter-btn active" data-value="">모든 리그</button>
+            </div>
+        </div>
+    </div>
 
     <div id="standingsContainer">
-        <%- include('ui/loading-spinner', { message: '순위표를 불러오는 중...' }) %>
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">순위표를 불러오는 중...</p>
+        </div>
     </div>
 </div>

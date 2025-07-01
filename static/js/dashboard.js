@@ -40,7 +40,7 @@ const Dashboard = {
             } catch (error) {
                 console.error('뉴스 피드 로드 실패:', error);
                 try {
-                    console.log('🔄 /api/newsfeed 실패, /api/matches 로 폴백 시도...');
+                    console.log('🔄 /api/matches 로 폴백 시도...');
                     const resp2 = await fetch('/api/matches');
                     if (!resp2.ok) throw new Error(`matches API error: ${resp2.status}`);
                     
@@ -660,6 +660,15 @@ const Dashboard = {
                 window.open(`team.html?team=${encodeURIComponent(teamName)}`, '_blank');
                 searchInput.value = '';
             }
+        },
+
+        managementTab() {
+            const managementTab = document.getElementById('management-tab');
+            if (managementTab) {
+                managementTab.addEventListener('shown.bs.tab', async () => {
+                    await Dashboard.management.loadStats();
+                });
+            }
         }
     },
 
@@ -714,3 +723,124 @@ window.exportData = () => {
 document.addEventListener('DOMContentLoaded', () => {
     Dashboard.init();
 });
+
+// ===== Management Functions =====
+
+// 전체 데이터 새로고침
+Dashboard.management = {
+    refreshAllData: async function() {
+        try {
+            // 모든 데이터 초기화
+            Dashboard.state.allStandings = [];
+            Dashboard.state.allMatches = [];
+            Dashboard.state.allAnalytics = null;
+            Dashboard.state.rawUpcomingMatches = [];
+            
+            // 현재 활성 탭 확인
+            const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+            if (activeTab) {
+                const tabId = activeTab.getAttribute('data-bs-target');
+                switch (tabId) {
+                    case '#newsfeed':
+                        await Dashboard.api.loadNewsFeed();
+                        break;
+                    case '#standings':
+                        await Dashboard.api.loadStandings();
+                        break;
+                    case '#matches':
+                        await Dashboard.api.loadMatches();
+                        break;
+                    case '#analytics':
+                        await Dashboard.api.loadAnalytics();
+                        break;
+                }
+            }
+            
+            // 통계 업데이트
+            await Dashboard.management.loadStats();
+            
+            alert('모든 데이터가 새로고침되었습니다.');
+        } catch (error) {
+            console.error('데이터 새로고침 실패:', error);
+            alert('데이터 새로고침 중 오류가 발생했습니다.');
+        }
+    },
+
+    exportData: function() {
+        const data = {
+            standings: Dashboard.state.allStandings,
+            matches: Dashboard.state.allMatches,
+            analytics: Dashboard.state.allAnalytics,
+            exportDate: new Date().toISOString(),
+            exportBy: 'K-League Dashboard'
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `k-league-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    loadStats: async function() {
+        try {
+            // 기존 데이터가 있으면 사용, 없으면 API 호출
+            let matches = Dashboard.state.allMatches;
+            if (!matches || matches.length === 0) {
+                const response = await fetch('/api/matches');
+                matches = await response.json();
+            }
+
+            const totalMatches = matches.length;
+            const completedMatches = matches.filter(m => 
+                m.MATCH_STATUS === '완료' || m.matchStatus === '완료'
+            ).length;
+            const activeLeagues = [...new Set(matches.map(m => 
+                m.leagueTitle || m.league
+            ).filter(Boolean))].length;
+            const activeTeams = [...new Set([
+                ...matches.map(m => m.HOME_TEAM_NAME).filter(Boolean),
+                ...matches.map(m => m.AWAY_TEAM_NAME).filter(Boolean)
+            ])].length;
+
+            // UI 업데이트
+            const totalEl = document.getElementById('totalMatches');
+            const completedEl = document.getElementById('completedMatches');
+            const leaguesEl = document.getElementById('activeLeagues');
+            const teamsEl = document.getElementById('activeTeams');
+
+            if (totalEl) totalEl.textContent = totalMatches;
+            if (completedEl) completedEl.textContent = completedMatches;
+            if (leaguesEl) leaguesEl.textContent = activeLeagues;
+            if (teamsEl) teamsEl.textContent = activeTeams;
+
+        } catch (error) {
+            console.error('통계 로드 실패:', error);
+        }
+    }
+};
+
+// 전역 함수들 (하위 호환성)
+window.refreshAllData = Dashboard.management.refreshAllData;
+window.exportData = Dashboard.management.exportData;
+
+// Management 탭 활성화 시 통계 로드
+Dashboard.events.managementTab = function() {
+    const managementTab = document.getElementById('management-tab');
+    if (managementTab) {
+        managementTab.addEventListener('shown.bs.tab', async () => {
+            await Dashboard.management.loadStats();
+        });
+    }
+};
+
+// Management 이벤트 리스너를 기존 이벤트에 추가
+const originalFirebaseEvents = Dashboard.events.firebase;
+Dashboard.events.firebase = function() {
+    originalFirebaseEvents();
+    Dashboard.events.managementTab();
+};
