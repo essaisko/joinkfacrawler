@@ -272,6 +272,7 @@
                                     <th>태그</th>
                                     <th>지역</th>
                                     <th>년도</th>
+                                    <th>월</th>
                                     <th style="text-align:left;">리그 이름</th>
                                     <th>크롤링</th>
                                     <th>업로드</th>
@@ -759,6 +760,17 @@
             const tableBody = document.querySelector('#leagueTable tbody');
             if (!tableBody) return;
             tableBody.innerHTML = '';
+
+            // 월 옵션 HTML 캐시
+            const monthOptions = (() => {
+                const opts = ['<option value="">전체</option>'];
+                for(let i=1;i<=12;i++){
+                    const m = String(i).padStart(2,'0');
+                    opts.push(`<option value="${m}">${m}</option>`);
+                }
+                return opts.join('');
+            })();
+
             leagues.forEach((l) => {
                 const regionKey = l.regionTag && l.regionTag.trim()!=='' ? l.regionTag : 'national';
                 const key = `${l.leagueTag}_${regionKey}_${l.year}`;
@@ -769,6 +781,7 @@
                     <td>${l.leagueTag}</td>
                     <td>${regionDisplay}</td>
                     <td>${l.year}</td>
+                    <td><select class="month-select">${monthOptions}</select></td>
                     <td style="text-align:left;">${l.leagueTitle}</td>
                     <td><button class="action-btn crawl-row-btn" data-key="${key}">크롤</button></td>
                     <td><button class="action-btn upload-row-btn" data-key="${key}">업로드</button></td>
@@ -777,7 +790,7 @@
                 `;
                 tableBody.appendChild(tr);
             });
-                    }
+        }
 
         // === 선택 작업 버튼 ===
         document.getElementById('selectAllLeagues').addEventListener('change', (e)=>{
@@ -790,8 +803,10 @@
             disableButtons();
             appendLog(`🚀 선택된 ${keys.length}개 리그 크롤링을 시작합니다...`);
             keys.forEach(k=>{ 
+                const row = document.querySelector(`.select-league[data-key="${k}"]`).closest('tr');
+                const month = row.querySelector('.month-select')?.value || '';
                 const [tag, region, year] = k.split('_'); 
-                socket.emit('start-crawling', { year, league: tag, region: region }); 
+                socket.emit('start-crawling', { year, month: month, league: tag, region: region }); 
             });
         });
 
@@ -801,8 +816,10 @@
             disableButtons();
             appendLog(`☁️ 선택된 ${keys.length}개 리그 업로드를 시작합니다...`);
             keys.forEach(k=>{ 
+                const row = document.querySelector(`.select-league[data-key="${k}"]`).closest('tr');
+                const month = row.querySelector('.month-select')?.value || '';
                 const [tag, region, year] = k.split('_'); 
-                socket.emit('start-uploading', { year, league: tag, region: region }); 
+                socket.emit('start-uploading', { year, month: month, league: tag, region: region }); 
             });
         });
 
@@ -877,17 +894,19 @@
             if (e.target.classList.contains('crawl-row-btn')) {
                 const key = e.target.dataset.key;
                 const [leagueTag, regionTag, year] = key.split('_');
+                const month = e.target.closest('tr').querySelector('.month-select')?.value || '';
                 disableButtons();
-                appendLog(`🚀 [${leagueTag} ${year}] 개별 크롤링을 시작합니다...`);
-                socket.emit('start-crawling', { year, league: leagueTag, region: regionTag });
+                appendLog(`🚀 [${leagueTag} ${year} ${month||'전체'}월] 개별 크롤링을 시작합니다...`);
+                socket.emit('start-crawling', { year, month: month, league: leagueTag, region: regionTag });
                 e.target.disabled = true;
             }
             if (e.target.classList.contains('upload-row-btn')) {
                 const key = e.target.dataset.key;
                 const [leagueTag, regionTag, year] = key.split('_');
+                const month = e.target.closest('tr').querySelector('.month-select')?.value || '';
                 disableButtons();
-                appendLog(`☁️ [${leagueTag} ${year}] 개별 업로드를 시작합니다...`);
-                socket.emit('start-uploading', { year, league: leagueTag, region: regionTag });
+                appendLog(`☁️ [${leagueTag} ${year} ${month||'전체'}월] 개별 업로드를 시작합니다...`);
+                socket.emit('start-uploading', { year, month: month, league: leagueTag, region: regionTag });
                 e.target.disabled = true;
             }
         });
