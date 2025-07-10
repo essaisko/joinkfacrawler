@@ -844,14 +844,28 @@
                     wrapper.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
                     btn.classList.add('active');
                 }else{
-                    // 개별 월 토글
+                    // 개별 월 토글 선택
                     btn.classList.toggle('active');
                     // '전체' 비활성화
                     wrapper.querySelector('.month-btn[data-month=""]')?.classList.remove('active');
                     // 아무 것도 선택 안 되었으면 '전체' 다시 활성화
-                    const activeExists = wrapper.querySelectorAll('.month-btn.active').length>0;
-                    if(!activeExists){ wrapper.querySelector('.month-btn[data-month=""]')?.classList.add('active'); }
+                    if(wrapper.querySelectorAll('.month-btn.active').length===0){
+                        wrapper.querySelector('.month-btn[data-month=""]')?.classList.add('active');
+                    }
                 }
+
+                // === 행 버튼 동기화 ===
+                const activeMonthsArr = Array.from(wrapper.querySelectorAll('.month-btn.active')).map(b=>b.dataset.month);
+                document.querySelectorAll('#leagueTable tbody .month-buttons').forEach(w=>{
+                    w.querySelectorAll('.month-btn').forEach(b=>{
+                        if(activeMonthsArr.includes('')){
+                            // 전체 선택: 행도 전체만 활성
+                            b.classList.toggle('active', b.dataset.month==='');
+                        }else{
+                            b.classList.toggle('active', activeMonthsArr.includes(b.dataset.month));
+                        }
+                    });
+                });
             }
         });
 
@@ -894,8 +908,8 @@
             appendLog(`🚀 선택된 ${keys.length}개 리그 크롤링을 시작합니다...`);
             keys.forEach(k=>{ 
                 const row = document.querySelector(`.select-league[data-key="${k}"]`).closest('tr');
-                const monthBtn = row.querySelector('.month-btn.active');
-                const month = monthBtn ? monthBtn.dataset.month : '';
+                const months = Array.from(row.querySelectorAll('.month-btn.active')).map(b=>b.dataset.month).filter(m=>m!=='');
+                const month = months.join(',');
                 const [tag, region, year, matchIdx] = k.split('_'); 
                 const leagueTitle = row.dataset.leaguetitle;
                 socket.emit('start-crawling', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
@@ -909,8 +923,8 @@
             appendLog(`☁️ 선택된 ${keys.length}개 리그 업로드를 시작합니다...`);
             keys.forEach(k=>{ 
                 const row = document.querySelector(`.select-league[data-key="${k}"]`).closest('tr');
-                const monthBtn = row.querySelector('.month-btn.active');
-                const month = monthBtn ? monthBtn.dataset.month : '';
+                const months = Array.from(row.querySelectorAll('.month-btn.active')).map(b=>b.dataset.month).filter(m=>m!=='');
+                const month = months.join(',');
                 const [tag, region, year, matchIdx] = k.split('_'); 
                 const leagueTitle = row.dataset.leaguetitle;
                 socket.emit('start-uploading', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
@@ -987,17 +1001,23 @@
         document.addEventListener('click', (e) => {
             // 월 버튼 클릭 처리
             if(e.target.classList.contains('month-btn')){
-                const btn = e.target;
-                const wrapper = btn.parentElement;
+                // 전역 컨트롤 영역인지 확인
+                if(e.target.closest('#globalMonthControls')){
+                    // 전역 컨트롤은 별도 로직에서 처리하므로 여기서는 무시
+                    return;
+                }
+
+                // 행 내부 월 버튼: 단일 선택 유지 (기존 로직)
+                const wrapper = e.target.parentElement;
                 wrapper.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
-                btn.classList.add('active');
+                e.target.classList.add('active');
                 return; // 다른 핸들러 실행 안하도록
             }
             if (e.target.classList.contains('crawl-row-btn')) {
                 const key = e.target.dataset.key;
                 const [leagueTag, regionTag, year, matchIdx] = key.split('_');
-                const monthBtn = e.target.closest('tr').querySelector('.month-btn.active');
-                const month = monthBtn ? monthBtn.dataset.month : '';
+                const months = Array.from(e.target.closest('tr').querySelectorAll('.month-btn.active')).map(b=>b.dataset.month).filter(m=>m!=='');
+                const month = months.join(',');
                 disableButtons();
                 appendLog(`🚀 [${leagueTag} ${year} ${month||'전체'}월] 개별 크롤링을 시작합니다...`);
                 const leagueTitle = e.target.closest('tr').dataset.leaguetitle;
@@ -1007,8 +1027,8 @@
             if (e.target.classList.contains('upload-row-btn')) {
                 const key = e.target.dataset.key;
                 const [leagueTag, regionTag, year, matchIdx] = key.split('_');
-                const monthBtn = e.target.closest('tr').querySelector('.month-btn.active');
-                const month = monthBtn ? monthBtn.dataset.month : '';
+                const months = Array.from(e.target.closest('tr').querySelectorAll('.month-btn.active')).map(b=>b.dataset.month).filter(m=>m!=='');
+                const month = months.join(',');
                 disableButtons();
                 appendLog(`☁️ [${leagueTag} ${year} ${month||'전체'}월] 개별 업로드를 시작합니다...`);
                 const leagueTitle = e.target.closest('tr').dataset.leaguetitle;
