@@ -199,21 +199,42 @@ const Dashboard = {
             };
 
             const safeParseDate = (str) => {
-                if(!str) return new Date('2100-01-01');
-                if(/^([0-9]{4})[.-]([0-9]{1,2})[.-]([0-9]{1,2})/.test(str)){
-                    const [y,m,d]=str.split(/[-.]/).map(n=>parseInt(n));
-                    return new Date(y,m-1,d);
+                if (!str) return new Date('2100-01-01');
+
+                // Non-string inputs (Date, number) – fall back to native constructor
+                if (typeof str !== 'string') return new Date(str);
+
+                let s = str.trim();
+
+                // Remove any text following "(" such as "2025-09-28 (일) 13:00"
+                if (s.includes('(')) {
+                    s = s.split('(')[0].trim();
                 }
-                if(/^\d{8}$/.test(str)){
-                    const y=str.substr(0,4); const m=str.substr(4,2); const d=str.substr(6,2);
-                    return new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+
+                // Normalise separators
+                s = s.replace(/[\.\/]/g, '-');
+
+                // Handle cases like "20250928" → YYYY-MM-DD
+                if (/^\d{8}$/.test(s)) {
+                    s = s.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
                 }
-                if(/^\d{2}[.-]\d{2}$/.test(str)){
-                    const today=new Date();
-                    const [m,d]=str.split(/[-.]/).map(n=>parseInt(n));
-                    return new Date(today.getFullYear(),m-1,d);
+
+                // Handle strings that include weekday / time e.g. "2025-09-28-일-13-50"
+                const numericParts = s.split('-').filter(p => /^\d+$/.test(p));
+                if (numericParts.length >= 3) {
+                    const [y, m, d] = numericParts;
+                    return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
                 }
-                return new Date(str);
+
+                // Handle MM-DD (current year implied)
+                if (/^\d{1,2}-\d{1,2}$/.test(s)) {
+                    const [mon, day] = s.split('-').map(Number);
+                    const y = new Date().getFullYear();
+                    return new Date(y, mon - 1, day);
+                }
+
+                // Fallback to browser Date parser
+                return new Date(s);
             };
 
             const renderTeamHtml = (rawTeamName, leagueRank) => {
