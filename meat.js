@@ -79,22 +79,24 @@ function parseArgs() {
 }
 
 const cliArgs = parseArgs();
-const { year: filterYear, month: filterMonth, league: filterLeague } = cliArgs;
+const { year: filterYear, month: filterMonth, league: filterLeague, region: filterRegion, matchIdx: filterMatchIdx } = cliArgs;
 
 // CSV 내용은 실행 시점(아래 IIFE 내부)에서 로드되므로 초기값은 빈 배열
 let LEAGUE_LIST = []; // 실행 시에 채워집니다.
 
-// 인자에 따라 리그 목록 필터링
-if (filterYear) {
-    LEAGUE_LIST = LEAGUE_LIST.filter(l => l.year === filterYear);
+// 함수: CLI 필터 적용
+function applyCliFilters(list){
+  let arr=list;
+  if(filterYear){ arr = arr.filter(l=> l.year===filterYear); }
+  if(filterLeague){
+     arr = arr.filter(l=> l.leagueTag.toLowerCase()===filterLeague.toLowerCase() || l.leagueTitle.includes(filterLeague));
+  }
+  if(filterRegion){ arr = arr.filter(l=> (l.regionTag||'').trim()===filterRegion.trim()); }
+  if(filterMatchIdx){ arr = arr.filter(l=> l.matchIdx===filterMatchIdx); }
+  return arr;
 }
-if (filterLeague) {
-    LEAGUE_LIST = LEAGUE_LIST.filter(l => 
-        l.leagueTitle.includes(filterLeague) || 
-        l.leagueTag.includes(filterLeague) ||
-        l.leagueTag.toLowerCase() === filterLeague.toLowerCase()
-    );
-}
+
+// 초기에는 빈배열이므로 실행 후에도 빈배열; 실제 CSV 로드 후 applyCliFilters 호출 필요
 
 // 인자에 따라 월 목록 필터링
 // 01월부터 12월까지 모두 포함하도록 수정 (기존: 03~12)
@@ -302,16 +304,7 @@ async function fetchMatchData(league, ym, retryCount = 0) {
   });
 
   // 인자에 따라 리그 목록 필터링
-  if (filterYear) {
-      LEAGUE_LIST = LEAGUE_LIST.filter(l => l.year === filterYear);
-  }
-  if (filterLeague) {
-      LEAGUE_LIST = LEAGUE_LIST.filter(l => 
-          l.leagueTitle.includes(filterLeague) || 
-          l.leagueTag.includes(filterLeague) ||
-          l.leagueTag.toLowerCase() === filterLeague.toLowerCase()
-      );
-  }
+  LEAGUE_LIST = applyCliFilters(LEAGUE_LIST);
 
   for (const league of LEAGUE_LIST) {
     // 방어 코드 추가 (regionTag는 빈 문자열 허용)

@@ -144,8 +144,8 @@
         .upload-row-btn:hover { background-color: #166fe5; }
         /* 레이아웃 개선 */
         .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; box-sizing: border-box; flex-wrap:nowrap; }
-        .left-area { flex: 1 1 60%; min-width:0; }
-        .log-panel { flex: 0 0 38%; }
+        .left-area { flex: 1 1 72%; min-width:0; }
+        .log-panel { flex: 0 0 26%; }
         /* 왼쪽 컨테이너 최대폭 제거 */
         .left-area .container { width:100%; max-width:none; }
         /* 로그인 오버레이 */
@@ -729,7 +729,7 @@
 
             if(options && options.league && options.year){
                 const regionKey = options.region && options.region.trim()!=='' ? options.region : 'national';
-                const key = `${options.league}_${regionKey}_${options.year}`;
+                const key = `${options.league}_${regionKey}_${options.year}_${options.matchIdx || ''}`;
                 const ts = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; };
                 const label = ts();
                 if(type==='crawling') {
@@ -777,8 +777,10 @@
 
             leagues.forEach((l) => {
                 const regionKey = l.regionTag && l.regionTag.trim()!=='' ? l.regionTag : 'national';
-                const key = `${l.leagueTag}_${regionKey}_${l.year}`;
+                const key = `${l.leagueTag}_${regionKey}_${l.year}_${l.matchIdx}`;
                 const tr = document.createElement('tr');
+                tr.dataset.matchidx = l.matchIdx;
+                tr.dataset.leaguetitle = l.leagueTitle;
                 const regionDisplay = l.regionTag && l.regionTag.trim() !== '' ? l.regionTag : '전국';
                 tr.innerHTML = `
                     <td><input type="checkbox" class="select-league" data-key="${key}"></td>
@@ -810,8 +812,9 @@
                 const row = document.querySelector(`.select-league[data-key="${k}"]`).closest('tr');
                 const monthBtn = row.querySelector('.month-btn.active');
                 const month = monthBtn ? monthBtn.dataset.month : '';
-                const [tag, region, year] = k.split('_'); 
-                socket.emit('start-crawling', { year, month: month, league: tag, region: region }); 
+                const [tag, region, year, matchIdx] = k.split('_'); 
+                const leagueTitle = row.dataset.leaguetitle;
+                socket.emit('start-crawling', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
             });
         });
 
@@ -824,8 +827,9 @@
                 const row = document.querySelector(`.select-league[data-key="${k}"]`).closest('tr');
                 const monthBtn = row.querySelector('.month-btn.active');
                 const month = monthBtn ? monthBtn.dataset.month : '';
-                const [tag, region, year] = k.split('_'); 
-                socket.emit('start-uploading', { year, month: month, league: tag, region: region }); 
+                const [tag, region, year, matchIdx] = k.split('_'); 
+                const leagueTitle = row.dataset.leaguetitle;
+                socket.emit('start-uploading', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
             });
         });
 
@@ -907,22 +911,24 @@
             }
             if (e.target.classList.contains('crawl-row-btn')) {
                 const key = e.target.dataset.key;
-                const [leagueTag, regionTag, year] = key.split('_');
+                const [leagueTag, regionTag, year, matchIdx] = key.split('_');
                 const monthBtn = e.target.closest('tr').querySelector('.month-btn.active');
                 const month = monthBtn ? monthBtn.dataset.month : '';
                 disableButtons();
                 appendLog(`🚀 [${leagueTag} ${year} ${month||'전체'}월] 개별 크롤링을 시작합니다...`);
-                socket.emit('start-crawling', { year, month: month, league: leagueTag, region: regionTag });
+                const leagueTitle = e.target.closest('tr').dataset.leaguetitle;
+                socket.emit('start-crawling', { year, month: month, league: leagueTag, region: regionTag, matchIdx: matchIdx, leagueTitle });
                 e.target.disabled = true;
             }
             if (e.target.classList.contains('upload-row-btn')) {
                 const key = e.target.dataset.key;
-                const [leagueTag, regionTag, year] = key.split('_');
+                const [leagueTag, regionTag, year, matchIdx] = key.split('_');
                 const monthBtn = e.target.closest('tr').querySelector('.month-btn.active');
                 const month = monthBtn ? monthBtn.dataset.month : '';
                 disableButtons();
                 appendLog(`☁️ [${leagueTag} ${year} ${month||'전체'}월] 개별 업로드를 시작합니다...`);
-                socket.emit('start-uploading', { year, month: month, league: leagueTag, region: regionTag });
+                const leagueTitle = e.target.closest('tr').dataset.leaguetitle;
+                socket.emit('start-uploading', { year, month: month, league: leagueTag, region: regionTag, matchIdx: matchIdx, leagueTitle });
                 e.target.disabled = true;
             }
         });

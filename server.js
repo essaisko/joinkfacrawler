@@ -281,6 +281,9 @@ io.on('connection', (socket) => {
     if (options.year) args.push(`--year=${options.year}`);
     if (options.month) args.push(`--month=${options.month}`);
     if (options.league) args.push(`--league=${options.league}`);
+    if (options.region) args.push(`--region=${options.region}`);
+    if (options.matchIdx) args.push(`--matchIdx=${options.matchIdx}`);
+    if (options.leagueTitle) args.push(`--leagueTitle=${options.leagueTitle}`);
 
     const crawler = spawn('node', args);
     const processId = `crawling-${Date.now()}`;
@@ -337,6 +340,9 @@ io.on('connection', (socket) => {
     if (options.year) args.push(`--year=${options.year}`);
     if (options.month) args.push(`--month=${options.month}`);
     if (options.league) args.push(`--league=${options.league}`);
+    if (options.region) args.push(`--region=${options.region}`);
+    if (options.matchIdx) args.push(`--matchIdx=${options.matchIdx}`);
+    if (options.leagueTitle) args.push(`--leagueTitle=${options.leagueTitle}`);
 
     const uploader = spawn('node', args);
     const processId = `uploading-${Date.now()}`;

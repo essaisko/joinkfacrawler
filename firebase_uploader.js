@@ -15,7 +15,7 @@ function parseArgs() {
 }
 
 const cliArgs = parseArgs();
-const { year: filterYear, month: filterMonth, league: filterLeague } = cliArgs;
+const { year: filterYear, month: filterMonth, league: filterLeague, region: filterRegion, matchIdx: filterMatchIdx, leagueTitle: filterLeagueTitle } = cliArgs;
 
 // 1. Firebase 서비스 계정 키 파일 경로
 // Firebase 콘솔에서 다운로드한 JSON 파일을 프로젝트 루트에 복사하고,
@@ -156,6 +156,20 @@ function shouldProcessFile(filePath, matches) {
       return false;
     }
   }
+  if (filterRegion) {
+    const lcReg = filterRegion.toLowerCase();
+    const inPath = pathParts.some(p=> p.toLowerCase()===lcReg);
+    if(!inPath) return false;
+  }
+
+  if(filterMatchIdx){
+    // Try to skip files that are not this matchIdx by mapping CSV later. Skip here: if filePath doesn't include matchIdx maybe nothing; so ignore
+  }
+
+  if(filterLeagueTitle){
+     const slug = filterLeagueTitle.replace(/\s+/g,'_').toLowerCase();
+     if(!fileName.toLowerCase().includes(slug)) return false;
+  }
   
   // 월 필터링은 실제 데이터를 확인해야 함
   if (filterMonth && matches && matches.length > 0) {
@@ -192,11 +206,14 @@ async function uploadAllMatchesToFirestore() {
     }
 
     // 필터링 정보 출력
-    if (filterYear || filterMonth || filterLeague) {
+    if (filterYear || filterMonth || filterLeague || filterRegion || filterMatchIdx || filterLeagueTitle) {
       console.log('🔍 필터링 조건:');
       if (filterYear) console.log(`  - 년도: ${filterYear}`);
       if (filterMonth) console.log(`  - 월: ${filterMonth}`);
       if (filterLeague) console.log(`  - 리그: ${filterLeague}`);
+      if (filterRegion) console.log(`  - 지역: ${filterRegion}`);
+      if (filterMatchIdx) console.log(`  - 경기 인덱스: ${filterMatchIdx}`);
+      if (filterLeagueTitle) console.log(`  - 리그 제목: ${filterLeagueTitle}`);
     }
 
     // 파일 필터링
