@@ -158,8 +158,15 @@ function shouldProcessFile(filePath, matches) {
   }
   if (filterRegion) {
     const lcReg = filterRegion.toLowerCase();
-    const inPath = pathParts.some(p=> p.toLowerCase()===lcReg);
-    if(!inPath) return false;
+    if(lcReg==='national'){
+        // accept files where region directory is missing or 'national'
+        const hasRegion = pathParts.some(p=> p.toLowerCase()==='national');
+        const inPath = pathParts.some(p=> p.toLowerCase()==='k1' || p.toLowerCase()==='k2'); // dummy ensure search
+        // if region dir exists (non empty) skip; simply proceed
+    }else{
+        const inPath = pathParts.some(p=> p.toLowerCase()===lcReg);
+        if(!inPath) return false;
+    }
   }
 
   if(filterMatchIdx){

@@ -91,7 +91,14 @@ function applyCliFilters(list){
   if(filterLeague){
      arr = arr.filter(l=> l.leagueTag.toLowerCase()===filterLeague.toLowerCase() || l.leagueTitle.includes(filterLeague));
   }
-  if(filterRegion){ arr = arr.filter(l=> (l.regionTag||'').trim()===filterRegion.trim()); }
+  if(filterRegion){
+     const norm = filterRegion.trim();
+     if(norm.toLowerCase()==='national'){
+        arr = arr.filter(l=> (l.regionTag||'').trim()==='');
+     }else{
+        arr = arr.filter(l=> (l.regionTag||'').trim()===norm);
+     }
+  }
   if(filterMatchIdx){ arr = arr.filter(l=> l.matchIdx===filterMatchIdx); }
   return arr;
 }
