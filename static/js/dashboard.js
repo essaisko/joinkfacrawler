@@ -581,7 +581,7 @@ const Dashboard = {
             }
 
             let html = '';
-            for (const [league, teams] of Object.entries(standings)) {
+            for (const [league, teams] of Object.entries(leagueMap)) {
                 html += `
                     <div class="league-section">
                         <h3 class="league-title">${league}</h3>
