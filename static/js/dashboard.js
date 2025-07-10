@@ -15,7 +15,9 @@ const Dashboard = {
         filteredTeams: [],
         upcomingLeagueFilter: '',
         rawUpcomingMatches: [],
-        isFullscreen: false
+        isFullscreen: false,
+        matchRegionFilter: null,
+        matchLeagueFilter: null
     },
 
     // === API 관련 함수들 ===
@@ -334,7 +336,7 @@ const Dashboard = {
 
                 const sortedMatches = [...matchList].sort((a, b) => {
                     const leagueA = a.leagueTitle || a.league || a.LEAGUE || '';
-                    const leagueB = b.leagueTitle || b.league || b.LEAGUE || '';
+                    const leagueB = b.leagueTitle || b.league || a.LEAGUE || '';
                     const rankA = getLeagueRank(leagueA);
                     const rankB = getLeagueRank(leagueB);
                     if (rankA !== rankB) return rankA - rankB; // K리그1 우선
@@ -571,20 +573,31 @@ const Dashboard = {
             document.getElementById('gitCommitMessageDashboard').textContent = error || 'Git 정보를 가져올 수 없습니다.';
         },
 
-        displayStandings(standings) {
+        displayStandings(data) {
             const container = document.getElementById('standingsContainer');
             if (!container) return;
 
-            if (!standings || Object.keys(standings).length === 0) {
+            if (!Array.isArray(data) || data.length === 0) {
                 container.innerHTML = '<div class="empty-message">순위표 데이터가 없습니다</div>';
                 return;
             }
 
             let html = '';
-            for (const [league, teams] of Object.entries(leagueMap)) {
+
+            data.forEach(group => {
+                const leagueName = group.league || group.leagueTitle || '리그';
+                const teams = Array.isArray(group.standings) ? [...group.standings] : [];
+
+                teams.sort((a, b) => {
+                    if (b.points !== a.points) return b.points - a.points;
+                    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                    return a.teamName.localeCompare(b.teamName, 'ko-KR');
+                });
+
                 html += `
                     <div class="league-section">
-                        <h3 class="league-title">${league}</h3>
+                        <h3 class="league-title">${leagueName}</h3>
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead>
@@ -604,19 +617,19 @@ const Dashboard = {
                                 <tbody>
                 `;
 
-                teams.forEach((team, index) => {
+                teams.forEach((t, idx) => {
                     html += `
                         <tr>
-                            <td>${index + 1}</td>
-                            <td><a href="team.html?team=${encodeURIComponent(team.teamName)}">${team.teamName}</a></td>
-                            <td>${team.matches}</td>
-                            <td><strong>${team.points}</strong></td>
-                            <td>${team.wins}</td>
-                            <td>${team.draws}</td>
-                            <td>${team.losses}</td>
-                            <td>${team.goalsFor}</td>
-                            <td>${team.goalsAgainst}</td>
-                            <td>${team.goalDifference}</td>
+                            <td>${idx + 1}</td>
+                            <td><a href="team.html?team=${encodeURIComponent(t.teamName)}">${t.teamName}</a></td>
+                            <td>${t.played}</td>
+                            <td><strong>${t.points}</strong></td>
+                            <td>${t.won}</td>
+                            <td>${t.drawn}</td>
+                            <td>${t.lost}</td>
+                            <td>${t.goalsFor}</td>
+                            <td>${t.goalsAgainst}</td>
+                            <td>${t.goalDifference}</td>
                         </tr>
                     `;
                 });
@@ -627,78 +640,98 @@ const Dashboard = {
                         </div>
                     </div>
                 `;
-            }
+            });
 
             container.innerHTML = html;
         },
 
-        displayMatches(matches) {
+        displayMatches(allMatches) {
             const container = document.getElementById('matchesContainer');
             if (!container) return;
 
-            if (!matches || matches.length === 0) {
+            if (!allMatches || allMatches.length === 0) {
                 container.innerHTML = '<div class="empty-message">경기 데이터가 없습니다</div>';
                 return;
             }
 
-            // 리그별로 그룹핑
-            const groupedMatches = {};
-            matches.forEach(match => {
-                const league = match.leagueTitle || match.league || '기타';
-                if (!groupedMatches[league]) {
-                    groupedMatches[league] = [];
-                }
-                groupedMatches[league].push(match);
+            // --- 필터 UI (최초 1회 렌더) ---
+            if (!document.getElementById('matchFilterSection')) {
+                const filterHtml = `
+                    <div id="matchFilterSection" class="d-flex gap-2 flex-wrap mb-3">
+                        <select id="matchRegionFilter" class="form-select form-select-sm" style="max-width: 160px"></select>
+                        <select id="matchLeagueFilter" class="form-select form-select-sm" style="max-width: 160px"></select>
+                    </div>`;
+                container.insertAdjacentHTML('beforebegin', filterHtml);
+
+                document.getElementById('matchRegionFilter').addEventListener('change', () => {
+                    Dashboard.state.matchRegionFilter = event.target.value || null;
+                    Dashboard.ui.displayMatches(Dashboard.state.allMatches);
+                });
+                document.getElementById('matchLeagueFilter').addEventListener('change', () => {
+                    Dashboard.state.matchLeagueFilter = event.target.value || null;
+                    Dashboard.ui.displayMatches(Dashboard.state.allMatches);
+                });
+
+                // 옵션 채우기
+                const regions = [...new Set(allMatches.map(m => m.regionTag || ''))].filter(Boolean).sort();
+                const leagues = [...new Set(allMatches.map(m => m.leagueTitle || m.league || ''))].filter(Boolean).sort();
+                const regionSel = document.getElementById('matchRegionFilter');
+                const leagueSel = document.getElementById('matchLeagueFilter');
+                regionSel.innerHTML = '<option value="">지역 전체</option>' + regions.map(r=>`<option value="${r}">${r}</option>`).join('');
+                leagueSel.innerHTML = '<option value="">리그 전체</option>' + leagues.map(l=>`<option value="${l}">${l}</option>`).join('');
+            }
+
+            // --- 필터 적용 ---
+            let matches = [...allMatches];
+            const { matchRegionFilter, matchLeagueFilter } = Dashboard.state;
+            if (matchRegionFilter) matches = matches.filter(m => (m.regionTag||'') === matchRegionFilter);
+            if (matchLeagueFilter) matches = matches.filter(m => (m.leagueTitle||m.league||'') === matchLeagueFilter);
+
+            // 월별로 그룹화
+            const monthGroups = {};
+            matches.forEach(m => {
+                const dateStr = m.MATCH_DATE || m.matchDate || m.date || '';
+                const d = dateStr ? new Date(dateStr) : new Date(NaN);
+                if (isNaN(d)) return;
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                if (!monthGroups[key]) monthGroups[key] = [];
+                monthGroups[key].push(m);
             });
 
             let html = '';
-            for (const [league, leagueMatches] of Object.entries(groupedMatches)) {
-                html += `
-                    <div class="league-section">
-                        <h3 class="league-title">${league}</h3>
-                        <div class="matches-grid">
-                `;
+            Object.keys(monthGroups).sort().forEach(monKey => {
+                const list = monthGroups[monKey];
+                const [y,m] = monKey.split('-');
+                html += `<h4 class="mt-4 mb-2">${y}년 ${m}월 (${list.length}경기)</h4>`;
 
-                leagueMatches.slice(0, 50).forEach(match => {
-                    const homeTeam = match.HOME_TEAM_NAME || match.homeTeam || match.TEAM_HOME || '';
-                    const awayTeam = match.AWAY_TEAM_NAME || match.awayTeam || match.TEAM_AWAY || '';
-                    const matchDate = match.MATCH_DATE || match.matchDate || match.date || '';
-                    const matchTime = match.MATCH_TIME_FORMATTED || match.matchTime || match.time || '';
-                    const homeScore = match.TH_SCORE_FINAL || match.homeScore || '';
-                    const awayScore = match.TA_SCORE_FINAL || match.awayScore || '';
-                    const status = match.MATCH_STATUS || match.matchStatus || '예정';
-                    const stadium = match.STADIUM || match.stadium || match.MATCH_AREA || '경기장 미정';
-
-                    html += `
-                        <div class="match-card">
-                            <div class="match-header">
-                                <div class="match-date">${matchDate}</div>
-                                <div class="match-time">${matchTime}</div>
-                                <div class="match-status">${status}</div>
-                            </div>
-                            <div class="match-teams">
-                                <div class="team home-team">
-                                    <a href="team.html?team=${encodeURIComponent(homeTeam)}" class="team-name-link">${homeTeam}</a>
-                                    ${homeScore ? `<span class="score">${homeScore}</span>` : ''}
-                                </div>
-                                <div class="vs">VS</div>
-                                <div class="team away-team">
-                                    <a href="team.html?team=${encodeURIComponent(awayTeam)}" class="team-name-link">${awayTeam}</a>
-                                    ${awayScore ? `<span class="score">${awayScore}</span>` : ''}
-                                </div>
-                            </div>
-                            <div class="match-venue">${stadium}</div>
-                        </div>
-                    `;
+                // 리그별 그룹화
+                const grouped = {};
+                list.forEach(match => {
+                    const league = match.leagueTitle || match.league || '기타';
+                    if (!grouped[league]) grouped[league] = [];
+                    grouped[league].push(match);
                 });
 
-                html += `
-                        </div>
-                    </div>
-                `;
-            }
+                for (const [league, leagueMatches] of Object.entries(grouped)) {
+                    html += `<div class="league-section"><h5 class="league-title">${league}</h5><div class="matches-grid">`;
 
-            container.innerHTML = html;
+                    leagueMatches.forEach(match => {
+                        const homeTeam = match.HOME_TEAM_NAME || match.homeTeam || match.TEAM_HOME || '';
+                        const awayTeam = match.AWAY_TEAM_NAME || match.awayTeam || match.TEAM_AWAY || '';
+                        const matchDate = match.MATCH_DATE || match.matchDate || match.date || '';
+                        const matchTime = match.MATCH_TIME_FORMATTED || match.matchTime || match.time || '';
+                        const homeScore = match.TH_SCORE_FINAL || match.homeScore || '';
+                        const awayScore = match.TA_SCORE_FINAL || match.awayScore || '';
+                        const status = match.MATCH_STATUS || match.matchStatus || '예정';
+                        const stadium = match.STADIUM || match.stadium || match.MATCH_AREA || '경기장 미정';
+
+                        html += `<div class="match-card"><div class="match-header"><div class="match-date">${matchDate}</div><div class="match-time">${matchTime}</div><div class="match-status">${status}</div></div><div class="match-teams"><div class="team home-team"><a href="team.html?team=${encodeURIComponent(homeTeam)}" class="team-name-link">${homeTeam}</a>${homeScore?`<span class="score">${homeScore}</span>`:''}</div><div class="vs">VS</div><div class="team away-team"><a href="team.html?team=${encodeURIComponent(awayTeam)}" class="team-name-link">${awayTeam}</a>${awayScore?`<span class="score">${awayScore}</span>`:''}</div></div><div class="match-venue">${stadium}</div></div>`;
+                    });
+                    html += `</div></div>`;
+                }
+            });
+
+            container.innerHTML = html || '<div class="empty-message">조건에 맞는 경기가 없습니다</div>';
         },
 
         updateAnalyticsDisplay(analytics) {
