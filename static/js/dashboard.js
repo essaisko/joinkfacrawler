@@ -353,12 +353,12 @@ const Dashboard = {
                 const buildTeamHtml = (raw, leagueRank) => {
                     const parsed = Dashboard.utils.parseTeam(raw);
                     const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
-                    if (leagueRank <= 4) {
-                        return raw;
-                    }
+                    const teamName  = parsed.teamName || raw;
+                    const encoded   = encodeURIComponent(teamName);
+                    const linkHtml  = `<a href=\"team.html?team=${encoded}\" class=\"team-name-link\">${teamName}</a>`;
+                    if (leagueRank <= 4) return linkHtml;
                     const regionLabel = regionText ? `<span class=\"region-label\">${regionText}</span><br/>` : '';
-                    const teamName = parsed.teamName || raw;
-                    return `${regionLabel}${teamName}`;
+                    return `${regionLabel}${linkHtml}`;
                 };
 
                 const tableRows = sortedMatches.map(match => {
@@ -678,12 +678,12 @@ const Dashboard = {
                             </div>
                             <div class="match-teams">
                                 <div class="team home-team">
-                                    <span class="team-name">${homeTeam}</span>
+                                    <a href="team.html?team=${encodeURIComponent(homeTeam)}" class="team-name-link">${homeTeam}</a>
                                     ${homeScore ? `<span class="score">${homeScore}</span>` : ''}
                                 </div>
                                 <div class="vs">VS</div>
                                 <div class="team away-team">
-                                    <span class="team-name">${awayTeam}</span>
+                                    <a href="team.html?team=${encodeURIComponent(awayTeam)}" class="team-name-link">${awayTeam}</a>
                                     ${awayScore ? `<span class="score">${awayScore}</span>` : ''}
                                 </div>
                             </div>
