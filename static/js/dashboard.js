@@ -356,7 +356,7 @@ const Dashboard = {
                     const teamName  = parsed.teamName || raw;
                     const encoded   = encodeURIComponent(teamName);
                     const linkHtml  = `<a href=\"team.html?team=${encoded}\" class=\"team-name-link\">${teamName}</a>`;
-                    if (leagueRank <= 4) return linkHtml;
+                    if (leagueRank <= 4) return `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${raw}</a>`;
                     const regionLabel = regionText ? `<span class=\"region-label\">${regionText}</span><br/>` : '';
                     return `${regionLabel}${linkHtml}`;
                 };
