@@ -173,9 +173,8 @@ function shouldProcessFile(filePath, matches) {
   
   // 월 필터링은 실제 데이터를 확인해야 함
   if (filterMonth && matches && matches.length > 0) {
-    const hasMatchingMonth = matches.some(match => 
-      match.month === filterMonth.padStart(2, '0')
-    );
+    const monthList = filterMonth.split(',').map(m=>m.padStart(2,'0'));
+    const hasMatchingMonth = matches.some(match => monthList.includes(match.month));
     if (!hasMatchingMonth) {
       return false;
     }
@@ -187,7 +186,8 @@ function shouldProcessFile(filePath, matches) {
 // 데이터를 월별로 필터링하는 함수
 function filterMatchesByMonth(matches, targetMonth) {
   if (!targetMonth) return matches;
-  return matches.filter(match => match.month === targetMonth.padStart(2, '0'));
+  const monthList = targetMonth.split(',').map(m=>m.padStart(2,'0'));
+  return matches.filter(match => monthList.includes(match.month));
 }
 
 async function uploadAllMatchesToFirestore() {

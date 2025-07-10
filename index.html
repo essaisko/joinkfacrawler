@@ -122,6 +122,10 @@
         .month-buttons { display:flex; gap:2px; overflow-x:auto; }
         .month-btn { font-size:12px; padding:2px 6px; border:none; border-radius:3px; cursor:pointer; background:#e9ecef; }
         .month-btn.active { background:#007bff; color:#fff; }
+        /* 전역 월 작업 버튼 */
+        .crawl-global-btn{ background:#28a745; color:#fff; border:none; }
+        .upload-global-btn{ background:#ff9800; color:#fff; border:none; }
+        .crawl-global-btn:disabled,.upload-global-btn:disabled{ opacity:0.6; }
         #leagueTable th, #leagueTable td {
             border: 1px solid #dee2e6;
             padding: 8px;
@@ -732,11 +736,12 @@
             hideStopButton(type);
             enableButtons();
 
+            const tsGen = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; };
+
             if(options && options.league && options.year){
                 const regionKey = options.region && options.region.trim()!=='' ? options.region : 'national';
                 const key = `${options.league}_${regionKey}_${options.year}_${options.matchIdx || ''}`;
-                const ts = () => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; };
-                const label = ts();
+                const label = tsGen();
                 if(type==='crawling') {
                     localStorage.setItem('crawl_'+key,label);
                     const cell=document.getElementById('crawl-'+key);
@@ -747,6 +752,20 @@
                     const cell=document.getElementById('upload-'+key);
                     if(cell) cell.textContent=label;
                 }
+            }else if(options && !options.league){
+                // 전역(월 전체) 작업일 경우: 모든 행에 동일하게 기록
+                const label = tsGen();
+                document.querySelectorAll('#leagueTable tbody tr').forEach(row=>{
+                    const key=row.querySelector('.select-league').dataset.key;
+                    if(type==='crawling'){
+                        localStorage.setItem('crawl_'+key,label);
+                        row.querySelector('.crawl-time').textContent=label;
+                    }
+                    if(type==='uploading'){
+                        localStorage.setItem('upload_'+key,label);
+                        row.querySelector('.upload-time').textContent=label;
+                    }
+                });
             }
         });
 
@@ -817,38 +836,50 @@
         // 전역 월 버튼 클릭 → 각 행 월 버튼 동기화
         document.getElementById('globalMonthControls')?.addEventListener('click',(e)=>{
             if(e.target.classList.contains('month-btn')){
-                const m=e.target.dataset.month;
-                // toggle active
-                e.currentTarget.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
-                e.target.classList.add('active');
-                // 각 행 버튼 동기화
-                document.querySelectorAll('#leagueTable tbody .month-buttons').forEach(w=>{
-                    w.querySelectorAll('.month-btn').forEach(b=>{ b.classList.toggle('active', b.dataset.month===m); });
-                });
+                const btn=e.target;
+                const wrapper=btn.parentElement;
+                const isAll = btn.dataset.month==='';
+                if(isAll){
+                    // '전체' 선택 → 나머지 해제 후 본인 활성화
+                    wrapper.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                }else{
+                    // 개별 월 토글
+                    btn.classList.toggle('active');
+                    // '전체' 비활성화
+                    wrapper.querySelector('.month-btn[data-month=""]')?.classList.remove('active');
+                    // 아무 것도 선택 안 되었으면 '전체' 다시 활성화
+                    const activeExists = wrapper.querySelectorAll('.month-btn.active').length>0;
+                    if(!activeExists){ wrapper.querySelector('.month-btn[data-month=""]')?.classList.add('active'); }
+                }
             }
         });
 
         // ===== 전역 월 전체 크롤링/업로드 버튼 =====
         document.getElementById('crawlMonthAllBtn')?.addEventListener('click',()=>{
-            const globalMonth = document.querySelector('#globalMonthButtons .month-btn.active')?.dataset.month || '';
+            const monthEls = document.querySelectorAll('#globalMonthButtons .month-btn.active');
+            const monthsArr = Array.from(monthEls).map(b=>b.dataset.month).filter(m=>m!=='');
+            const monthParam = monthsArr.join(',');
             const firstRow = document.querySelector('#leagueTable tbody tr');
             if(!firstRow){ alert('테이블이 비어 있습니다.'); return; }
             const year = firstRow.children[3]?.textContent.trim() || '';
             disableButtons();
-            appendLog(`🚀 모든 리그 ${globalMonth||'전체'}월 크롤링을 시작합니다...`);
+            appendLog(`🚀 모든 리그 ${monthParam||'전체'}월 크롤링을 시작합니다...`);
             // 단일 요청으로 모든 리그 처리 – 서버/스크립트에서 month, year만 필터링
-            socket.emit('start-crawling',{ year, month: globalMonth });
+            socket.emit('start-crawling',{ year, month: monthParam });
         });
 
         document.getElementById('uploadMonthAllBtn')?.addEventListener('click',()=>{
-            const globalMonth = document.querySelector('#globalMonthButtons .month-btn.active')?.dataset.month || '';
+            const monthEls2 = document.querySelectorAll('#globalMonthButtons .month-btn.active');
+            const monthsArr2 = Array.from(monthEls2).map(b=>b.dataset.month).filter(m=>m!=='');
+            const monthParam2 = monthsArr2.join(',');
             const firstRow = document.querySelector('#leagueTable tbody tr');
             if(!firstRow){ alert('테이블이 비어 있습니다.'); return; }
             const year = firstRow.children[3]?.textContent.trim() || '';
             disableButtons();
-            appendLog(`☁️ 모든 리그 ${globalMonth||'전체'}월 업로드를 시작합니다...`);
+            appendLog(`☁️ 모든 리그 ${monthParam2||'전체'}월 업로드를 시작합니다...`);
             // 업로드도 단일 요청으로 처리
-            socket.emit('start-uploading',{ year, month: globalMonth });
+            socket.emit('start-uploading',{ year, month: monthParam2 });
         });
 
         // === 선택 작업 버튼 ===
