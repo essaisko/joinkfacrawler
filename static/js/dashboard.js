@@ -590,15 +590,15 @@ const Dashboard = {
                                 <thead>
                                     <tr>
                                         <th>순위</th>
-                                        <th>팀명</th>
-                                        <th>경기</th>
+                                        <th>구단명</th>
+                                        <th>경기수</th>
+                                        <th>승점</th>
                                         <th>승</th>
                                         <th>무</th>
                                         <th>패</th>
                                         <th>득점</th>
                                         <th>실점</th>
                                         <th>득실차</th>
-                                        <th>승점</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -610,13 +610,13 @@ const Dashboard = {
                             <td>${index + 1}</td>
                             <td><a href="team.html?team=${encodeURIComponent(team.teamName)}">${team.teamName}</a></td>
                             <td>${team.matches}</td>
+                            <td><strong>${team.points}</strong></td>
                             <td>${team.wins}</td>
                             <td>${team.draws}</td>
                             <td>${team.losses}</td>
                             <td>${team.goalsFor}</td>
                             <td>${team.goalsAgainst}</td>
                             <td>${team.goalDifference}</td>
-                            <td><strong>${team.points}</strong></td>
                         </tr>
                     `;
                 });
