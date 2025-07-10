@@ -262,8 +262,8 @@
                         <h3 style="margin:0;">🏷️ 개별 리그 작업</h3>
                         <div id="globalMonthControls" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                             <div id="globalMonthButtons" class="month-buttons"></div>
-                            <button id="crawlMonthAllBtn" class="action-btn crawl-row-btn" style="padding:4px 12px;">월 전체 크롤링</button>
-                            <button id="uploadMonthAllBtn" class="action-btn upload-row-btn" style="padding:4px 12px;">월 전체 업로드</button>
+                            <button id="crawlMonthAllBtn" class="action-btn crawl-global-btn" style="padding:4px 12px;">월 전체 크롤링</button>
+                            <button id="uploadMonthAllBtn" class="action-btn upload-global-btn" style="padding:4px 12px;">월 전체 업로드</button>
                         </div>
                         <button id="refreshTableBtn" style="background-color:#17a2b8; color:white; border:none; padding: 6px 12px; border-radius:4px; font-size:12px;">테이블 새로고침</button>
                     </div>
@@ -831,30 +831,24 @@
         // ===== 전역 월 전체 크롤링/업로드 버튼 =====
         document.getElementById('crawlMonthAllBtn')?.addEventListener('click',()=>{
             const globalMonth = document.querySelector('#globalMonthButtons .month-btn.active')?.dataset.month || '';
-            const rows = document.querySelectorAll('#leagueTable tbody tr');
-            if(rows.length===0){ alert('테이블이 비어 있습니다.'); return; }
+            const firstRow = document.querySelector('#leagueTable tbody tr');
+            if(!firstRow){ alert('테이블이 비어 있습니다.'); return; }
+            const year = firstRow.children[3]?.textContent.trim() || '';
             disableButtons();
             appendLog(`🚀 모든 리그 ${globalMonth||'전체'}월 크롤링을 시작합니다...`);
-            rows.forEach(row=>{
-                const key = row.querySelector('.select-league').dataset.key;
-                const [tag, region, year, matchIdx] = key.split('_');
-                const leagueTitle = row.dataset.leaguetitle;
-                socket.emit('start-crawling',{ year, month: globalMonth, league: tag, region: region, matchIdx, leagueTitle });
-            });
+            // 단일 요청으로 모든 리그 처리 – 서버/스크립트에서 month, year만 필터링
+            socket.emit('start-crawling',{ year, month: globalMonth });
         });
 
         document.getElementById('uploadMonthAllBtn')?.addEventListener('click',()=>{
             const globalMonth = document.querySelector('#globalMonthButtons .month-btn.active')?.dataset.month || '';
-            const rows = document.querySelectorAll('#leagueTable tbody tr');
-            if(rows.length===0){ alert('테이블이 비어 있습니다.'); return; }
+            const firstRow = document.querySelector('#leagueTable tbody tr');
+            if(!firstRow){ alert('테이블이 비어 있습니다.'); return; }
+            const year = firstRow.children[3]?.textContent.trim() || '';
             disableButtons();
             appendLog(`☁️ 모든 리그 ${globalMonth||'전체'}월 업로드를 시작합니다...`);
-            rows.forEach(row=>{
-                const key = row.querySelector('.select-league').dataset.key;
-                const [tag, region, year, matchIdx] = key.split('_');
-                const leagueTitle = row.dataset.leaguetitle;
-                socket.emit('start-uploading',{ year, month: globalMonth, league: tag, region: region, matchIdx, leagueTitle });
-            });
+            // 업로드도 단일 요청으로 처리
+            socket.emit('start-uploading',{ year, month: globalMonth });
         });
 
         // === 선택 작업 버튼 ===
