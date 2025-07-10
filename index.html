@@ -260,6 +260,11 @@
                 <div id="leagueTableSection" style="margin-top: 25px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
                         <h3 style="margin:0;">🏷️ 개별 리그 작업</h3>
+                        <div id="globalMonthControls" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                            <div id="globalMonthButtons" class="month-buttons"></div>
+                            <button id="crawlMonthAllBtn" class="action-btn crawl-row-btn" style="padding:4px 12px;">월 전체 크롤링</button>
+                            <button id="uploadMonthAllBtn" class="action-btn upload-row-btn" style="padding:4px 12px;">월 전체 업로드</button>
+                        </div>
                         <button id="refreshTableBtn" style="background-color:#17a2b8; color:white; border:none; padding: 6px 12px; border-radius:4px; font-size:12px;">테이블 새로고침</button>
                     </div>
                     <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -797,6 +802,60 @@
                 tableBody.appendChild(tr);
             });
         }
+
+        // =========== 전역 월 버튼 UI 생성 ===========
+        (function initGlobalMonthButtons(){
+            const container = document.getElementById('globalMonthButtons');
+            if(!container) return;
+            const btnHtml = (()=>{
+                const arr=['<button class="month-btn active" data-month="">전체</button>'];
+                for(let i=1;i<=12;i++){ const m=String(i).padStart(2,'0'); arr.push(`<button class="month-btn" data-month="${m}">${m}</button>`);} return arr.join('');
+            })();
+            container.innerHTML = btnHtml;
+        })();
+
+        // 전역 월 버튼 클릭 → 각 행 월 버튼 동기화
+        document.getElementById('globalMonthControls')?.addEventListener('click',(e)=>{
+            if(e.target.classList.contains('month-btn')){
+                const m=e.target.dataset.month;
+                // toggle active
+                e.currentTarget.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
+                e.target.classList.add('active');
+                // 각 행 버튼 동기화
+                document.querySelectorAll('#leagueTable tbody .month-buttons').forEach(w=>{
+                    w.querySelectorAll('.month-btn').forEach(b=>{ b.classList.toggle('active', b.dataset.month===m); });
+                });
+            }
+        });
+
+        // ===== 전역 월 전체 크롤링/업로드 버튼 =====
+        document.getElementById('crawlMonthAllBtn')?.addEventListener('click',()=>{
+            const globalMonth = document.querySelector('#globalMonthButtons .month-btn.active')?.dataset.month || '';
+            const rows = document.querySelectorAll('#leagueTable tbody tr');
+            if(rows.length===0){ alert('테이블이 비어 있습니다.'); return; }
+            disableButtons();
+            appendLog(`🚀 모든 리그 ${globalMonth||'전체'}월 크롤링을 시작합니다...`);
+            rows.forEach(row=>{
+                const key = row.querySelector('.select-league').dataset.key;
+                const [tag, region, year, matchIdx] = key.split('_');
+                const leagueTitle = row.dataset.leaguetitle;
+                socket.emit('start-crawling',{ year, month: globalMonth, league: tag, region: region, matchIdx, leagueTitle });
+            });
+        });
+
+        document.getElementById('uploadMonthAllBtn')?.addEventListener('click',()=>{
+            const globalMonth = document.querySelector('#globalMonthButtons .month-btn.active')?.dataset.month || '';
+            const rows = document.querySelectorAll('#leagueTable tbody tr');
+            if(rows.length===0){ alert('테이블이 비어 있습니다.'); return; }
+            disableButtons();
+            appendLog(`☁️ 모든 리그 ${globalMonth||'전체'}월 업로드를 시작합니다...`);
+            rows.forEach(row=>{
+                const key = row.querySelector('.select-league').dataset.key;
+                const [tag, region, year, matchIdx] = key.split('_');
+                const leagueTitle = row.dataset.leaguetitle;
+                socket.emit('start-uploading',{ year, month: globalMonth, league: tag, region: region, matchIdx, leagueTitle });
+            });
+        });
 
         // === 선택 작업 버튼 ===
         document.getElementById('selectAllLeagues').addEventListener('change', (e)=>{
