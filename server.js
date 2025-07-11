@@ -1,14 +1,23 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { spawn } = require('child_process');
 const path = require('path');
-const fs = require('fs');
-const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase, db } = require('./firebase_uploader');
-const admin = require('firebase-admin');
 const { exec } = require('child_process');
+
+// Firebase 관련 imports
+const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase, db } = require('./firebase_uploader');
 const FirebaseService = require('./firebase-service');
-const cache = require('./cache-service');
+
+// 유틸리티 imports
+const { parseTeamName, getLeagueOrder, sortLeagues, sortRegions } = require('./utils/team-utils');
+const { parseFlexibleDate } = require('./utils/date-utils');
+const { formatTimeKorean, calculateStandings } = require('./utils/server-utils');
+const { expressErrorHandler, setupProcessHandlers } = require('./utils/error-handler');
+
+// 라우터 imports
+const { router: apiRouter, initializeApiRoutes } = require('./routes/api');
+const { router: csvRouter, initializeCsvRoutes } = require('./routes/csv');
+const { handleWebSocketConnection, initializeWebSocketRoutes } = require('./routes/websocket');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,18 +32,23 @@ const PORT = process.env.PORT || 3000;
 // Firebase 서비스 인스턴스 생성
 const firebaseService = new FirebaseService(db);
 
-// === [GLOBAL QUEUES & FLAGS] ===
-// 전역 큐 및 상태 플래그 (모든 소켓에서 공유)
-const crawlQueue = [];
-const uploadQueue = [];
-let isCrawling = false;
-let isUploading = false;
+// 라우터 의존성 주입
+initializeApiRoutes(firebaseService, { calculateStandings });
+initializeCsvRoutes({ uploadCsvToFirebase, downloadCsvFromFirebase });
+initializeWebSocketRoutes({ downloadCsvFromFirebase, uploadCsvToFirebase, syncCsvWithFirebase }, firebaseService);
 
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
 // 정적 파일 제공
 app.use(express.static(path.join(__dirname)));
 app.use('/components', express.static(path.join(__dirname, 'components')));
+
+// 라우터 등록
+app.use('/api', apiRouter);
+app.use('/', csvRouter);
+
+// 에러 핸들링 미들웨어 (라우터 다음에 위치)
+app.use(expressErrorHandler);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -109,8 +123,9 @@ app.get('/leagues-csv', async (req, res) => {
     console.log('📄 로컬 CSV 파일에서 데이터 로드 시도');
     const localPath = path.join(__dirname, 'leagues.csv');
     
-    if (fs.existsSync(localPath)) {
-      const csvData = fs.readFileSync(localPath, 'utf-8');
+    try {
+      await fs.access(localPath);
+      const csvData = await fs.readFile(localPath, 'utf-8');
       console.log('✅ 로컬 CSV 파일 로드 성공');
       
       // 로컬 파일을 Firebase에 동기화
@@ -118,7 +133,7 @@ app.get('/leagues-csv', async (req, res) => {
       await uploadCsvToFirebase(csvData);
       
       res.type('text/plain').send(csvData);
-    } else {
+    } catch {
       console.log('⚠️ 로컬 CSV 파일도 없음, 기본 템플릿 제공');
       const defaultCsv = 'leagueTag,regionTag,year,leagueTitle,matchIdx\n';
       res.type('text/plain').send(defaultCsv);
@@ -182,7 +197,7 @@ app.post('/leagues-csv', async (req, res) => {
       // 로컬 파일도 백업으로 저장
       try {
         const filePath = path.join(__dirname, 'leagues.csv');
-        fs.writeFileSync(filePath, content, 'utf-8');
+        await fs.writeFile(filePath, content, 'utf-8');
         console.log('✅ 로컬 백업 파일도 저장 완료');
       } catch (localError) {
         console.warn('⚠️ 로컬 백업 저장 실패:', localError.message);
@@ -193,7 +208,7 @@ app.post('/leagues-csv', async (req, res) => {
       // Firebase 저장 실패시 로컬에만 저장
       console.log('⚠️ Firebase 저장 실패, 로컬에만 저장');
       const filePath = path.join(__dirname, 'leagues.csv');
-      fs.writeFileSync(filePath, content, 'utf-8');
+      await fs.writeFile(filePath, content, 'utf-8');
       console.log('✅ 로컬 CSV 파일 저장 완료');
       
       res.status(200).send('CSV file saved locally (Firebase failed).');
@@ -224,12 +239,8 @@ function addToLogHistory(message) {
   }
 }
 
-// 클라이언트로부터의 연결 처리
-io.on('connection', (socket) => {
-  console.log('✅ A user connected');
-  
-  // 클라이언트별 프로세스 추적
-  socket.runningProcesses = new Set();
+// 웹소켓 연결 처리 (모듈화된 핸들러 사용)
+io.on('connection', handleWebSocketConnection);
   
   // 새로 연결된 클라이언트에게 기존 로그 히스토리 전송
   if (logHistory.length > 0) {
@@ -271,7 +282,7 @@ io.on('connection', (socket) => {
       socket.emit('log', `🔄 Firebase에서 최신 리그 데이터를 가져오는 중...\n`);
       const firebaseContent = await downloadCsvFromFirebase();
       if (firebaseContent !== null) {
-        fs.writeFileSync(path.join(__dirname, 'leagues.csv'), firebaseContent, 'utf-8');
+        await fs.writeFile(path.join(__dirname, 'leagues.csv'), firebaseContent, 'utf-8');
         socket.emit('log', `✅ 최신 리그 데이터로 업데이트 완료\n`);
       } else {
         socket.emit('log', `⚠️ Firebase에서 데이터를 가져올 수 없어 로컬 파일을 사용합니다\n`);
@@ -520,9 +531,13 @@ const keepAlive = () => {
   }, 5 * 60 * 1000); // 5분마다
 };
 
-// 서버 초기화 함수 (CSV 동기화 제거)
+// 서버 초기화 함수
 async function initializeServer() {
   console.log('🚀 서버 초기화 중...');
+  
+  // 프로세스 핸들러 설정
+  setupProcessHandlers();
+  console.log('✅ 프로세스 핸들러 설정 완료');
   
   // Keep-Alive 시작 (프로덕션 환경에서만)
   if (process.env.NODE_ENV === 'production') {
@@ -539,229 +554,8 @@ async function initializeServer() {
   });
 }
 
-// 팀명에서 지역명 분리 함수 (대분류 + 중분류)
-function parseTeamName(fullTeamName) {
-  if (!fullTeamName) {
-    return { majorRegion: '', minorRegion: '', teamName: fullTeamName || '', fullRegion: '' };
-  }
 
-  // 대분류 지역 패턴
-  const majorRegionPatterns = ['경남', '부산', '울산', '대구', '대전', '광주', '인천', '서울', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '제주'];
 
-  // 중분류 지역 패턴 (시/군/구)
-  const minorRegionPatterns = [
-    // 경남 지역
-    '양산시', '거제시', '김해시', '진주시', '창원시', '통영시', '사천시', '밀양시', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군',
-    // 부산 지역  
-    '중구', '서구', '동구', '영도구', '부산진구', '동래구', '남구', '북구', '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군',
-    // 기타 주요 시/군/구
-    '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
-  ];
-
-  let majorRegion = '';
-  let remainingName = fullTeamName;
-
-  // 대분류 지역 찾기 (지역명 뒤에 공백이 있는 경우에만 분리)
-  for (const region of majorRegionPatterns) {
-    const prefix = region + ' ';
-    if (fullTeamName.startsWith(prefix)) {
-      majorRegion = region;
-      remainingName = fullTeamName.substring(prefix.length);
-      break;
-    }
-  }
-
-  let minorRegion = '';
-  let teamName = remainingName;
-
-  // 중분류 지역 찾기 (역시 공백이 있어야 분리)
-  for (const region of minorRegionPatterns) {
-    const prefix = region + ' ';
-    if (remainingName.startsWith(prefix)) {
-      minorRegion = region;
-      teamName = remainingName.substring(prefix.length).trim();
-      break;
-    }
-  }
-
-  // 팀명이 비어있으면 원본 사용
-  if (!teamName.trim()) {
-    teamName = fullTeamName;
-  }
-
-  return {
-    majorRegion,
-    minorRegion,
-    teamName: teamName.trim(),
-    fullRegion: majorRegion + minorRegion
-  };
-}
-
-// 시간 형식 변환 함수
-function formatTime(timeString) {
-  if (!timeString) return timeString;
-  
-  // 이미 형식화된 시간인지 확인
-  if (timeString.includes('오전') || timeString.includes('오후')) return timeString;
-  
-  let hour, minute;
-  
-  // MATCH_CHECK_TIME1 형식: "2025-05-25 (일) 13:00"
-  if (timeString.includes('(') && timeString.includes(')')) {
-    const timeMatch = timeString.match(/(\d{1,2}):(\d{2})$/);
-    if (timeMatch) {
-      hour = timeMatch[1];
-      minute = timeMatch[2];
-    }
-  }
-  // MATCH_TIME 형식: "2025-05-25-일-13-00"
-  else if (timeString.includes('-')) {
-    const parts = timeString.split('-');
-    if (parts.length >= 5) {
-      hour = parts[parts.length - 2]; // 끝에서 두 번째가 시간
-      minute = parts[parts.length - 1]; // 마지막이 분
-    } else {
-      // 간단한 "13-00" 형식
-      const timeParts = timeString.split('-');
-      if (timeParts.length === 2) {
-        hour = timeParts[0];
-        minute = timeParts[1];
-      }
-    }
-  }
-  // 단순 "13:00" 형식
-  else if (timeString.includes(':')) {
-    [hour, minute] = timeString.split(':');
-  }
-  // 숫자만 있는 경우
-  else if (/^\d+$/.test(timeString)) {
-    if (timeString.length === 4) {
-      hour = timeString.substring(0, 2);
-      minute = timeString.substring(2, 4);
-    } else {
-      hour = timeString;
-      minute = '00';
-    }
-  }
-  
-  if (!hour || !minute) return timeString;
-  
-  const hourNum = parseInt(hour);
-  const minuteNum = parseInt(minute) || 0;
-  
-  if (isNaN(hourNum) || hourNum < 0 || hourNum > 23) return timeString;
-  if (isNaN(minuteNum) || minuteNum < 0 || minuteNum > 59) return timeString;
-  
-  const period = hourNum < 12 ? '오전' : '오후';
-  const displayHour = hourNum === 0 ? 12 : (hourNum > 12 ? hourNum - 12 : hourNum);
-  
-  return `${period} ${displayHour}시 ${minuteNum.toString().padStart(2, '0')}분`;
-}
-
-// 순위표 계산 함수
-function calculateStandings(matches, leagueFilter = null) {
-  const standings = new Map();
-  
-  matches.forEach(match => {
-    if (leagueFilter && match.leagueTitle !== leagueFilter) return;
-    if (match.matchStatus !== '완료') return;
-    
-    const homeTeamFull = match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
-    const awayTeamFull = match.TA_CLUB_NAME || match.TEAM_AWAY || '어웨이팀';
-    
-    // 팀명 파싱
-    const homeParsed = parseTeamName(homeTeamFull);
-    const awayParsed = parseTeamName(awayTeamFull);
-    const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
-    const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
-    
-    // 리그별로 팀을 구분하기 위해 고유 식별자 생성
-    const homeTeamId = `${match.leagueTitle}_${homeParsed.teamName}`;
-    const awayTeamId = `${match.leagueTitle}_${awayParsed.teamName}`;
-    
-    // 팀 통계 초기화
-    if (!standings.has(homeTeamId)) {
-      standings.set(homeTeamId, {
-        teamName: homeParsed.teamName,
-        fullTeamName: homeTeamFull,
-        majorRegion: homeParsed.majorRegion,
-        minorRegion: homeParsed.minorRegion,
-        fullRegion: homeParsed.fullRegion,
-        league: match.leagueTitle,
-        region: match.regionTag,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0,
-        points: 0
-      });
-    }
-    
-    if (!standings.has(awayTeamId)) {
-      standings.set(awayTeamId, {
-        teamName: awayParsed.teamName,
-        fullTeamName: awayTeamFull,
-        majorRegion: awayParsed.majorRegion,
-        minorRegion: awayParsed.minorRegion,
-        fullRegion: awayParsed.fullRegion,
-        league: match.leagueTitle,
-        region: match.regionTag,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0,
-        points: 0
-      });
-    }
-    
-    const homeStats = standings.get(homeTeamId);
-    const awayStats = standings.get(awayTeamId);
-    
-    // 경기 수 증가
-    homeStats.played++;
-    awayStats.played++;
-    
-    // 득점/실점 기록
-    homeStats.goalsFor += homeScore;
-    homeStats.goalsAgainst += awayScore;
-    awayStats.goalsFor += awayScore;
-    awayStats.goalsAgainst += homeScore;
-    
-    // 승부 결과 처리
-    if (homeScore > awayScore) {
-      homeStats.won++;
-      homeStats.points += 3;
-      awayStats.lost++;
-    } else if (homeScore < awayScore) {
-      awayStats.won++;
-      awayStats.points += 3;
-      homeStats.lost++;
-    } else {
-      homeStats.drawn++;
-      homeStats.points += 1;
-      awayStats.drawn++;
-      awayStats.points += 1;
-    }
-    
-    // 골득실 계산
-    homeStats.goalDifference = homeStats.goalsFor - homeStats.goalsAgainst;
-    awayStats.goalDifference = awayStats.goalsFor - awayStats.goalsAgainst;
-  });
-  
-  // 순위표 정렬 (승점 > 골득실 > 득점 > 팀명)
-  return Array.from(standings.values()).sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
-    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-    return a.teamName.localeCompare(b.teamName);
-  });
-}
 
 // Firebase API 엔드포인트들
 // 지역 목록 조회 (최적화됨 - 캐싱 적용)
@@ -851,7 +645,7 @@ app.get('/api/matches', async (req, res) => {
       
       // 시간 형식 변환 (우선순위: MATCH_CHECK_TIME1 > TIME > MATCH_TIME)
       const rawTime = data.MATCH_CHECK_TIME1 || data.TIME || data.MATCH_TIME || data.KICK_OFF || '';
-      const formattedTime = formatTime(rawTime);
+      const formattedTime = formatTimeKorean(rawTime);
       
       return { 
         id: doc.id, 
@@ -1033,13 +827,6 @@ app.get('/api/teams', async (req, res) => {
     // K5~K7별, 지역별, 팀명순으로 정렬
     teamList.sort((a, b) => {
       // 1. K5, K6, K7 순서로 정렬
-      const getLeagueOrder = (league) => {
-        if (league.includes('K5')) return 1;
-        if (league.includes('K6')) return 2;
-        if (league.includes('K7')) return 3;
-        return 4;
-      };
-      
       const orderA = getLeagueOrder(a.leagueTitle);
       const orderB = getLeagueOrder(b.leagueTitle);
       
@@ -1120,7 +907,7 @@ app.get('/api/teams/:teamName', async (req, res) => {
         const homeParsed = parseTeamName(match.TEAM_HOME || '');
         const awayParsed = parseTeamName(match.TEAM_AWAY || '');
         const rawTime = match.MATCH_CHECK_TIME1 || match.TIME || match.MATCH_TIME || match.KICK_OFF || '';
-        const formattedTime = formatTime(rawTime);
+        const formattedTime = formatTimeKorean(rawTime);
         
         return {
           ...match,
@@ -1277,43 +1064,6 @@ app.get('/api/analytics', async (req, res) => {
   }
 });
 
-// Helper to parse various date formats into Date obj
-function parseFlexibleDate(str){
-  if(!str) return null;
-  // If already Date object (or timestamp)
-  if(typeof str !== 'string') return new Date(str);
-  // Trim and normalize
-  let s = str.trim();
-  // Remove time portion if present after whitespace
-  if(s.includes(' ')) s = s.split(' ')[0];
-  // Remove anything in parentheses e.g., "2024-07-05(금)" or "2024.07.05(토)"
-  s = s.split('(')[0];
-  // Remove trailing Korean weekday characters without parentheses (월,화,수,목,금,토,일)
-  s = s.replace(/[월화수목금토일]$/, '');
-  // Remove trailing dot if any
-  s = s.replace(/\.$/, '');
-  // Replace separators with '-'
-  s = s.replace(/[\.\/]/g, '-');
-  // Remove duplicate '--'
-  s = s.replace(/-+/g, '-');
-  // If format is yyyymmdd
-  if(/^\d{8}$/.test(s)){
-    s = s.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
-  }
-  // If format is mm-dd without year
-  if(/^\d{2}-\d{2}$/.test(s)){
-    const y = new Date().getFullYear();
-    s = `${y}-${s}`;
-  }
-  // Final attempt: extract first YYYY-MM-DD pattern if exists
-  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if(m){
-    s = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
-  }
-  const d = new Date(s);
-  if(isNaN(d)) return null;
-  return d;
-}
 
 // 서버 초기화 실행
 initializeServer(); 

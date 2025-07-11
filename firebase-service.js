@@ -1,6 +1,7 @@
 // firebase-service.js - Firebase 쿼리 최적화 서비스
 const admin = require('firebase-admin');
 const cache = require('./cache-service');
+const { parseTeamName, getLeagueOrder, sortLeagues, sortRegions } = require('./utils/team-utils');
 
 class FirebaseService {
   constructor(db) {
@@ -29,7 +30,7 @@ class FirebaseService {
       if (regionTag) regionSet.add(regionTag);
     });
     
-    regions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'ko-KR'));
+    regions = sortRegions(Array.from(regionSet));
     cache.set(cacheKey, regions, 30); // 30분 캐싱
     return regions;
   }
@@ -57,21 +58,7 @@ class FirebaseService {
       if (leagueTitle) leagueSet.add(leagueTitle);
     });
     
-    leagues = Array.from(leagueSet).sort((a, b) => {
-      // K5, K6, K7 순서로 정렬 후 가나다순
-      const getLeagueOrder = (league) => {
-        if (league.includes('K5')) return 1;
-        if (league.includes('K6')) return 2;
-        if (league.includes('K7')) return 3;
-        return 4;
-      };
-      
-      const orderA = getLeagueOrder(a);
-      const orderB = getLeagueOrder(b);
-      
-      if (orderA !== orderB) return orderA - orderB;
-      return a.localeCompare(b, 'ko-KR');
-    });
+    leagues = sortLeagues(Array.from(leagueSet));
     
     cache.set(cacheKey, leagues, 20); // 20분 캐싱
     return leagues;
@@ -185,13 +172,6 @@ class FirebaseService {
     })).sort((a, b) => {
       if (a.region !== b.region) return a.region.localeCompare(b.region, 'ko-KR');
       
-      const getLeagueOrder = (league) => {
-        if (league.includes('K5')) return 1;
-        if (league.includes('K6')) return 2;
-        if (league.includes('K7')) return 3;
-        return 4;
-      };
-      
       return getLeagueOrder(a.league) - getLeagueOrder(b.league);
     });
     
@@ -272,9 +252,9 @@ class FirebaseService {
       const homeTeamFull = match.TH_CLUB_NAME || match.TEAM_HOME || '홈팀';
       const awayTeamFull = match.TA_CLUB_NAME || match.TEAM_AWAY || '어웨이팀';
       
-      // 팀명 파싱 (추후 별도 유틸리티로 분리 예정)
-      const homeParsed = this.parseTeamName(homeTeamFull);
-      const awayParsed = this.parseTeamName(awayTeamFull);
+      // 팀명 파싱
+      const homeParsed = parseTeamName(homeTeamFull);
+      const awayParsed = parseTeamName(awayTeamFull);
       const homeScore = parseInt(match.TH_SCORE_FINAL) || 0;
       const awayScore = parseInt(match.TA_SCORE_FINAL) || 0;
       
@@ -293,63 +273,6 @@ class FirebaseService {
     });
   }
 
-  // 팀명 파싱 로직 (기존 server.js parseTeamName과 동일)
-  parseTeamName(fullTeamName) {
-    if (!fullTeamName) {
-      return { majorRegion: '', minorRegion: '', teamName: fullTeamName || '', fullRegion: '' };
-    }
-
-    // 대분류 지역 패턴
-    const majorRegionPatterns = ['경남', '부산', '울산', '대구', '대전', '광주', '인천', '서울', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '제주'];
-
-    // 중분류 지역 패턴 (시/군/구)
-    const minorRegionPatterns = [
-      // 경남 지역
-      '양산시', '거제시', '김해시', '진주시', '창원시', '통영시', '사천시', '밀양시', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군',
-      // 부산 지역  
-      '중구', '서구', '동구', '영도구', '부산진구', '동래구', '남구', '북구', '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군',
-      // 기타 주요 시/군/구
-      '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
-    ];
-
-    let majorRegion = '';
-    let remainingName = fullTeamName;
-
-    // 대분류 지역 찾기 (지역명 뒤에 공백이 있는 경우에만 분리)
-    for (const region of majorRegionPatterns) {
-      const prefix = region + ' ';
-      if (fullTeamName.startsWith(prefix)) {
-        majorRegion = region;
-        remainingName = fullTeamName.substring(prefix.length);
-        break;
-      }
-    }
-
-    let minorRegion = '';
-    let teamName = remainingName;
-
-    // 중분류 지역 찾기 (역시 공백이 있어야 분리)
-    for (const region of minorRegionPatterns) {
-      const prefix = region + ' ';
-      if (remainingName.startsWith(prefix)) {
-        minorRegion = region;
-        teamName = remainingName.substring(prefix.length).trim();
-        break;
-      }
-    }
-
-    // 팀명이 비어있으면 원본 사용
-    if (!teamName.trim()) {
-      teamName = fullTeamName;
-    }
-
-    return {
-      majorRegion,
-      minorRegion,
-      teamName: teamName.trim(),
-      fullRegion: majorRegion + minorRegion
-    };
-  }
 
   // 캐시 무효화 (새로운 데이터 업로드 시 호출)
   invalidateCache() {
