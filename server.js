@@ -1012,7 +1012,9 @@ app.get('/api/leagues/all', async (req, res) => {
 // 뉴스 피드 데이터 조회 (최근 경기 결과 + 예정 경기)
 app.get('/api/newsfeed', async (req, res) => {
   try {
-    const snapshot = await db.collection('matches').limit(1000).get();
+    // 모든 경기 문서를 가져와야 주간 범위에 포함되는 최근·예정 경기를 완전히 포착할 수 있다.
+    // limit(1000) 으로 인해 1,000번째 이후에 저장된 경기(예: 최근 크롤링된 K3 경기)가 누락되는 문제가 발생하므로 제거한다.
+    const snapshot = await db.collection('matches').get();
     const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     const now = new Date();
