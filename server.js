@@ -1424,20 +1424,38 @@ app.get('/api/analytics', async (req, res) => {
 // Helper to parse various date formats into Date obj
 function parseFlexibleDate(str){
   if(!str) return null;
-  if(typeof str!=='string') return new Date(str);
-  let s=str.trim();
-  // replace separators to '-'
-  s=s.replace(/[\.\/]/g,'-');
+  // If already Date object (or timestamp)
+  if(typeof str !== 'string') return new Date(str);
+  // Trim and normalize
+  let s = str.trim();
+  // Remove time portion if present after whitespace
+  if(s.includes(' ')) s = s.split(' ')[0];
+  // Remove anything in parentheses e.g., "2024-07-05(금)" or "2024.07.05(토)"
+  s = s.split('(')[0];
+  // Remove trailing Korean weekday characters without parentheses (월,화,수,목,금,토,일)
+  s = s.replace(/[월화수목금토일]$/, '');
+  // Remove trailing dot if any
+  s = s.replace(/\.$/, '');
+  // Replace separators with '-'
+  s = s.replace(/[\.\/]/g, '-');
+  // Remove duplicate '--'
+  s = s.replace(/-+/g, '-');
+  // If format is yyyymmdd
   if(/^\d{8}$/.test(s)){
-    s=s.replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');
+    s = s.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
   }
-  // handle without year (e.g., '07-05') use current year
+  // If format is mm-dd without year
   if(/^\d{2}-\d{2}$/.test(s)){
-    const y=new Date().getFullYear();
-    s=`${y}-${s}`;
+    const y = new Date().getFullYear();
+    s = `${y}-${s}`;
   }
-  const d=new Date(s);
-  if(isNaN(d)){return null;}
+  // Final attempt: extract first YYYY-MM-DD pattern if exists
+  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){
+    s = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  }
+  const d = new Date(s);
+  if(isNaN(d)) return null;
   return d;
 }
 
