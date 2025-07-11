@@ -71,6 +71,42 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-trash-alt me-2"></i>문서 일괄 삭제
+                        </h5>
+                        <p class="card-text">조건을 설정하여 Firestore의 경기 문서를 대량 삭제합니다. <span class="text-danger">※ 복구 불가</span></p>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label mb-1">리그명</label>
+                                <input type="text" id="deleteLeagueInput" class="form-control" placeholder="예) K3리그" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label mb-1">시작일</label>
+                                <input type="date" id="deleteStartDate" class="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label mb-1">종료일</label>
+                                <input type="date" id="deleteEndDate" class="form-control" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label mb-1">상태</label>
+                                <select id="deleteStatus" class="form-select">
+                                    <option value="">전체</option>
+                                    <option value="예정">예정</option>
+                                    <option value="완료">완료</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger mt-3" onclick="bulkDeleteDocuments()">
+                            <i class="fas fa-trash me-1"></i>문서 삭제
+                        </button>
+                        <div id="deleteResult" class="mt-2 text-muted small"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -1463,3 +1463,59 @@ function parseFlexibleDate(str){
 
 // 서버 초기화 실행
 initializeServer(); 
+
+app.post('/api/matches/bulk-delete', async (req, res) => {
+  /*
+    Request body 예시 {
+      leagueTitle: 'K3리그',        // 선택 (정확히 일치)
+      matchStatus: '예정',          // 선택 ('예정' | '완료')
+      startDate: '2025-07-01',      // 선택 (YYYY-MM-DD)
+      endDate:   '2025-07-31'       // 선택 (YYYY-MM-DD)
+    }
+  */
+  try {
+    const { leagueTitle, matchStatus, startDate, endDate } = req.body || {};
+    let query = db.collection('matches');
+    if (leagueTitle) query = query.where('leagueTitle', '==', leagueTitle);
+    if (matchStatus) query = query.where('matchStatus', '==', matchStatus);
+
+    // ① Firestore에서 1차 필터링
+    const snapshot = await query.get();
+    let docs = snapshot.docs;
+
+    // ② 날짜 범위 필터링 (메모리 내)
+    if (startDate || endDate) {
+      const start = startDate ? new Date(startDate) : null;
+      const end   = endDate   ? new Date(endDate)   : null;
+      docs = docs.filter(doc => {
+        const data = doc.data();
+        const dateStr = data.MATCH_DATE || data.MATCH_CHECK_TIME2 || data.matchDate || data.date || data.DATE;
+        if (!dateStr) return false;
+        const d = parseFlexibleDate(dateStr);
+        if (!d) return false;
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      });
+    }
+
+    if (docs.length === 0) {
+      return res.json({ success: true, deletedCount: 0, message: '조건에 해당하는 문서가 없습니다.' });
+    }
+
+    // ③ 배치 삭제 (500개 제한)
+    const batchSize = 500;
+    let deletedCount = 0;
+    for (let i = 0; i < docs.length; i += batchSize) {
+      const batch = db.batch();
+      docs.slice(i, i + batchSize).forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      deletedCount += Math.min(batchSize, docs.length - i);
+    }
+
+    res.json({ success: true, deletedCount });
+  } catch (error) {
+    console.error('🔥 일괄 삭제 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+}); 

@@ -1204,3 +1204,54 @@ Dashboard.events.firebase = function() {
     originalFirebaseEvents();
     Dashboard.events.managementTab();
 };
+
+// === Bulk Delete Function ===
+window.bulkDeleteDocuments = async function () {
+  const league = document.getElementById('deleteLeagueInput')?.value.trim();
+  const startDate = document.getElementById('deleteStartDate')?.value;
+  const endDate   = document.getElementById('deleteEndDate')?.value;
+  const matchStatus = document.getElementById('deleteStatus')?.value;
+
+  if (!league && !startDate && !endDate && !matchStatus) {
+    alert('하나 이상의 조건을 입력해야 합니다.');
+    return;
+  }
+
+  const confirmMsg = `선택한 조건에 해당하는 문서를 삭제하시겠습니까?\n`+
+    `리그: ${league || '전체'} / 상태: ${matchStatus || '전체'}\n`+
+    `기간: ${startDate || '제한 없음'} ~ ${endDate || '제한 없음'}\n`+
+    `※ 삭제한 데이터는 복구할 수 없습니다.`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    document.getElementById('deleteResult').textContent = '삭제 중...';
+
+    const resp = await fetch('/api/matches/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueTitle: league || undefined, startDate: startDate || undefined, endDate: endDate || undefined, matchStatus: matchStatus || undefined })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '삭제 실패');
+
+    document.getElementById('deleteResult').textContent = `✅ ${data.deletedCount}건 삭제 완료`;
+
+    // 데이터 통계 갱신
+    await Dashboard.management.loadStats();
+    // 필요 시 다른 캐시 데이터 초기화
+    Dashboard.state.allMatches = Dashboard.state.allMatches.filter(m => {
+      if (league && m.leagueTitle !== league) return true;
+      if (matchStatus && (m.matchStatus || m.MATCH_STATUS) !== matchStatus) return true;
+      if (startDate || endDate) {
+        const dateStr = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
+        const d = new Date(dateStr);
+        if (startDate && d < new Date(startDate)) return true;
+        if (endDate && d > new Date(endDate)) return true;
+      }
+      return false; // 삭제 대상
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById('deleteResult').textContent = `❌ 오류: ${err.message}`;
+  }
+};
