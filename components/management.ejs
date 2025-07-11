@@ -100,6 +100,20 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="row g-2 align-items-end mt-2">
+                            <div class="col-md-4">
+                                <label class="form-label mb-1">matchIdx</label>
+                                <input type="text" id="deleteMatchIdx" class="form-control" placeholder="예) 0AC2..." />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-1">leagueTag</label>
+                                <input type="text" id="deleteLeagueTag" class="form-control" placeholder="예) k5" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-1">year</label>
+                                <input type="number" id="deleteYear" class="form-control" placeholder="예) 2025" />
+                            </div>
+                        </div>
                         <button class="btn btn-danger mt-3" onclick="bulkDeleteDocuments()">
                             <i class="fas fa-trash me-1"></i>문서 삭제
                         </button>

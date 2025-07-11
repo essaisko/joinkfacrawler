@@ -1211,14 +1211,18 @@ window.bulkDeleteDocuments = async function () {
   const startDate = document.getElementById('deleteStartDate')?.value;
   const endDate   = document.getElementById('deleteEndDate')?.value;
   const matchStatus = document.getElementById('deleteStatus')?.value;
+  const matchIdx = document.getElementById('deleteMatchIdx')?.value.trim();
+  const leagueTag = document.getElementById('deleteLeagueTag')?.value.trim();
+  const year = document.getElementById('deleteYear')?.value.trim();
 
-  if (!league && !startDate && !endDate && !matchStatus) {
+  if (!league && !startDate && !endDate && !matchStatus && !matchIdx && !leagueTag && !year) {
     alert('하나 이상의 조건을 입력해야 합니다.');
     return;
   }
 
   const confirmMsg = `선택한 조건에 해당하는 문서를 삭제하시겠습니까?\n`+
     `리그: ${league || '전체'} / 상태: ${matchStatus || '전체'}\n`+
+    `matchIdx: ${matchIdx || '미지정'} / leagueTag: ${leagueTag || '미지정'} / year: ${year || '미지정'}\n`+
     `기간: ${startDate || '제한 없음'} ~ ${endDate || '제한 없음'}\n`+
     `※ 삭제한 데이터는 복구할 수 없습니다.`;
   if (!confirm(confirmMsg)) return;
@@ -1229,7 +1233,7 @@ window.bulkDeleteDocuments = async function () {
     const resp = await fetch('/api/matches/bulk-delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leagueTitle: league || undefined, startDate: startDate || undefined, endDate: endDate || undefined, matchStatus: matchStatus || undefined })
+      body: JSON.stringify({ leagueTitle: league || undefined, startDate: startDate || undefined, endDate: endDate || undefined, matchStatus: matchStatus || undefined, matchIdx: matchIdx || undefined, leagueTag: leagueTag || undefined, year: year || undefined })
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || '삭제 실패');

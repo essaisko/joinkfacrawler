@@ -1474,10 +1474,13 @@ app.post('/api/matches/bulk-delete', async (req, res) => {
     }
   */
   try {
-    const { leagueTitle, matchStatus, startDate, endDate } = req.body || {};
+    const { leagueTitle, matchStatus, startDate, endDate, matchIdx, leagueTag, year } = req.body || {};
     let query = db.collection('matches');
     if (leagueTitle) query = query.where('leagueTitle', '==', leagueTitle);
     if (matchStatus) query = query.where('matchStatus', '==', matchStatus);
+    if (matchIdx) query = query.where('matchIdx', '==', matchIdx);
+    if (leagueTag) query = query.where('leagueTag', '==', leagueTag);
+    if (year) query = query.where('year', '==', year);
 
     // ① Firestore에서 1차 필터링
     const snapshot = await query.get();
