@@ -7,6 +7,8 @@ const fs = require('fs');
 const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase, db } = require('./firebase_uploader');
 const admin = require('firebase-admin');
 const { exec } = require('child_process');
+const FirebaseService = require('./firebase-service');
+const cache = require('./cache-service');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +19,9 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname));
 
 const PORT = process.env.PORT || 3000;
+
+// Firebase 서비스 인스턴스 생성
+const firebaseService = new FirebaseService(db);
 
 // === [GLOBAL QUEUES & FLAGS] ===
 // 전역 큐 및 상태 플래그 (모든 소켓에서 공유)
@@ -369,6 +374,13 @@ io.on('connection', (socket) => {
       console.log(msg);
       addToLogHistory(msg);
       io.emit('log', msg);
+
+      // 업로드 성공 시 캐시 무효화
+      if (code === 0) {
+        console.log('🧹 업로드 완료로 인한 캐시 무효화');
+        firebaseService.invalidateCache();
+        io.emit('log', '🧹 캐시가 무효화되었습니다. 새로운 데이터로 업데이트됩니다.\n');
+      }
 
       const processInfo = runningProcesses.get(processId);
       finalizeProcess(processId, 'uploading', processInfo.options);
@@ -752,109 +764,45 @@ function calculateStandings(matches, leagueFilter = null) {
 }
 
 // Firebase API 엔드포인트들
-// 지역 목록 조회
+// 지역 목록 조회 (최적화됨 - 캐싱 적용)
 app.get('/api/regions', async (req, res) => {
   try {
-    const snapshot = await db.collection('matches').get();
-    const matches = snapshot.docs.map(doc => doc.data());
-    
-    const regions = [...new Set(matches.map(m => m.regionTag))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'ko-KR'));
+    const regions = await firebaseService.getRegions();
     res.json(regions);
   } catch (error) {
+    console.error('❌ 지역 목록 조회 실패:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 특정 지역의 리그 목록 조회
+// 특정 지역의 리그 목록 조회 (최적화됨 - 인덱스 활용 + 캐싱)
 app.get('/api/leagues/:region', async (req, res) => {
   try {
     const { region } = req.params;
-    const snapshot = await db.collection('matches').get();
-    const matches = snapshot.docs.map(doc => doc.data());
-    
-    const leagues = [...new Set(
-      matches
-        .filter(m => m.regionTag === region)
-        .map(m => m.leagueTitle)
-    )].filter(Boolean).sort((a, b) => {
-      // K5, K6, K7 순서로 정렬 후 가나다순
-      const getLeagueOrder = (league) => {
-        if (league.includes('K5')) return 1;
-        if (league.includes('K6')) return 2;
-        if (league.includes('K7')) return 3;
-        return 4;
-      };
-      
-      const orderA = getLeagueOrder(a);
-      const orderB = getLeagueOrder(b);
-      
-      if (orderA !== orderB) return orderA - orderB;
-      return a.localeCompare(b, 'ko-KR');
-    });
-    
+    const leagues = await firebaseService.getLeaguesByRegion(region);
     res.json(leagues);
   } catch (error) {
+    console.error(`❌ ${region} 리그 목록 조회 실패:`, error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 모든 리그 순위표 조회
+// 모든 리그 순위표 조회 (최적화됨 - 완료된 경기만 조회 + 캐싱)
 app.get('/api/standings', async (req, res) => {
   try {
-    const snapshot = await db.collection('matches').get();
-    const matches = snapshot.docs.map(doc => doc.data());
-    
-    // 리그별로 그룹화
-    const leagueGroups = {};
-    matches.forEach(match => {
-      const key = `${match.regionTag}_${match.leagueTitle}`;
-      if (!leagueGroups[key]) {
-        leagueGroups[key] = {
-          region: match.regionTag,
-          league: match.leagueTitle,
-          matches: []
-        };
-      }
-      leagueGroups[key].matches.push(match);
-    });
-    
-    // 각 리그별 순위표 계산
-    const allStandings = Object.values(leagueGroups).map(group => ({
-      region: group.region,
-      league: group.league,
-      standings: calculateStandings(group.matches, group.league)
-    })).sort((a, b) => {
-      // 지역별, 리그별 정렬
-      if (a.region !== b.region) return a.region.localeCompare(b.region, 'ko-KR');
-      
-      const getLeagueOrder = (league) => {
-        if (league.includes('K5')) return 1;
-        if (league.includes('K6')) return 2;
-        if (league.includes('K7')) return 3;
-        return 4;
-      };
-      
-      return getLeagueOrder(a.league) - getLeagueOrder(b.league);
-    });
-    
+    const allStandings = await firebaseService.getAllStandings();
     res.json(allStandings);
   } catch (error) {
+    console.error('❌ 전체 순위표 조회 실패:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 특정 리그 순위표 조회
+// 특정 리그 순위표 조회 (최적화됨 - 인덱스 활용 + 캐싱)
 app.get('/api/standings/:region/:league', async (req, res) => {
   try {
     const { region, league } = req.params;
-    const snapshot = await db.collection('matches').get();
-    const matches = snapshot.docs.map(doc => doc.data());
-    
-    const filteredMatches = matches.filter(m => 
-      m.regionTag === region && m.leagueTitle === league
-    );
-    
-    const standings = calculateStandings(filteredMatches, league);
+    const standings = await firebaseService.getStandings(region, league);
     
     res.json({
       region,
@@ -862,6 +810,7 @@ app.get('/api/standings/:region/:league', async (req, res) => {
       standings
     });
   } catch (error) {
+    console.error(`❌ ${region}-${league} 순위표 조회 실패:`, error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1010,108 +959,13 @@ app.get('/api/leagues/all', async (req, res) => {
 });
 
 // 뉴스 피드 데이터 조회 (최근 경기 결과 + 예정 경기)
+// 뉴스피드 데이터 조회 (최적화됨 - 날짜 범위 쿼리 + 캐싱)
 app.get('/api/newsfeed', async (req, res) => {
   try {
-    // 모든 경기 문서를 가져와야 주간 범위에 포함되는 최근·예정 경기를 완전히 포착할 수 있다.
-    // limit(1000) 으로 인해 1,000번째 이후에 저장된 경기(예: 최근 크롤링된 K3 경기)가 누락되는 문제가 발생하므로 제거한다.
-    const snapshot = await db.collection('matches').get();
-    const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    // 최근 완료된 경기 (지난 주)
-    const recentMatches = matches
-      .filter(m => {
-        const matchDate = new Date(m.MATCH_DATE || m.MATCH_CHECK_TIME2 || '1970-01-01');
-        return m.matchStatus === '완료' && matchDate >= oneWeekAgo && matchDate <= now;
-      })
-      .map(m => ({
-        ...m,
-        homeTeam: parseTeamName(m.TH_CLUB_NAME || m.TEAM_HOME || '홈팀'),
-        awayTeam: parseTeamName(m.TA_CLUB_NAME || m.TEAM_AWAY || '어웨이팀'),
-        homeScore: m.TH_SCORE_FINAL || 0,
-        awayScore: m.TA_SCORE_FINAL || 0,
-        formattedTime: formatTime(m.MATCH_CHECK_TIME1 || m.TIME || ''),
-        stadium: m.STADIUM || m.MATCH_AREA || '경기장 미정'
-      }))
-      .sort((a, b) => new Date(b.MATCH_DATE || '1970-01-01') - new Date(a.MATCH_DATE || '1970-01-01'))
-      .slice(0, 10);
-    
-    // 예정된 경기 (이번주)
-    const thisWeekEnd = new Date(now);
-    const daysToSunday = 7 - now.getDay(); // 이번주 일요일까지
-    thisWeekEnd.setDate(now.getDate() + daysToSunday);
-    
-    const upcomingMatches = matches
-      .filter(m => {
-        // 여러 날짜 필드 시도
-        const dateStr = m.MATCH_DATE || m.MATCH_CHECK_TIME2 || m.matchDate || m.date || m.DATE;
-        if (!dateStr) return false;
-        
-        // 다양한 날짜 형식 처리
-        const matchDate = parseFlexibleDate(dateStr);
-        if(!matchDate){
-          console.warn('날짜 파싱 실패:', dateStr);
-          return false;
-        }
-        
-        if (isNaN(matchDate.getTime())) return false;
-        
-        // 이번주 모든 경기 (완료/예정 포함)
-        const isUpcoming = (m.matchStatus === '예정' || !m.matchStatus || 
-                           (m.TH_SCORE_FINAL === null && m.TA_SCORE_FINAL === null) ||
-                           (!m.homeScore && !m.awayScore));
-        
-        const thisWeekStart = new Date(now);
-        thisWeekStart.setDate(now.getDate() - now.getDay());
-        return matchDate >= thisWeekStart && matchDate <= thisWeekEnd;
-      })
-      .map(m => ({
-        ...m,
-        homeTeam: parseTeamName(m.TH_CLUB_NAME || m.TEAM_HOME || m.homeTeam || '홈팀'),
-        awayTeam: parseTeamName(m.TA_CLUB_NAME || m.TEAM_AWAY || m.awayTeam || '어웨이팀'),
-        formattedTime: formatTime(m.MATCH_CHECK_TIME1 || m.MATCH_TIME || m.TIME || m.time || ''),
-        stadium: m.STADIUM || m.MATCH_AREA || m.venue || m.stadium || '경기장 미정',
-        matchDate: m.MATCH_DATE || m.MATCH_CHECK_TIME2 || m.matchDate || m.date || m.DATE
-      }))
-      .sort((a, b) => {
-        const dateA = new Date(a.matchDate || '2099-12-31');
-        const dateB = new Date(b.matchDate || '2099-12-31');
-        return dateA - dateB;
-      })
-             // .slice(0, 20) 제거 - 모든 경기 표시
-    
-    // 주요 통계
-    const totalMatches = matches.length;
-    const completedMatches = matches.filter(m => m.matchStatus === '완료').length;
-    const activeLeagues = [...new Set(matches.map(m => m.leagueTitle))].filter(Boolean).length;
-    const activeTeams = new Set();
-    matches.forEach(m => {
-      if (m.TH_CLUB_NAME || m.TEAM_HOME) activeTeams.add(m.TH_CLUB_NAME || m.TEAM_HOME);
-      if (m.TA_CLUB_NAME || m.TEAM_AWAY) activeTeams.add(m.TA_CLUB_NAME || m.TEAM_AWAY);
-    });
-    
-    // 이주의 하이라이트 (최고 득점 경기)
-    const highlight = recentMatches.reduce((max, match) => {
-      const totalGoals = (match.homeScore || 0) + (match.awayScore || 0);
-      const maxGoals = (max?.homeScore || 0) + (max?.awayScore || 0);
-      return totalGoals > maxGoals ? match : max;
-    }, null);
-    
-    res.json({
-      recentMatches,
-      upcomingMatches,
-      highlight,
-      stats: {
-        totalMatches,
-        completedMatches,
-        activeLeagues,
-        activeTeams: activeTeams.size
-      }
-    });
+    const newsfeed = await firebaseService.getNewsfeed();
+    res.json(newsfeed);
   } catch (error) {
+    console.error('❌ 뉴스피드 조회 실패:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -1,0 +1,124 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "regionTag",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "MATCH_DATE",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "leagueTitle",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "MATCH_DATE",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "matchStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "MATCH_DATE",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "regionTag",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "leagueTitle",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "matchStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "matchStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "MATCH_DATE",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "matches",
+      "fieldPath": "regionTag",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "fieldPath": "leagueTitle",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "fieldPath": "matchStatus",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "fieldPath": "MATCH_DATE",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    }
+  ]
+}
