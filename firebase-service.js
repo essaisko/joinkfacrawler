@@ -179,7 +179,7 @@ class FirebaseService {
     return allStandings;
   }
 
-  // 뉴스피드 데이터 조회 (날짜 범위 쿼리 활용)
+  // 뉴스피드 데이터 조회 (개선된 버전)
   async getNewsfeed() {
     const cacheKey = 'newsfeed';
     let newsfeed = cache.get(cacheKey);
@@ -191,40 +191,89 @@ class FirebaseService {
 
     console.log('🔥 Firebase에서 뉴스피드 계산');
     
+    // 한국 시간 기준으로 날짜 계산
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const koreaOffset = 9 * 60; // UTC+9
+    const koreaTime = new Date(now.getTime() + koreaOffset * 60 * 1000);
+    const today = koreaTime.toISOString().split('T')[0];
     
-    // 인덱스 없이 작동하도록 단순화된 쿼리
+    const oneWeekAgo = new Date(koreaTime.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneWeekLater = new Date(koreaTime.getTime() + 14 * 24 * 60 * 60 * 1000); // 2주로 확장
+    const oneWeekAgoStr = oneWeekAgo.toISOString().split('T')[0];
+    const oneWeekLaterStr = oneWeekLater.toISOString().split('T')[0];
+    
+    // 최근 완료된 경기 조회 (개선된 버전)
     const recentSnapshot = await this.db.collection('matches')
       .where('matchStatus', '==', '완료')
       .orderBy('__name__', 'desc')
-      .limit(50)
+      .limit(100) // 증가
       .get();
     
+    // 다가오는 경기 조회 (개선된 버전) - limit 대폭 증가
     const upcomingSnapshot = await this.db.collection('matches')
-      .where('MATCH_DATE', '>=', now.toISOString().split('T')[0])
+      .where('MATCH_DATE', '>=', today)
       .orderBy('MATCH_DATE', 'asc')
-      .limit(30)
+      .limit(200) // 30 → 200으로 증가
       .get();
     
-    // 클라이언트에서 날짜 필터링 (인덱스 없이 작동)
+    // 안전한 날짜 파싱 함수
+    const safeParseDate = (dateStr) => {
+      if (!dateStr || typeof dateStr !== 'string') return null;
+      try {
+        // 다양한 날짜 형식 처리
+        let cleanDate = dateStr.trim();
+        
+        // "2025-09-21 (일)" → "2025-09-21"
+        if (cleanDate.includes('(')) {
+          cleanDate = cleanDate.split('(')[0].trim();
+        }
+        
+        // 점이나 슬래시를 하이픈으로 변경
+        cleanDate = cleanDate.replace(/[\.\/]/g, '-');
+        
+        // "20250921" → "2025-09-21"
+        if (/^\d{8}$/.test(cleanDate)) {
+          cleanDate = cleanDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+        }
+        
+        const parsed = new Date(cleanDate + 'T00:00:00+09:00'); // 한국 시간으로 파싱
+        return isNaN(parsed.getTime()) ? null : parsed;
+      } catch (e) {
+        return null;
+      }
+    };
+    
+    // 최근 경기 필터링 및 정렬
     const recentMatches = recentSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(match => {
-        const matchDate = new Date(match.MATCH_DATE || '1900-01-01');
-        return matchDate >= oneWeekAgo && matchDate <= now;
+        const matchDate = safeParseDate(match.MATCH_DATE);
+        if (!matchDate) return false;
+        return matchDate >= oneWeekAgo && matchDate <= koreaTime;
       })
-      .sort((a, b) => new Date(b.MATCH_DATE || '1900-01-01') - new Date(a.MATCH_DATE || '1900-01-01'))
-      .slice(0, 20);
+      .sort((a, b) => {
+        const dateA = safeParseDate(a.MATCH_DATE) || new Date(0);
+        const dateB = safeParseDate(b.MATCH_DATE) || new Date(0);
+        return dateB - dateA; // 최신순
+      })
+      .slice(0, 30);
     
+    // 다가오는 경기 필터링 및 정렬
     const upcomingMatches = upcomingSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(match => {
-        const matchDate = new Date(match.MATCH_DATE || '9999-12-31');
-        return matchDate <= oneWeekLater;
+        const matchDate = safeParseDate(match.MATCH_DATE);
+        if (!matchDate) return false;
+        
+        // 오늘 이후이고 2주 이내의 경기만
+        return matchDate >= koreaTime && matchDate <= oneWeekLater;
       })
-      .slice(0, 20);
+      .sort((a, b) => {
+        const dateA = safeParseDate(a.MATCH_DATE) || new Date(9999, 11, 31);
+        const dateB = safeParseDate(b.MATCH_DATE) || new Date(9999, 11, 31);
+        return dateA - dateB; // 날짜순
+      })
+      .slice(0, 50); // 더 많은 경기 표시
     
     // 통계 계산 (캐시된 데이터 활용)
     const statsSnapshot = await this.db.collection('matches').select('matchStatus', 'leagueTitle').get();
