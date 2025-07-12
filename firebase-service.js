@@ -209,12 +209,25 @@ class FirebaseService {
       .limit(100) // 증가
       .get();
     
-    // 다가오는 경기 조회 (개선된 버전) - limit 대폭 증가
-    const upcomingSnapshot = await this.db.collection('matches')
-      .where('MATCH_DATE', '>=', today)
-      .orderBy('MATCH_DATE', 'asc')
-      .limit(200) // 30 → 200으로 증가
-      .get();
+    // 다가오는 경기 조회 (리미트 제거 버전)
+    console.log('🔍 다가오는 경기 조회 시작, 기준 날짜:', today);
+    
+    let upcomingSnapshot;
+    try {
+      // 방법 1: 날짜 기반 쿼리 시도
+      upcomingSnapshot = await this.db.collection('matches')
+        .where('MATCH_DATE', '>=', today)
+        .orderBy('MATCH_DATE', 'asc')
+        .get();
+      console.log('✅ 날짜 기반 쿼리 성공, 결과:', upcomingSnapshot.docs.length);
+    } catch (error) {
+      console.log('❌ 날짜 기반 쿼리 실패, 전체 조회로 대체:', error.message);
+      // 방법 2: 전체 조회 후 필터링
+      upcomingSnapshot = await this.db.collection('matches')
+        .orderBy('MATCH_DATE', 'asc')
+        .get();
+      console.log('📊 전체 경기 조회 완료, 총:', upcomingSnapshot.docs.length);
+    }
     
     // 안전한 날짜 파싱 함수
     const safeParseDate = (dateStr) => {
@@ -258,22 +271,47 @@ class FirebaseService {
       })
       .slice(0, 30);
     
-    // 다가오는 경기 필터링 및 정렬
-    const upcomingMatches = upcomingSnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
+    // 다가오는 경기 필터링 및 정렬 (단순화된 버전)
+    console.log('📊 조회된 다가오는 경기 수:', upcomingSnapshot.docs.length);
+    
+    const allUpcomingMatches = upcomingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('📋 전체 경기 데이터 샘플:', allUpcomingMatches.slice(0, 3).map(m => ({
+      id: m.id,
+      MATCH_DATE: m.MATCH_DATE,
+      matchStatus: m.matchStatus,
+      TH_CLUB_NAME: m.TH_CLUB_NAME,
+      TA_CLUB_NAME: m.TA_CLUB_NAME
+    })));
+
+    // 먼저 모든 다가오는 경기를 보여주기 위해 필터링을 매우 관대하게 설정
+    const upcomingMatches = allUpcomingMatches
       .filter(match => {
-        const matchDate = safeParseDate(match.MATCH_DATE);
-        if (!matchDate) return false;
+        // MATCH_DATE가 있고 오늘 이후인 모든 경기
+        if (!match.MATCH_DATE) {
+          console.log('❌ MATCH_DATE 없음:', match.id);
+          return false;
+        }
         
-        // 오늘 이후이고 2주 이내의 경기만
-        return matchDate >= koreaTime && matchDate <= oneWeekLater;
+        // 문자열 비교로 단순화 (날짜 파싱 문제 방지)
+        const matchDateStr = match.MATCH_DATE.toString();
+        const todayStr = today;
+        
+        const isUpcoming = matchDateStr >= todayStr;
+        if (!isUpcoming) {
+          console.log('❌ 과거 경기:', matchDateStr, '기준:', todayStr);
+        }
+        
+        return isUpcoming;
       })
       .sort((a, b) => {
-        const dateA = safeParseDate(a.MATCH_DATE) || new Date(9999, 11, 31);
-        const dateB = safeParseDate(b.MATCH_DATE) || new Date(9999, 11, 31);
-        return dateA - dateB; // 날짜순
+        // 문자열 비교로 날짜 정렬
+        const dateA = a.MATCH_DATE || '9999-12-31';
+        const dateB = b.MATCH_DATE || '9999-12-31';
+        return dateA.localeCompare(dateB);
       })
-      .slice(0, 50); // 더 많은 경기 표시
+      .slice(0, 100); // 최대 100개까지 표시
+      
+    console.log('✅ 필터링된 다가오는 경기 수:', upcomingMatches.length);
     
     // 통계 계산 (캐시된 데이터 활용)
     const statsSnapshot = await this.db.collection('matches').select('matchStatus', 'leagueTitle').get();
