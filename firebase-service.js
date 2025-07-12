@@ -195,31 +195,36 @@ class FirebaseService {
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     
-    // 날짜 범위로 필터링하여 조회
+    // 인덱스 없이 작동하도록 단순화된 쿼리
     const recentSnapshot = await this.db.collection('matches')
       .where('matchStatus', '==', '완료')
-      .where('MATCH_DATE', '>=', oneWeekAgo.toISOString().split('T')[0])
-      .where('MATCH_DATE', '<=', now.toISOString().split('T')[0])
-      .orderBy('MATCH_DATE', 'desc')
-      .limit(20)
+      .orderBy('__name__', 'desc')
+      .limit(50)
       .get();
     
     const upcomingSnapshot = await this.db.collection('matches')
       .where('MATCH_DATE', '>=', now.toISOString().split('T')[0])
-      .where('MATCH_DATE', '<=', oneWeekLater.toISOString().split('T')[0])
       .orderBy('MATCH_DATE', 'asc')
-      .limit(20)
+      .limit(30)
       .get();
     
-    const recentMatches = recentSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    // 클라이언트에서 날짜 필터링 (인덱스 없이 작동)
+    const recentMatches = recentSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(match => {
+        const matchDate = new Date(match.MATCH_DATE || '1900-01-01');
+        return matchDate >= oneWeekAgo && matchDate <= now;
+      })
+      .sort((a, b) => new Date(b.MATCH_DATE || '1900-01-01') - new Date(a.MATCH_DATE || '1900-01-01'))
+      .slice(0, 20);
     
-    const upcomingMatches = upcomingSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const upcomingMatches = upcomingSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(match => {
+        const matchDate = new Date(match.MATCH_DATE || '9999-12-31');
+        return matchDate <= oneWeekLater;
+      })
+      .slice(0, 20);
     
     // 통계 계산 (캐시된 데이터 활용)
     const statsSnapshot = await this.db.collection('matches').select('matchStatus', 'leagueTitle').get();
