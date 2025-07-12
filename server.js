@@ -150,10 +150,46 @@ app.post('/deploy', (req, res) => {
   const gitRepoPath = '/home/ubuntu/joinkfacrawler';
 
   const bodyToken = req.headers['x-deploy-token'];
+  const githubEvent = req.headers['x-github-event'];
+  const userAgent = req.headers['user-agent'];
 
-  console.log('🔄 Deploy 요청 받음, 토큰:', bodyToken);
-  console.log('🔄 요청 본문:', JSON.stringify(req.body, null, 2));
+  console.log('🔄 Deploy 요청 받음');
+  console.log('🔄 토큰:', bodyToken);
+  console.log('🔄 GitHub Event:', githubEvent);
+  console.log('🔄 User Agent:', userAgent);
 
+  // GitHub webhook인지 확인 (User-Agent에 GitHub-Hookshot이 포함됨)
+  const isGitHubWebhook = userAgent && userAgent.includes('GitHub-Hookshot');
+  
+  if (isGitHubWebhook) {
+    console.log('🐙 GitHub webhook 감지됨');
+    if (githubEvent === 'push') {
+      console.log('📤 Push 이벤트, 자동 배포 시작...');
+      
+      res.status(200).send('✅ GitHub webhook received, deploying...');
+      
+      // 배포 실행
+      const deployCommand = `cd ${gitRepoPath} && git fetch origin && git reset --hard origin/main && pm2 restart all`;
+      
+      exec(deployCommand, (err, stdout, stderr) => {
+        if (err) {
+          console.error('❌ Webhook 배포 실패:', err);
+          console.error('❌ stderr:', stderr);
+        } else {
+          console.log('✅ Webhook 배포 완료:\n', stdout);
+          if (stderr) {
+            console.log('⚠️ stderr:', stderr);
+          }
+        }
+      });
+      return;
+    } else {
+      console.log('ℹ️ GitHub webhook이지만 push 이벤트가 아님');
+      return res.status(200).send('Webhook received, but not a push event');
+    }
+  }
+
+  // 일반 배포 요청 (토큰 필요)
   if (bodyToken !== secret) {
     console.error('❌ 잘못된 토큰:', bodyToken);
     return res.status(403).send('Invalid deploy token');
