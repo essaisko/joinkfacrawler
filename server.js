@@ -163,8 +163,8 @@ app.post('/deploy', (req, res) => {
   // 응답을 먼저 보내고 배포 실행 (타임아웃 방지)
   res.status(200).send('✅ Deploy started...');
 
-  // 배포 명령어 실행
-  exec(`cd ${gitRepoPath} && git pull && pm2 restart all`, (err, stdout, stderr) => {
+  // 배포 명령어 실행 (충돌 해결 포함)
+  exec(`cd ${gitRepoPath} && git fetch origin && git reset --hard origin/main && pm2 restart all`, (err, stdout, stderr) => {
     if (err) {
       console.error('❌ 자동배포 실패:', err);
       console.error('❌ stderr:', stderr);
