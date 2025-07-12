@@ -255,18 +255,7 @@ io.on('connection', handleWebSocketConnection);
 
 
 
-// 'start-crawling' 요청을 큐에 등록
-socket.on('start-crawling', (options) => {
-  console.log('📥 큐에 크롤링 요청 추가:', options);
-  socket.emit('log', `📥 요청이 큐에 등록되었습니다. (옵션: ${JSON.stringify(options)})\n`);
-
-  crawlQueue.push({ options, socket });
-  if (!isCrawling) {
-    const next = crawlQueue.shift();
-    launchCrawler(next.options, next.socket);
-  }
-  emitQueueStatus();
-});
+// WebSocket 이벤트 핸들러들은 routes/websocket.js에서 처리됨
 
 // ===== 업로드 실행 함수 =====
 async function launchUploader(options, socket) {
@@ -287,7 +276,7 @@ async function launchUploader(options, socket) {
   runningProcesses.set(processId, { process: uploader, type: 'uploading', socket: socket.id, options });
   socket.runningProcesses.add(processId);
   socket.emit('process-started', { processId, type: 'uploading', options });
-  emitQueueStatus();
+  // emitQueueStatus(); // 웹소켓에서 처리
 
   uploader.stdout.on('data', data => {
     const msg = data.toString();
@@ -319,87 +308,11 @@ async function launchUploader(options, socket) {
   });
 }
 
-// 'start-uploading' 이벤트를 받으면 firebase_uploader.js 실행
-socket.on('start-uploading', (options) => {
-  console.log('📥 업로드 큐 요청 추가:', options);
-  socket.emit('log', `📥 업로드 요청이 큐에 등록되었습니다. (옵션: ${JSON.stringify(options)})\n`);
-  uploadQueue.push({ options, socket });
-  if (!isUploading) {
-    const next = uploadQueue.shift();
-    launchUploader(next.options, next.socket);
-  }
-  emitQueueStatus();
-});
+// 업로드 이벤트 핸들러는 routes/websocket.js에서 처리됨
 
-// 프로세스 중단 이벤트
-socket.on('stop-process', (data) => {
-  const { processId } = data;
-  console.log(`🛑 프로세스 중단 요청: ${processId}`);
+// 프로세스 중단 이벤트 핸들러는 routes/websocket.js에서 처리됨
 
-  if (runningProcesses.has(processId)) {
-    const processInfo = runningProcesses.get(processId);
-    try {
-      processInfo.process.kill('SIGTERM');
-      console.log(`✅ 프로세스 ${processId} 중단 신호 전송`);
-      socket.emit('log', `🛑 ${processInfo.type} 프로세스를 중단합니다...\n`);
-
-      // === 개선: 크롤링 중단 시 대기열도 함께 비우기 (전역 큐 사용) ===
-      if (processInfo.type === 'crawling') {
-        crawlQueue.length = 0;
-        socket.emit('log', '🧹 크롤링 대기열을 모두 비웠습니다.\n');
-        emitQueueStatus();
-        maybeStartNextUpload();
-      }
-      if (processInfo.type === 'uploading') {
-        uploadQueue.length = 0;
-        socket.emit('log', '🧹 업로드 대기열을 모두 비웠습니다.\n');
-        emitQueueStatus();
-        maybeStartNextUpload();
-      }
-
-      // 3초 후에도 프로세스가 살아있으면 강제 종료
-      setTimeout(() => {
-        if (runningProcesses.has(processId)) {
-          processInfo.process.kill('SIGKILL');
-          console.log(`💀 프로세스 ${processId} 강제 종료`);
-          socket.emit('log', '💀 프로세스가 강제 종료되었습니다.\n');
-          finalizeProcess(processId, processInfo.type, processInfo.options);
-        }
-      }, 3000);
-
-    } catch (error) {
-      console.error(`❌ 프로세스 종료 실패: ${error.message}`);
-      socket.emit('log', `❌ 프로세스 종료 실패: ${error.message}\n`);
-    }
-  } else {
-    socket.emit('log', `⚠️ 중단할 프로세스를 찾을 수 없습니다: ${processId}\n`);
-  }
-});
-
-socket.on('disconnect', () => {
-  console.log('🔌 User disconnected');
-
-  // 연결이 끊어진 클라이언트의 모든 프로세스 정리
-  if (socket.runningProcesses) {
-    socket.runningProcesses.forEach(processId => {
-      if (runningProcesses.has(processId)) {
-        const processInfo = runningProcesses.get(processId);
-        console.log(`🧹 연결 해제로 인한 프로세스 정리: ${processId}`);
-        try {
-          processInfo.process.kill('SIGTERM');
-          setTimeout(() => {
-            if (runningProcesses.has(processId)) {
-              processInfo.process.kill('SIGKILL');
-            }
-          }, 1000);
-        } catch (error) {
-          console.error(`❌ 프로세스 정리 실패: ${error.message}`);
-        }
-        runningProcesses.delete(processId);
-      }
-    });
-  }
-});
+// disconnect 이벤트 핸들러는 routes/websocket.js에서 처리됨
 
 // ===== 프로세스 종료 공통 처리 (소켓 범위) =====
 function finalizeProcess(processId, type, options) {
@@ -417,20 +330,20 @@ function finalizeProcess(processId, type, options) {
   if (type === 'crawling') {
     isCrawling = false;
     // 크롤링이 끝났으니 대기중인 업로드 실행 시도
-    maybeStartNextUpload();
+    // maybeStartNextUpload(); // 웹소켓에서 처리
   }
   if (type === 'uploading') {
     isUploading = false;
   }
 
   io.emit('process-ended', { processId, type, options });
-  emitQueueStatus();
+  // emitQueueStatus(); // 웹소켓에서 처리
 
   // 크롤링이 끝났고 대기열에 다음 크롤링이 있으면 실행
-  if (!isCrawling && crawlQueue.length > 0) {
-    const next = crawlQueue.shift();
-    launchCrawler(next.options, next.socket);
-  }
+  // if (!isCrawling && crawlQueue.length > 0) {
+  //   const next = crawlQueue.shift();
+  //   launchCrawler(next.options, next.socket); // 웹소켓에서 처리
+  // }
   // 업로드도 동일하게 처리 (업로드 종료 후 다른 업로드가 남아있으면)
   if (!isUploading && uploadQueue.length > 0) {
     const next = uploadQueue.shift();
