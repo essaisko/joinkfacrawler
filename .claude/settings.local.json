@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(systemctl status:*)",
+      "Bash(sudo service:*)",
+      "Bash(ss:*)",
+      "Bash(pgrep:*)",
+      "Bash(cat:*)",
+      "Bash(node server.js)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx eslint:*)"
+    ],
+    "deny": []
+  }
+}
