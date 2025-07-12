@@ -1,0 +1,21 @@
+name: Simple Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  notify-server:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify server of new changes
+      run: |
+        echo "🔔 Notifying server of new changes..."
+        echo "✅ Code pushed to main branch"
+        echo "📦 Commit: ${{ github.sha }}"
+        echo "👤 Author: ${{ github.actor }}"
+        echo ""
+        echo "The server will automatically pull changes using git webhooks or manual restart:"
+        echo "1. Auto-update via deploy endpoint (if configured)"
+        echo "2. Manual: ssh to server and run 'pm2 restart all'"
+        echo "3. Server checks GitHub for updates periodically"

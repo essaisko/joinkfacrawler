@@ -152,6 +152,7 @@ app.post('/deploy', (req, res) => {
   const bodyToken = req.headers['x-deploy-token'];
 
   console.log('🔄 Deploy 요청 받음, 토큰:', bodyToken);
+  console.log('🔄 요청 본문:', JSON.stringify(req.body, null, 2));
 
   if (bodyToken !== secret) {
     console.error('❌ 잘못된 토큰:', bodyToken);
@@ -164,7 +165,9 @@ app.post('/deploy', (req, res) => {
   res.status(200).send('✅ Deploy started...');
 
   // 배포 명령어 실행 (충돌 해결 포함)
-  exec(`cd ${gitRepoPath} && git fetch origin && git reset --hard origin/main && pm2 restart all`, (err, stdout, stderr) => {
+  const deployCommand = `cd ${gitRepoPath} && echo "Current directory: $(pwd)" && git fetch origin && git reset --hard origin/main && echo "Git update completed" && pm2 restart all`;
+  
+  exec(deployCommand, (err, stdout, stderr) => {
     if (err) {
       console.error('❌ 자동배포 실패:', err);
       console.error('❌ stderr:', stderr);
@@ -175,6 +178,38 @@ app.post('/deploy', (req, res) => {
       }
     }
   });
+});
+
+// GitHub Webhook 엔드포인트 (토큰 없이도 작동)
+app.post('/webhook/github', (req, res) => {
+  const gitRepoPath = '/home/ubuntu/joinkfacrawler';
+  
+  console.log('🐙 GitHub webhook 받음');
+  console.log('📦 이벤트:', req.headers['x-github-event']);
+  
+  // push 이벤트만 처리
+  if (req.headers['x-github-event'] === 'push') {
+    console.log('📤 Push 이벤트 감지, 자동 배포 시작...');
+    
+    res.status(200).send('Webhook received, deploying...');
+    
+    // 배포 실행
+    const deployCommand = `cd ${gitRepoPath} && git fetch origin && git reset --hard origin/main && pm2 restart all`;
+    
+    exec(deployCommand, (err, stdout, stderr) => {
+      if (err) {
+        console.error('❌ Webhook 배포 실패:', err);
+        console.error('❌ stderr:', stderr);
+      } else {
+        console.log('✅ Webhook 배포 완료:\n', stdout);
+        if (stderr) {
+          console.log('⚠️ stderr:', stderr);
+        }
+      }
+    });
+  } else {
+    res.status(200).send('Webhook received, but not a push event');
+  }
 });
 
 // 클라이언트로부터 받은 내용으로 CSV 파일 저장 (Firebase 우선)
