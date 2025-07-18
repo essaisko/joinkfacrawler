@@ -337,15 +337,8 @@ const Dashboard = {
                 const league = this.shortenLeagueName(match.leagueTitle || '미정');
                 const status = match.matchStatus || match.MATCH_STATUS || '예정';
                 
-                // 리그 등급 판단
-                const getLeagueRank = (leagueTitle) => {
-                    if (leagueTitle.includes('K5')) return 5;
-                    if (leagueTitle.includes('K6')) return 6;
-                    if (leagueTitle.includes('K7')) return 7;
-                    return 0;
-                };
-                
-                const leagueRank = getLeagueRank(match.leagueTitle || '');
+                const leagueRank = Dashboard.utils.getLeagueRank(match.leagueTitle || '');
+                const leagueClass = Dashboard.utils.getLeagueClass(match.leagueTitle || '');
                 
                 // 팀명 처리 함수
                 const buildTeamHtml = (raw, leagueRank) => {
@@ -366,23 +359,23 @@ const Dashboard = {
                 const homeTeam = buildTeamHtml(homeTeamRaw, leagueRank);
                 const awayTeam = buildTeamHtml(awayTeamRaw, leagueRank);
                 
-                // 리그 색상 클래스 결정
-                const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
+                // leagueClass는 이미 위에서 정의됨
                 
                 const isCompleted = status === '완료';
                 const homeScore = isCompleted ? (match.TH_SCORE_FINAL || '0') : '';
                 const awayScore = isCompleted ? (match.TA_SCORE_FINAL || '0') : '';
                 
                 const resultDisplay = isCompleted ? 
-                    `<span class="fw-bold text-secondary">${homeScore} - ${awayScore}</span>` : 
+                    `<span class="completed-score">${homeScore} - ${awayScore}</span>` : 
                     '<span class="text-muted">vs</span>';
+                const rowClass = isCompleted ? 'completed-match-row' : '';
                 
                 const statusBadge = isCompleted ? 
                     '<span class="badge bg-secondary">완료</span>' : 
                     '<span class="badge bg-primary">예정</span>';
                 
                 return `
-                    <tr class="match-row ${isCompleted ? '' : ''}" data-date="${date}">
+                    <tr class="match-row ${rowClass}" data-date="${date}">
                         <td>${index === 0 ? formattedDate : ''}</td>
                         <td class="text-muted">${time}</td>
                         <td class="fw-bold" title="${homeTeamRaw}">${homeTeam}</td>
@@ -564,16 +557,8 @@ const Dashboard = {
             const league = match.leagueTitle || '미정';
             const status = match.matchStatus || match.MATCH_STATUS || '예정';
             
-            // 리그 등급 판단
-            const getLeagueRank = (leagueTitle) => {
-                if (leagueTitle.includes('K5')) return 5;
-                if (leagueTitle.includes('K6')) return 6;
-                if (leagueTitle.includes('K7')) return 7;
-                return 0;
-            };
-            
-            const leagueRank = getLeagueRank(league);
-            const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
+            const leagueRank = Dashboard.utils.getLeagueRank(league);
+            const leagueClass = Dashboard.utils.getLeagueClass(league);
             
             // 팀명 처리 함수
             const buildTeamHtml = (raw, leagueRank) => {
@@ -608,7 +593,7 @@ const Dashboard = {
                                 <div class="fw-bold">${homeTeam}</div>
                                 <div class="text-muted">vs</div>
                                 <div class="fw-bold">${awayTeam}</div>
-                                ${isCompleted ? `<div class="h5 text-secondary mt-2">${homeScore} - ${awayScore}</div>` : ''}
+                                ${isCompleted ? `<div class="h5 completed-score mt-2">${homeScore} - ${awayScore}</div>` : ''}
                             </div>
                             <div class="text-center">
                                 <small class="text-muted d-block">${stadium}</small>
@@ -1140,8 +1125,8 @@ const Dashboard = {
 
                     let league = match.leagueTitle || match.league || match.LEAGUE || '';
                     league = league.replace(/k4리그/gi, 'K4리그');
-                    const leagueRank = getLeagueRank(league);
-                    const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
+                    const leagueRank = Dashboard.utils.getLeagueRank(league);
+                    const leagueClass = Dashboard.utils.getLeagueClass(league);
 
                     const venue = match.VENUE || match.STADIUM || match.경기장 || match.venue || match.stadium || '경기장미정';
 
@@ -2075,6 +2060,24 @@ const Dashboard = {
             });
         },
 
+        getLeagueRank(leagueTitle) {
+            if (!leagueTitle) return 0;
+            const title = leagueTitle.toUpperCase();
+            if (title.includes('K리그1') || title.includes('K1리그') || title === 'K1') return 1;
+            if (title.includes('K리그2') || title.includes('K2리그') || title === 'K2') return 2;
+            if (title.includes('K3') || title.includes('K3리그')) return 3;
+            if (title.includes('K4') || title.includes('K4리그')) return 4;
+            if (title.includes('K5') || title.includes('K5리그')) return 5;
+            if (title.includes('K6') || title.includes('K6리그')) return 6;
+            if (title.includes('K7') || title.includes('K7리그')) return 7;
+            return 0;
+        },
+
+        getLeagueClass(leagueTitle) {
+            const rank = this.getLeagueRank(leagueTitle);
+            return rank >= 1 && rank <= 7 ? `k${rank}` : 'other';
+        },
+
         simplifyLeagueName(leagueTitle) {
             if (!leagueTitle) return leagueTitle;
             
@@ -2109,16 +2112,18 @@ const Dashboard = {
             }
             
             if (leagueTitle.includes('K7')) {
-                const regionMatches = [
-                    leagueTitle.match(/K7.*?(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)/),
-                    leagueTitle.match(/K7.*?([가-힣]+)/),
+                // K7은 더 상세한 지역 정보 포함
+                const detailedMatches = [
+                    // 전체 문자열에서 상세 지역명 추출
+                    leagueTitle.match(/K7.*?([가-힣]+[A-Za-z]?)/),
+                    leagueTitle.match(/K7.*?(양산|창원|김해|밀양|거제|통영|마산|진주|사천|거창|합천)/),
                 ];
                 
-                for (const match of regionMatches) {
+                for (const match of detailedMatches) {
                     if (match) {
-                        // "김해A", "김해B" 등의 경우 처리
                         let region = match[1];
-                        if (region.length > 3 && /[A-Z]$/.test(region)) {
+                        // "김해A", "김해B" 등의 경우 대문자를 소문자로 변경
+                        if (/[A-Z]$/.test(region)) {
                             region = region.slice(0, -1) + region.slice(-1).toLowerCase();
                         }
                         return `K7 ${region}`;
@@ -2227,6 +2232,12 @@ const Dashboard = {
             if (searchBtn) {
                 searchBtn.addEventListener('click', Dashboard.events.searchTeamFromHeader);
             }
+
+            // 오늘로 이동 버튼
+            const goToTodayBtn = document.getElementById('goToTodayBtn');
+            if (goToTodayBtn) {
+                goToTodayBtn.addEventListener('click', this.goToToday.bind(this));
+            }
         },
 
         searchTeamFromHeader() {
@@ -2248,6 +2259,61 @@ const Dashboard = {
             } else {
                 window.open(`team.html?team=${encodeURIComponent(teamName)}`, '_blank');
                 searchInput.value = '';
+            }
+        },
+
+        goToToday() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+            
+            // 오늘 날짜의 경기 섹션으로 스크롤
+            const dateHeaders = document.querySelectorAll('.date-header');
+            let targetElement = null;
+            
+            for (const header of dateHeaders) {
+                if (header.textContent.includes(todayStr) || 
+                    header.id === `date-${todayStr}` ||
+                    header.dataset.date === todayStr) {
+                    targetElement = header;
+                    break;
+                }
+            }
+            
+            // 오늘 날짜가 없으면 현재 날짜와 가장 가까운 미래 날짜 찾기
+            if (!targetElement) {
+                const currentDate = today.getTime();
+                let closestElement = null;
+                let minDiff = Infinity;
+                
+                for (const header of dateHeaders) {
+                    const dateText = header.textContent || header.dataset.date;
+                    if (dateText) {
+                        const headerDate = new Date(dateText.match(/\d{4}-\d{2}-\d{2}/)?.[0] || dateText);
+                        const diff = headerDate.getTime() - currentDate;
+                        
+                        if (diff >= 0 && diff < minDiff) {
+                            minDiff = diff;
+                            closestElement = header;
+                        }
+                    }
+                }
+                targetElement = closestElement;
+            }
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+                
+                // 시각적 강조 효과
+                targetElement.style.backgroundColor = '#e3f2fd';
+                setTimeout(() => {
+                    targetElement.style.backgroundColor = '';
+                }, 2000);
+            } else {
+                // 오늘 경기가 없는 경우 알림
+                Dashboard.ui.showRefreshMessage('info', '📅 오늘 예정된 경기가 없습니다.');
             }
         },
 

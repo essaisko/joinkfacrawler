@@ -1445,6 +1445,55 @@ body {
 .league-badge.k7 { background: #32cd32; color: white; } /* 초록 */
 .league-badge.other { background: #7f8c8d; color: white; }
 
+/* === 진행된 경기 스코어 스타일 === */
+.completed-score {
+    color: #28a745 !important;
+    font-weight: 700 !important;
+    background: rgba(40, 167, 69, 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.completed-match-row {
+    background-color: rgba(40, 167, 69, 0.05) !important;
+}
+
+.vs-completed {
+    color: #28a745 !important;
+    font-weight: 600;
+}
+
+/* === 오늘로 이동 버튼 === */
+.today-navigation {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.today-navigation .btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.today-navigation .btn:hover {
+    background: linear-gradient(135deg, #2980b9, #1f618d);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    color: white;
+}
+
+.today-navigation .btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
 /* === 팀 검색 및 필터 === */
 .team-search-container {
     position: relative;

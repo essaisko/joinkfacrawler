@@ -76,8 +76,30 @@ app.use((req, res, next) => {
 
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
+
+// 모바일 최적화 미들웨어
+app.use((req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(userAgent);
+  
+  if (isMobile) {
+    res.setHeader('X-Mobile-Optimized', 'true');
+    // 모바일 장치에 대한 추가 헤더 설정
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  
+  req.isMobile = isMobile;
+  next();
+});
+
 // 정적 파일 제공
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), {
+  etag: true,
+  lastModified: true,
+  maxAge: '1h'
+}));
 app.use('/components', express.static(path.join(__dirname, 'components')));
 
 // 라우터 등록
@@ -489,6 +511,13 @@ async function initializeServer() {
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server is running on http://0.0.0.0:${PORT}`);
     console.log('🔥 Firebase 연동 준비 완료! (사용자 요청 시에만 동작)');
+    console.log('📱 모바일 최적화 미들웨어 활성화됨');
+    
+    // 서버 설정 정보 출력
+    console.log('🌐 서버 접속 정보:');
+    console.log(`   - 로컬: http://localhost:${PORT}`);
+    console.log(`   - 네트워크: http://0.0.0.0:${PORT}`);
+    console.log(`   - 도메인: http://ssurpass.com:${PORT}`);
     
     // 자동 스케줄러 시작
     try {
