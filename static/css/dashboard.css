@@ -1078,58 +1078,75 @@ body {
     opacity: 0.9;
 }
 
-.standings-list-modern {
+.standings-table-container {
+    overflow-x: auto;
     padding: 1rem;
 }
 
-.team-card-modern {
-    display: flex;
-    align-items: center;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.standings-table-modern {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.standings-table-modern th {
+    background: #f8f9fa;
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    white-space: nowrap;
+}
+
+.standings-table-modern td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+}
+
+.team-row-modern {
     transition: all 0.3s ease;
-    border: 1px solid #f1f3f4;
 }
 
-.team-card-modern:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+.team-row-modern:hover {
+    background: rgba(52, 152, 219, 0.05);
+    transform: translateY(-1px);
 }
 
-.team-card-modern:last-child {
-    margin-bottom: 0;
-}
-
-.team-card-modern.champion {
+.team-row-modern.champion {
     background: linear-gradient(135deg, #fff9c4, #ffeaa7);
     border-left: 4px solid #f39c12;
 }
 
-.team-card-modern.top3 {
+.team-row-modern.top3 {
     background: linear-gradient(135deg, #e8f5e8, #d4edda);
     border-left: 4px solid #28a745;
 }
 
-.team-card-modern.relegation {
+.team-row-modern.relegation {
     background: linear-gradient(135deg, #f8d7da, #f5c6cb);
     border-left: 4px solid #dc3545;
 }
 
-.position-section {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+.position-cell {
     min-width: 80px;
 }
 
+.position-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .position-number {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 900;
     color: #495057;
-    min-width: 40px;
+    min-width: 30px;
     text-align: center;
 }
 
@@ -1147,7 +1164,7 @@ body {
 
 .champion-icon {
     color: #f39c12;
-    font-size: 1.2rem;
+    font-size: 1rem;
     animation: pulse 2s infinite;
 }
 
@@ -1157,17 +1174,19 @@ body {
     100% { transform: scale(1); }
 }
 
-.team-info-section {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex: 1;
-    min-width: 0;
+.team-cell {
+    min-width: 200px;
 }
 
-.team-logo-modern {
-    width: 48px;
-    height: 48px;
+.team-info-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.team-logo-small {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea, #764ba2);
     display: flex;
@@ -1175,122 +1194,69 @@ body {
     justify-content: center;
     color: white;
     font-weight: bold;
-    font-size: 18px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     flex-shrink: 0;
 }
 
-.team-details {
-    min-width: 0;
-    flex: 1;
-}
-
-.team-name-modern {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    font-weight: 700;
-}
-
-.team-name-modern a {
-    color: #2c3e50;
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.team-name-modern a:hover {
-    color: #3498db;
-}
-
-.team-stats-quick {
+.team-name-container {
     display: flex;
-    gap: 1rem;
-    font-size: 0.85rem;
-    color: #6c757d;
-}
-
-.stat-item {
-    white-space: nowrap;
-}
-
-.stats-section {
-    display: flex;
-    gap: 2rem;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.main-stats {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-}
-
-.points-display, .goal-diff-display {
+.stat-cell {
     text-align: center;
+    font-weight: 600;
+    color: #495057;
+    min-width: 50px;
 }
 
-.points-value {
-    display: block;
-    font-size: 1.8rem;
+.points-cell {
+    text-align: center;
+    min-width: 60px;
+}
+
+.points-highlight {
+    font-size: 1.1rem;
     font-weight: 900;
     color: #2c3e50;
-    line-height: 1;
 }
 
-.points-label {
-    font-size: 0.75rem;
-    color: #6c757d;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.goal-diff-value {
-    display: block;
-    font-size: 1.2rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.goal-diff-value.positive {
+.win-cell {
     color: #28a745;
 }
 
-.goal-diff-value.negative {
+.draw-cell {
+    color: #ffc107;
+}
+
+.loss-cell {
     color: #dc3545;
 }
 
-.goal-diff-label {
-    font-size: 0.75rem;
+.goals-for-cell {
+    color: #17a2b8;
+}
+
+.goals-against-cell {
     color: #6c757d;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-.detailed-stats {
-    display: flex;
-    gap: 1rem;
+.goal-diff-cell {
+    min-width: 70px;
 }
 
-.stat-group {
-    text-align: center;
+.goal-diff {
+    font-weight: 700;
 }
 
-.stat-label {
-    display: block;
-    font-size: 0.75rem;
-    color: #6c757d;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
+.goal-diff.positive {
+    color: #28a745;
 }
 
-.stat-value {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #495057;
+.goal-diff.negative {
+    color: #dc3545;
 }
 
 /* 리그별 헤더 색상 */
@@ -1453,6 +1419,27 @@ body {
     background: linear-gradient(135deg, #95a5a6, #bdc3c7);
     border: 1px solid #7f8c8d;
 }
+
+/* === 리그 배지 (일반 테이블용) === */
+.league-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    min-width: 50px;
+}
+
+.league-badge.k1 { background: #e74c3c; }
+.league-badge.k2 { background: #d35400; }
+.league-badge.k3 { background: #8e44ad; }
+.league-badge.k4 { background: #34495e; }
+.league-badge.k5 { background: #e67e22; }
+.league-badge.k6 { background: #3498db; }
+.league-badge.k7 { background: #27ae60; }
+.league-badge.other { background: #7f8c8d; }
 
 /* === 팀 검색 및 필터 === */
 .team-search-container {

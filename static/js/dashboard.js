@@ -332,7 +332,7 @@ const Dashboard = {
                 const homeTeamRaw = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
                 const awayTeamRaw = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
                 const stadium = this.shortenStadiumName(match.STADIUM || '미정');
-                const time = match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정';
+                const time = Dashboard.utils.formatMatchTime(match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정');
                 const league = this.shortenLeagueName(match.leagueTitle || '미정');
                 const status = match.matchStatus || match.MATCH_STATUS || '예정';
                 
@@ -354,14 +354,19 @@ const Dashboard = {
                         const teamName = parsed.teamName || raw;
                         const shortenedTeamName = this.shortenTeamName(teamName);
                         const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
-                        return `${regionLabel}${shortenedTeamName}`;
+                        const teamLink = `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${shortenedTeamName}</a>`;
+                        return `${regionLabel}${teamLink}`;
                     } else {
-                        return this.shortenTeamName(raw);
+                        const shortenedTeamName = this.shortenTeamName(raw);
+                        return `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${shortenedTeamName}</a>`;
                     }
                 };
                 
                 const homeTeam = buildTeamHtml(homeTeamRaw, leagueRank);
                 const awayTeam = buildTeamHtml(awayTeamRaw, leagueRank);
+                
+                // 리그 색상 클래스 결정
+                const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
                 
                 const isCompleted = status === '완료';
                 const homeScore = isCompleted ? (match.TH_SCORE_FINAL || '0') : '';
@@ -383,7 +388,7 @@ const Dashboard = {
                         <td class="text-center">${resultDisplay}</td>
                         <td class="fw-bold" title="${awayTeamRaw}">${awayTeam}</td>
                         <td class="text-muted" title="${match.STADIUM || '미정'}">${stadium}</td>
-                        <td><small class="text-muted" title="${match.leagueTitle || '미정'}">${league}</small></td>
+                        <td><span class="league-badge ${leagueClass}" title="${match.leagueTitle || '미정'}">${league}</span></td>
                         <td>${statusBadge}</td>
                     </tr>
                 `;
@@ -544,7 +549,7 @@ const Dashboard = {
             const homeTeamRaw = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
             const awayTeamRaw = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
             const stadium = match.STADIUM || '미정';
-            const time = match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정';
+            const time = Dashboard.utils.formatMatchTime(match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정');
             const league = match.leagueTitle || '미정';
             const status = match.matchStatus || match.MATCH_STATUS || '예정';
             
@@ -557,6 +562,7 @@ const Dashboard = {
             };
             
             const leagueRank = getLeagueRank(league);
+            const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
             
             // 팀명 처리 함수
             const buildTeamHtml = (raw, leagueRank) => {
@@ -565,9 +571,10 @@ const Dashboard = {
                     const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
                     const teamName = parsed.teamName || raw;
                     const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
-                    return `${regionLabel}${teamName}`;
+                    const teamLink = `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${teamName}</a>`;
+                    return `${regionLabel}${teamLink}`;
                 } else {
-                    return raw;
+                    return `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${raw}</a>`;
                 }
             };
             
@@ -594,7 +601,7 @@ const Dashboard = {
                             </div>
                             <div class="text-center">
                                 <small class="text-muted d-block">${stadium}</small>
-                                <small class="text-muted">${league}</small>
+                                <span class="league-badge ${leagueClass}">${league}</span>
                             </div>
                         </div>
                     </div>
@@ -1162,9 +1169,8 @@ const Dashboard = {
 
                 const tableRows = sortedMatches.map(match => {
                     const matchDateObj = safeParseDate(match.MATCH_DATE || match.matchDate || match.date || match.DATE);
-                    const time = Dashboard.utils.parseMatchTime(
-                        match.formattedTime || match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '',
-                        matchDateObj
+                    const time = Dashboard.utils.formatMatchTime(
+                        match.formattedTime || match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '미정'
                     );
 
                     let league = match.leagueTitle || match.league || match.LEAGUE || '';
@@ -1587,7 +1593,23 @@ const Dashboard = {
                                 <span>${teams.length}개 팀</span>
                             </div>
                         </div>
-                        <div class="standings-list-modern">
+                        <div class="standings-table-container">
+                            <table class="standings-table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>순위</th>
+                                        <th>팀명</th>
+                                        <th>경기</th>
+                                        <th>승점</th>
+                                        <th>승</th>
+                                        <th>무</th>
+                                        <th>패</th>
+                                        <th>득점</th>
+                                        <th>실점</th>
+                                        <th>득실차</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                 `;
 
                 teams.forEach((t, idx) => {
@@ -1604,57 +1626,54 @@ const Dashboard = {
                     const teamLogo = t.teamName.charAt(0).toUpperCase();
                     const goalDiff = t.goalDifference >= 0 ? `+${t.goalDifference}` : t.goalDifference;
 
+                    // K5-K7 리그 팀명에 지역 라벨 추가
+                    const buildTeamName = (teamName, leagueClass) => {
+                        if (leagueClass === 'k5' || leagueClass === 'k6' || leagueClass === 'k7') {
+                            const parsed = Dashboard.utils.parseTeam(teamName);
+                            const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
+                            const cleanTeamName = parsed.teamName || teamName;
+                            const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
+                            return `${regionLabel}<a href="team.html?team=${encodeURIComponent(teamName)}" class="team-name-link">${cleanTeamName}</a>`;
+                        } else {
+                            return `<a href="team.html?team=${encodeURIComponent(teamName)}" class="team-name-link">${teamName}</a>`;
+                        }
+                    };
+
                     html += `
-                        <div class="team-card-modern ${positionClass}">
-                            <div class="position-section">
-                                <div class="position-number ${positionClass}">
-                                    ${position}
+                        <tr class="team-row-modern ${positionClass}">
+                            <td class="position-cell">
+                                <div class="position-display">
+                                    <span class="position-number ${positionClass}">${position}</span>
+                                    ${isChampion ? '<i class="fas fa-crown champion-icon"></i>' : ''}
                                 </div>
-                                ${isChampion ? '<i class="fas fa-crown champion-icon"></i>' : ''}
-                            </div>
-                            
-                            <div class="team-info-section">
-                                <div class="team-logo-modern">
-                                    ${teamLogo}
-                                </div>
-                                <div class="team-details">
-                                    <h4 class="team-name-modern">
-                                        <a href="team.html?team=${encodeURIComponent(t.teamName)}">${t.teamName}</a>
-                                    </h4>
-                                    <div class="team-stats-quick">
-                                        <span class="stat-item">경기 ${t.played}</span>
-                                        <span class="stat-item">${t.won}승 ${t.drawn}무 ${t.lost}패</span>
+                            </td>
+                            <td class="team-cell">
+                                <div class="team-info-display">
+                                    <div class="team-logo-small">${teamLogo}</div>
+                                    <div class="team-name-container">
+                                        ${buildTeamName(t.teamName, leagueClass)}
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="stats-section">
-                                <div class="main-stats">
-                                    <div class="points-display">
-                                        <span class="points-value">${t.points}</span>
-                                        <span class="points-label">승점</span>
-                                    </div>
-                                    <div class="goal-diff-display">
-                                        <span class="goal-diff-value ${t.goalDifference >= 0 ? 'positive' : 'negative'}">${goalDiff}</span>
-                                        <span class="goal-diff-label">득실차</span>
-                                    </div>
-                                </div>
-                                <div class="detailed-stats">
-                                    <div class="stat-group">
-                                        <span class="stat-label">득점</span>
-                                        <span class="stat-value">${t.goalsFor}</span>
-                                    </div>
-                                    <div class="stat-group">
-                                        <span class="stat-label">실점</span>
-                                        <span class="stat-value">${t.goalsAgainst}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            </td>
+                            <td class="stat-cell">${t.played}</td>
+                            <td class="points-cell">
+                                <span class="points-highlight">${t.points}</span>
+                            </td>
+                            <td class="stat-cell win-cell">${t.won}</td>
+                            <td class="stat-cell draw-cell">${t.drawn}</td>
+                            <td class="stat-cell loss-cell">${t.lost}</td>
+                            <td class="stat-cell goals-for-cell">${t.goalsFor}</td>
+                            <td class="stat-cell goals-against-cell">${t.goalsAgainst}</td>
+                            <td class="stat-cell goal-diff-cell">
+                                <span class="goal-diff ${t.goalDifference >= 0 ? 'positive' : 'negative'}">${goalDiff}</span>
+                            </td>
+                        </tr>
                     `;
                 });
 
                 html += `
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 `;
@@ -1950,6 +1969,54 @@ const Dashboard = {
             }
             
             return '시간미정';
+        },
+
+        formatMatchTime(rawTime) {
+            if (!rawTime || rawTime === '미정') return '미정';
+            
+            // 이미 HH:MM 형식이면 그대로 반환
+            if (/^\d{2}:\d{2}$/.test(rawTime)) {
+                return rawTime;
+            }
+            
+            // 오전/오후 형식 처리
+            if (rawTime.includes('오전') || rawTime.includes('오후')) {
+                const timeMatch = rawTime.match(/(오전|오후)\s*(\d{1,2})시\s*(\d{1,2})분/);
+                if (timeMatch) {
+                    const period = timeMatch[1];
+                    let hour = parseInt(timeMatch[2]);
+                    const minute = parseInt(timeMatch[3]);
+                    
+                    if (period === '오후' && hour !== 12) hour += 12;
+                    if (period === '오전' && hour === 12) hour = 0;
+                    
+                    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            // HHMM 형식 처리
+            if (/^\d{4}$/.test(rawTime)) {
+                return rawTime.slice(0,2) + ':' + rawTime.slice(2);
+            }
+            
+            // H:MM 형식 처리
+            if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
+                const parts = rawTime.split(':');
+                return `${parts[0].padStart(2, '0')}:${parts[1]}`;
+            }
+            
+            // 시간만 있는 경우
+            if (/^\d{1,2}$/.test(rawTime)) {
+                return rawTime.padStart(2, '0') + ':00';
+            }
+            
+            // 날짜 포함된 경우 시간 부분만 추출
+            const timeOnly = rawTime.match(/(\d{1,2}):(\d{2})/);
+            if (timeOnly) {
+                return `${timeOnly[1].padStart(2, '0')}:${timeOnly[2]}`;
+            }
+            
+            return '미정';
         },
 
         parseTeam(str) {

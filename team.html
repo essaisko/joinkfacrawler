@@ -103,13 +103,38 @@
             const winRate = teamData.completedMatches > 0 ? 
                 ((teamData.wins / teamData.completedMatches) * 100).toFixed(1) : 0;
             
+            // 리그 등급 판단
+            const getLeagueRank = (leagueTitle) => {
+                if (leagueTitle && leagueTitle.includes('K리그1')) return 1;
+                if (leagueTitle && leagueTitle.includes('K리그2')) return 2;
+                if (leagueTitle && leagueTitle.includes('K3')) return 3;
+                if (leagueTitle && leagueTitle.includes('K4')) return 4;
+                if (leagueTitle && leagueTitle.includes('K5')) return 5;
+                if (leagueTitle && leagueTitle.includes('K6')) return 6;
+                if (leagueTitle && leagueTitle.includes('K7')) return 7;
+                return 0;
+            };
+            
+            const leagueRank = getLeagueRank(teamData.leagueTitle || '');
+            
+            // K5-K7 리그만 지역 라벨 표시
+            let regionBadges = '';
+            if (leagueRank >= 5 && leagueRank <= 7) {
+                const parsed = parseTeamName(teamData.teamName);
+                if (parsed.major) {
+                    regionBadges = `
+                        <div class="mb-3">
+                            <span class="region-badge major-region">${parsed.major}</span>
+                            ${parsed.minor ? `<span class="region-badge minor-region">${parsed.minor}</span>` : ''}
+                        </div>
+                    `;
+                }
+            }
+            
             teamInfoEl.innerHTML = `
                 <div class="team-logo-large">${teamInitial}</div>
                 <h2 class="mb-2">${teamData.teamName}</h2>
-                <div class="mb-3">
-                    <span class="region-badge major-region">경남</span>
-                    <span class="region-badge minor-region">부산</span>
-                </div>
+                ${regionBadges}
                 
                 <div class="team-stats-grid">
                     <div class="stat-card">
@@ -150,7 +175,23 @@
             `;
         }
 
-        // 경기 목록 표시 (월별 그룹화)
+        // 팀명 파싱 함수
+        function parseTeamName(str) {
+            if(!str) return {teamName:'',major:'',minor:''};
+            const majors = ['경남','부산','울산','대구','대전','광주','인천','서울','경기','강원','충북','충남','전북','전남','경북','제주'];
+            
+            const tokens = str.trim().split(' ');
+            if(tokens.length>1 && majors.includes(tokens[0])){
+                const major = tokens[0];
+                const minor = tokens[1].match(/(시|군|구)$/) ? tokens[1] : '';
+                const teamName = (minor ? tokens.slice(2) : tokens.slice(1)).join(' ');
+                return {teamName, major, minor};
+            }
+            
+            return {teamName: str, major: '', minor: ''};
+        }
+
+        // 경기 목록 표시 (월별/날짜별 그룹화)
         function displayMatches(matches) {
             const container = document.getElementById('matchesContainer');
             if (!container) return;
@@ -165,110 +206,117 @@
                 return;
             }
 
-            // 월별로 그룹화
-            const monthGroups = {};
+            // 날짜별로 그룹화
+            const dateGroups = {};
             matches.forEach(match => {
                 const date = new Date(match.MATCH_DATE || Date.now());
-                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                const monthName = `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+                const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                const dateLabel = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
                 
-                if (!monthGroups[monthKey]) {
-                    monthGroups[monthKey] = {
-                        name: monthName,
+                if (!dateGroups[dateKey]) {
+                    dateGroups[dateKey] = {
+                        label: dateLabel,
                         matches: []
                     };
                 }
-                monthGroups[monthKey].matches.push(match);
+                dateGroups[dateKey].matches.push(match);
             });
 
-            let html = '';
-            Object.keys(monthGroups).sort().forEach(monthKey => {
-                const group = monthGroups[monthKey];
-                const monthId = `month-${monthKey}`;
+            // 리그 등급 판단 함수
+            const getLeagueRank = (leagueTitle) => {
+                if (leagueTitle && leagueTitle.includes('K리그1')) return 1;
+                if (leagueTitle && leagueTitle.includes('K리그2')) return 2;
+                if (leagueTitle && leagueTitle.includes('K3')) return 3;
+                if (leagueTitle && leagueTitle.includes('K4')) return 4;
+                if (leagueTitle && leagueTitle.includes('K5')) return 5;
+                if (leagueTitle && leagueTitle.includes('K6')) return 6;
+                if (leagueTitle && leagueTitle.includes('K7')) return 7;
+                return 0;
+            };
+
+            // 테이블 형식으로 표시
+            let html = `
+                <div class="matches-table-container">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>날짜</th>
+                                <th>시간</th>
+                                <th>홈팀</th>
+                                <th>결과</th>
+                                <th>원정팀</th>
+                                <th>경기장</th>
+                                <th>리그</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // 날짜별 정렬
+            Object.keys(dateGroups).sort().forEach(dateKey => {
+                const group = dateGroups[dateKey];
                 
-                html += `
-                    <div class="month-section">
-                        <div class="month-header" onclick="toggleMonth('${monthId}')">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-calendar me-2"></i>${group.name}
-                                </h5>
-                                <div>
-                                    <span class="badge bg-primary me-2">${group.matches.length}경기</span>
-                                    <i class="fas fa-chevron-down" id="icon-${monthId}"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="collapse-content" id="${monthId}">
-                `;
-                
-                // 경기일 기준 오름차순 정렬
-                group.matches.sort((a,b)=> new Date(a.MATCH_DATE||a.matchDate||a.date||0) - new Date(b.MATCH_DATE||b.matchDate||b.date||0));
-                group.matches.forEach(match => {
-                    const isCompleted = match.matchStatus === '완료';
-                    const statusClass = isCompleted ? 'status-completed' : 'status-upcoming';
-                    const statusText = isCompleted ? '완료' : '예정';
-                    
-                    const homeInitial = (match.HOME_TEAM_NAME || '홈').charAt(0).toUpperCase();
-                    const awayInitial = (match.AWAY_TEAM_NAME || '어').charAt(0).toUpperCase();
-                    
-                    html += `
-                        <div class="match-item">
-                            <div class="match-content">
-                                <div class="match-teams">
-                                    <div class="team-section">
-                                        <div class="team-logo-small">${homeInitial}</div>
-                                        <div>
-                                            <div class="team-name">${match.HOME_TEAM_NAME || '홈팀'}</div>
-                                            <div>
-                                                ${match.HOME_TEAM_MAJOR_REGION ? `<span class="region-badge major-region">${match.HOME_TEAM_MAJOR_REGION}</span>` : ''}
-                                                ${match.HOME_TEAM_MINOR_REGION ? `<span class="region-badge minor-region">${match.HOME_TEAM_MINOR_REGION}</span>` : ''}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="match-score">
-                                        ${isCompleted ? 
-                                            `${match.TH_SCORE_FINAL || 0} : ${match.TA_SCORE_FINAL || 0}` :
-                                            'VS'
-                                        }
-                                    </div>
-                                    
-                                    <div class="team-section justify-content-end">
-                                        <div class="text-end">
-                                            <div class="team-name">${match.AWAY_TEAM_NAME || '어웨이팀'}</div>
-                                            <div>
-                                                ${match.AWAY_TEAM_MAJOR_REGION ? `<span class="region-badge major-region">${match.AWAY_TEAM_MAJOR_REGION}</span>` : ''}
-                                                ${match.AWAY_TEAM_MINOR_REGION ? `<span class="region-badge minor-region">${match.AWAY_TEAM_MINOR_REGION}</span>` : ''}
-                                            </div>
-                                        </div>
-                                        <div class="team-logo-small ms-2">${awayInitial}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="match-info">
-                                    <div class="mb-1">
-                                        <span class="match-status ${statusClass}">${statusText}</span>
-                                    </div>
-                                    <div class="mb-1">
-                                        <i class="fas fa-clock me-1"></i>
-                                        ${match.MATCH_TIME_FORMATTED || '시간 미정'}
-                                    </div>
-                                    <div>
-                                        <i class="fas fa-map-marker-alt me-1"></i>
-                                        ${match.STADIUM || '경기장 미정'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                // 경기 시간 기준 정렬
+                group.matches.sort((a,b)=> {
+                    const timeA = a.MATCH_TIME_FORMATTED || a.MATCH_TIME || '00:00';
+                    const timeB = b.MATCH_TIME_FORMATTED || b.MATCH_TIME || '00:00';
+                    return timeA.localeCompare(timeB);
                 });
                 
-                html += `
-                        </div>
-                    </div>
-                `;
+                group.matches.forEach((match, index) => {
+                    const isCompleted = match.matchStatus === '완료';
+                    const homeTeam = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
+                    const awayTeam = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
+                    const leagueRank = getLeagueRank(match.leagueTitle || '');
+                    
+                    // 팀명 처리 (K5-K7만 지역 라벨 표시)
+                    const buildTeamName = (teamName, leagueRank) => {
+                        if (leagueRank >= 5 && leagueRank <= 7) {
+                            // K5-K7 리그만 지역 파싱
+                            const parsed = parseTeamName(teamName);
+                            const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
+                            const cleanTeamName = parsed.teamName || teamName;
+                            const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
+                            return `${regionLabel}${cleanTeamName}`;
+                        } else {
+                            return teamName;
+                        }
+                    };
+                    
+                    const homeTeamDisplay = buildTeamName(homeTeam, leagueRank);
+                    const awayTeamDisplay = buildTeamName(awayTeam, leagueRank);
+                    
+                    const resultDisplay = isCompleted ? 
+                        `<span class="fw-bold">${match.TH_SCORE_FINAL || 0} - ${match.TA_SCORE_FINAL || 0}</span>` : 
+                        '<span class="text-muted">vs</span>';
+                    
+                    const statusBadge = isCompleted ? 
+                        '<span class="badge bg-secondary">완료</span>' : 
+                        '<span class="badge bg-primary">예정</span>';
+                    
+                    const leagueClass = (leagueRank >= 1 && leagueRank <= 7) ? `k${leagueRank}` : 'other';
+                    
+                    html += `
+                        <tr>
+                            <td>${index === 0 ? group.label : ''}</td>
+                            <td>${match.MATCH_TIME_FORMATTED || match.MATCH_TIME || '미정'}</td>
+                            <td>${homeTeamDisplay}</td>
+                            <td class="text-center">${resultDisplay}</td>
+                            <td>${awayTeamDisplay}</td>
+                            <td>${match.STADIUM || '미정'}</td>
+                            <td><span class="league-badge ${leagueClass}">${match.leagueTitle || '미정'}</span></td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                });
             });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
 
             container.innerHTML = html;
         }
