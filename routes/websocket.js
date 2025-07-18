@@ -42,15 +42,15 @@ function handleWebSocketConnection(socket) {
   });
 
   // 업로드 요청 처리
-  socket.on('start-upload', async () => {
-    console.log('📤 업로드 요청 받음:', socket.id);
+  socket.on('start-upload', async (options) => {
+    console.log('📤 업로드 요청 받음:', socket.id, options);
     
     if (isUploading) {
       socket.emit('upload-log', '⚠️ 이미 업로드가 진행 중입니다. 잠시 후 다시 시도해주세요.\\n');
       return;
     }
     
-    uploadQueue.push({ socket });
+    uploadQueue.push({ socket, options });
     
     if (uploadQueue.length === 1) {
       await processUploadQueue();
@@ -165,7 +165,7 @@ async function processCrawlQueue() {
 // 업로드 큐 처리
 async function processUploadQueue() {
   while (uploadQueue.length > 0) {
-    const { socket } = uploadQueue.shift();
+    const { socket, options } = uploadQueue.shift();
     
     if (!socket.connected) {
       console.log('⚠️ 소켓이 연결되지 않음, 업로드 건너뜀');
@@ -174,22 +174,24 @@ async function processUploadQueue() {
     
     isUploading = true;
 
-    socket.emit('upload-log', '📤 Firebase 업로드를 시작합니다...\\n');
+    socket.emit('upload-log', `📤 Firebase 업로드를 시작합니다... (옵션: ${JSON.stringify(options)})\\n`);
 
     try {
       await syncCsvWithFirebase();
       
-      // 업로드 프로세스 실행 (firebase_uploader.js 의 uploadResultsToFirebase 함수)
-      const uploadProcess = spawn('node', ['-e', `
-        const { uploadResultsToFirebase } = require('./firebase_uploader');
-        uploadResultsToFirebase().then(() => {
-          console.log('✅ 업로드 완료');
-          process.exit(0);
-        }).catch(err => {
-          console.error('❌ 업로드 실패:', err.message);
-          process.exit(1);
-        });
-      `], {
+      // 업로드 프로세스 실행 - firebase_uploader.js를 직접 실행
+      const args = ['firebase_uploader.js'];
+      
+      // 옵션이 있으면 명령줄 인자로 추가
+      if (options) {
+        if (options.year) args.push(`--year=${options.year}`);
+        if (options.month) args.push(`--month=${options.month}`);
+        if (options.league) args.push(`--league=${options.league}`);
+        if (options.region) args.push(`--region=${options.region}`);
+        if (options.matchIdx) args.push(`--matchIdx=${options.matchIdx}`);
+      }
+      
+      const uploadProcess = spawn('node', args, {
         cwd: path.join(__dirname, '..')
       });
 

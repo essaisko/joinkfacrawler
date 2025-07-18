@@ -65,11 +65,10 @@
             font-size: 13px;
             padding: 15px;
             border-radius: 6px;
-            height: 80vh;
+            height: calc(100vh - 100px);
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
-            margin-top: 20px;
         }
         .section {
             margin-top: 25px;
@@ -147,9 +146,33 @@
         .upload-row-btn { background-color: #1877f2; }
         .upload-row-btn:hover { background-color: #166fe5; }
         /* 레이아웃 개선 */
-        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; width:100%; box-sizing: border-box; flex-wrap:nowrap; }
-        .left-area { flex: 1 1 72%; min-width:0; }
-        .log-panel { flex: 0 0 26%; }
+        .main-wrapper { 
+            display: flex; 
+            gap: 20px; 
+            align-items: flex-start; 
+            width:100%; 
+            box-sizing: border-box; 
+            flex-wrap:nowrap;
+            height: calc(100vh - 40px);
+        }
+        .left-area { 
+            flex: 1 1 65%; 
+            min-width:0; 
+            overflow-y: auto;
+            max-height: 100%;
+        }
+        .log-panel { 
+            flex: 0 0 33%; 
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
         /* 왼쪽 컨테이너 최대폭 제거 */
         .left-area .container { width:100%; max-width:none; }
         /* 로그인 오버레이 */
@@ -349,10 +372,13 @@
             </div>
         </div>
         
-        <!-- 로그 패널 오른쪽 (위치를 left-area와 동일한 레벨로 이동) -->
+        <!-- 로그 패널 오른쪽 -->
         <div class="log-panel">
-            <button id="clearLogBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; margin-bottom:6px;">🧹 로그 지우기</button>
-        <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 16px; color: #1c1e21;">📋 실시간 로그</h3>
+                <button id="clearLogBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px;">🧹 지우기</button>
+            </div>
+            <div id="logContainer">작업 로그가 여기에 표시됩니다...</div>
         </div>
     </div>
 
