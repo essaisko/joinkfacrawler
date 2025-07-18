@@ -35,6 +35,82 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
+/* === 필터 버튼 스타일 === */
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.filter-buttons .btn {
+    transition: all 0.2s ease;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.filter-buttons .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filter-buttons .btn.active {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    color: white !important;
+}
+
+.league-filter-btn.active {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+/* === 경기 테이블 스타일 === */
+.table-responsive {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table thead th {
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.table tbody tr.table-success {
+    background-color: rgba(39, 174, 96, 0.1);
+}
+
+.table tbody tr.table-success:hover {
+    background-color: rgba(39, 174, 96, 0.15);
+}
+
+.match-row td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.match-row .fw-bold {
+    font-size: 0.95rem;
+}
+
+/* === 팀 검색 필드 스타일 === */
+.input-group .input-group-text {
+    background-color: var(--light-bg);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
 .git-info-display {
     background-color: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.2);

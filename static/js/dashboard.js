@@ -214,43 +214,57 @@ const Dashboard = {
             
             const { byMonth, byDate, upcoming, past, stats } = data;
             
-            // 월별 필터 생성
+            // 월별 필터 버튼 생성
             const monthKeys = Object.keys(byMonth).sort().reverse();
-            const monthFilter = monthKeys.map(month => {
+            const monthButtons = monthKeys.map(month => {
                 const [year, monthNum] = month.split('-');
-                const monthName = new Date(year, monthNum - 1).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
-                return `<option value="${month}">${monthName} (${byMonth[month].length}경기)</option>`;
+                const monthName = new Date(year, monthNum - 1).toLocaleDateString('ko-KR', { month: 'short' });
+                return `<button class="btn btn-outline-primary btn-sm me-1 mb-1 month-filter-btn" data-month="${month}">${monthName} (${byMonth[month].length})</button>`;
             }).join('');
+            
+            // 리그 필터 버튼 생성
+            const leagues = [...new Set(upcoming.concat(past).map(m => m.leagueTitle).filter(Boolean))];
+            const leagueButtons = leagues.map(league => 
+                `<button class="btn btn-outline-secondary btn-sm me-1 mb-1 league-filter-btn" data-league="${league}">${league}</button>`
+            ).join('');
             
             container.innerHTML = `
                 <div class="card">
                     <div class="card-header">
                         <h6>📅 경기 일정 관리</h6>
+                        
+                        <!-- 팀 검색 필드 -->
                         <div class="row mt-2">
-                            <div class="col-md-4">
-                                <select id="monthFilter" class="form-select form-select-sm">
-                                    <option value="">전체 월 보기</option>
-                                    ${monthFilter}
-                                </select>
+                            <div class="col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">🔍</span>
+                                    <input type="text" id="teamSearchInput" class="form-control" placeholder="팀명으로 검색...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearTeamSearch">초기화</button>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <select id="matchTypeFilter" class="form-select form-select-sm">
-                                    <option value="upcoming">다가오는 경기</option>
-                                    <option value="past">지난 경기</option>
-                                    <option value="all">전체 경기</option>
-                                </select>
+                        </div>
+                        
+                        <!-- 월별 필터 -->
+                        <div class="mt-3">
+                            <h6 class="mb-2">📅 월별 필터</h6>
+                            <div class="filter-buttons">
+                                <button class="btn btn-primary btn-sm me-1 mb-1 month-filter-btn active" data-month="">전체</button>
+                                ${monthButtons}
                             </div>
-                            <div class="col-md-4">
-                                <select id="leagueFilter" class="form-select form-select-sm">
-                                    <option value="">전체 리그</option>
-                                    ${this.getLeagueOptions(upcoming.concat(past))}
-                                </select>
+                        </div>
+                        
+                        <!-- 리그 필터 -->
+                        <div class="mt-3">
+                            <h6 class="mb-2">🏆 리그 필터</h6>
+                            <div class="filter-buttons">
+                                <button class="btn btn-secondary btn-sm me-1 mb-1 league-filter-btn active" data-league="">전체</button>
+                                ${leagueButtons}
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <div id="matchesDisplay">
-                            ${this.renderMatchesByType(upcoming, 'upcoming')}
+                            ${this.renderMatchesTable(upcoming.concat(past))}
                         </div>
                     </div>
                 </div>
@@ -265,9 +279,9 @@ const Dashboard = {
             return leagues.map(league => `<option value="${league}">${league}</option>`).join('');
         },
 
-        renderMatchesByType(matches, type) {
+        renderMatchesTable(matches) {
             if (!matches || matches.length === 0) {
-                return `<div class="alert alert-info">표시할 경기가 없습니다.</div>`;
+                return `<div class="alert alert-info m-3">표시할 경기가 없습니다.</div>`;
             }
             
             // 날짜별 그룹화
@@ -280,28 +294,193 @@ const Dashboard = {
                 groupedByDate[date].push(match);
             });
             
-            const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
-                return type === 'upcoming' ? a.localeCompare(b) : b.localeCompare(a);
+            const sortedDates = Object.keys(groupedByDate).sort();
+            
+            return `
+                <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th style="min-width: 120px;">날짜</th>
+                                <th style="min-width: 60px;">시간</th>
+                                <th style="min-width: 150px;">홈팀</th>
+                                <th style="min-width: 80px;">결과</th>
+                                <th style="min-width: 150px;">원정팀</th>
+                                <th style="min-width: 120px;">경기장</th>
+                                <th style="min-width: 100px;">리그</th>
+                                <th style="min-width: 60px;">상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedDates.map(date => this.renderDateRows(date, groupedByDate[date])).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        },
+
+        renderDateRows(date, dateMatches) {
+            const formattedDate = new Date(date).toLocaleDateString('ko-KR', { 
+                month: 'short', 
+                day: 'numeric',
+                weekday: 'short'
             });
             
-            return sortedDates.map(date => {
-                const dateMatches = groupedByDate[date];
-                const formattedDate = new Date(date).toLocaleDateString('ko-KR', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric',
-                    weekday: 'short'
-                });
+            return dateMatches.map((match, index) => {
+                const homeTeam = this.shortenTeamName(match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀');
+                const awayTeam = this.shortenTeamName(match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀');
+                const stadium = this.shortenStadiumName(match.STADIUM || '미정');
+                const time = match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정';
+                const league = this.shortenLeagueName(match.leagueTitle || '미정');
+                const status = match.matchStatus || match.MATCH_STATUS || '예정';
+                
+                const isCompleted = status === '완료';
+                const homeScore = isCompleted ? (match.TH_SCORE_FINAL || '0') : '';
+                const awayScore = isCompleted ? (match.TA_SCORE_FINAL || '0') : '';
+                
+                const resultDisplay = isCompleted ? 
+                    `<span class="fw-bold text-success">${homeScore} - ${awayScore}</span>` : 
+                    '<span class="text-muted">vs</span>';
+                
+                const statusBadge = isCompleted ? 
+                    '<span class="badge bg-success">완료</span>' : 
+                    '<span class="badge bg-primary">예정</span>';
                 
                 return `
-                    <div class="mb-4">
-                        <h6 class="text-primary border-bottom pb-2">${formattedDate} (${dateMatches.length}경기)</h6>
-                        <div class="row">
-                            ${dateMatches.map(match => this.renderMatchCard(match)).join('')}
-                        </div>
-                    </div>
+                    <tr class="match-row ${isCompleted ? 'table-success' : ''}">
+                        <td>${index === 0 ? formattedDate : ''}</td>
+                        <td class="text-muted">${time}</td>
+                        <td class="fw-bold" title="${match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀'}">${homeTeam}</td>
+                        <td class="text-center">${resultDisplay}</td>
+                        <td class="fw-bold" title="${match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀'}">${awayTeam}</td>
+                        <td class="text-muted" title="${match.STADIUM || '미정'}">${stadium}</td>
+                        <td><small class="text-muted" title="${match.leagueTitle || '미정'}">${league}</small></td>
+                        <td>${statusBadge}</td>
+                    </tr>
                 `;
             }).join('');
+        },
+
+        shortenTeamName(teamName) {
+            if (!teamName) return '';
+            
+            // 팀명 줄임 규칙
+            const shortcuts = {
+                '울산 현대': '울산',
+                '포항 스틸러스': '포항',
+                '대구 FC': '대구',
+                '수원 삼성': '수원삼성',
+                '수원 FC': '수원FC',
+                '서울 이랜드': '서울이랜드',
+                '부천 FC': '부천',
+                '김포 FC': '김포',
+                '안산 그리너스': '안산',
+                '천안 시티': '천안',
+                '전남 드래곤즈': '전남',
+                '경남 FC': '경남',
+                '충남 아산': '충남아산',
+                '부산 아이파크': '부산',
+                '제주 유나이티드': '제주',
+                '강원 FC': '강원',
+                '전북 현대': '전북',
+                '광주 FC': '광주',
+                '대전 하나': '대전',
+                '인천 유나이티드': '인천'
+            };
+            
+            // 정확한 매칭 우선
+            if (shortcuts[teamName]) {
+                return shortcuts[teamName];
+            }
+            
+            // 부분 매칭
+            for (const [full, short] of Object.entries(shortcuts)) {
+                if (teamName.includes(full)) {
+                    return short;
+                }
+            }
+            
+            // 기본 줄임 규칙: 15자 이상이면 줄임
+            if (teamName.length > 15) {
+                return teamName.substring(0, 12) + '...';
+            }
+            
+            return teamName;
+        },
+
+        shortenStadiumName(stadium) {
+            if (!stadium) return '';
+            
+            // 경기장명 줄임 규칙
+            const shortcuts = {
+                '울산문수월드컵경기장': '문수경기장',
+                '포항스틸야드': '스틸야드',
+                '대구FC파크': 'DGB파크',
+                '수원월드컵경기장': '수원WC',
+                '서울월드컵경기장': '서울WC',
+                '잠실종합운동장': '잠실',
+                '고양종합운동장': '고양',
+                '김포FC경기장': '김포',
+                '안산와스타디움': '안산',
+                '천안종합운동장': '천안',
+                '광양전용구장': '광양',
+                '창원축구센터': '창원',
+                '이천종합운동장': '이천',
+                '부산아시아드경기장': '부산아시아드',
+                '제주월드컵경기장': '제주WC',
+                '춘천송암스포츠타운': '춘천',
+                '전주월드컵경기장': '전주WC',
+                '광주월드컵경기장': '광주WC',
+                '대전월드컵경기장': '대전WC',
+                '인천축구전용경기장': '인천전용'
+            };
+            
+            // 정확한 매칭 우선
+            if (shortcuts[stadium]) {
+                return shortcuts[stadium];
+            }
+            
+            // 부분 매칭
+            for (const [full, short] of Object.entries(shortcuts)) {
+                if (stadium.includes(full)) {
+                    return short;
+                }
+            }
+            
+            // 기본 줄임 규칙
+            if (stadium.length > 12) {
+                return stadium.substring(0, 10) + '...';
+            }
+            
+            return stadium;
+        },
+
+        shortenLeagueName(league) {
+            if (!league) return '';
+            
+            const shortcuts = {
+                'K리그1': 'K1',
+                'K리그2': 'K2',
+                'K리그3': 'K3',
+                'K3리그': 'K3',
+                'K4리그': 'K4',
+                'K5리그': 'K5',
+                'K6리그': 'K6',
+                'K7리그': 'K7',
+                'FA컵': 'FA컵',
+                'AFC 챔피언스리그': 'AFC CL',
+                'AFC컵': 'AFC컵'
+            };
+            
+            if (shortcuts[league]) {
+                return shortcuts[league];
+            }
+            
+            if (league.length > 10) {
+                return league.substring(0, 8) + '...';
+            }
+            
+            return league;
         },
 
         renderMatchCard(match) {
@@ -342,40 +521,81 @@ const Dashboard = {
 
         attachGroupedMatchesFilters(data) {
             const { byMonth, upcoming, past } = data;
+            const allMatches = upcoming.concat(past);
             
-            const monthFilter = document.getElementById('monthFilter');
-            const typeFilter = document.getElementById('matchTypeFilter');
-            const leagueFilter = document.getElementById('leagueFilter');
             const display = document.getElementById('matchesDisplay');
+            const teamSearchInput = document.getElementById('teamSearchInput');
+            const clearTeamSearchBtn = document.getElementById('clearTeamSearch');
+            
+            let currentSelectedMonth = '';
+            let currentSelectedLeague = '';
+            let currentSearchTerm = '';
             
             const updateDisplay = () => {
-                const selectedMonth = monthFilter.value;
-                const selectedType = typeFilter.value;
-                const selectedLeague = leagueFilter.value;
+                let matches = allMatches;
                 
-                let matches = [];
-                
-                if (selectedMonth) {
-                    matches = byMonth[selectedMonth] || [];
-                } else if (selectedType === 'upcoming') {
-                    matches = upcoming;
-                } else if (selectedType === 'past') {
-                    matches = past;
-                } else {
-                    matches = upcoming.concat(past);
+                // 월별 필터 적용
+                if (currentSelectedMonth) {
+                    matches = byMonth[currentSelectedMonth] || [];
                 }
                 
                 // 리그 필터 적용
-                if (selectedLeague) {
-                    matches = matches.filter(m => m.leagueTitle === selectedLeague);
+                if (currentSelectedLeague) {
+                    matches = matches.filter(m => m.leagueTitle === currentSelectedLeague);
                 }
                 
-                display.innerHTML = this.renderMatchesByType(matches, selectedType);
+                // 팀 검색 필터 적용
+                if (currentSearchTerm) {
+                    matches = matches.filter(m => {
+                        const homeTeam = (m.HOME_TEAM_NAME || m.TH_CLUB_NAME || '').toLowerCase();
+                        const awayTeam = (m.AWAY_TEAM_NAME || m.TA_CLUB_NAME || '').toLowerCase();
+                        const searchLower = currentSearchTerm.toLowerCase();
+                        return homeTeam.includes(searchLower) || awayTeam.includes(searchLower);
+                    });
+                }
+                
+                display.innerHTML = this.renderMatchesTable(matches);
             };
             
-            monthFilter.addEventListener('change', updateDisplay);
-            typeFilter.addEventListener('change', updateDisplay);
-            leagueFilter.addEventListener('change', updateDisplay);
+            // 월별 필터 버튼 이벤트
+            document.querySelectorAll('.month-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // 활성 버튼 업데이트
+                    document.querySelectorAll('.month-filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    currentSelectedMonth = e.target.dataset.month;
+                    updateDisplay();
+                });
+            });
+            
+            // 리그 필터 버튼 이벤트
+            document.querySelectorAll('.league-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // 활성 버튼 업데이트
+                    document.querySelectorAll('.league-filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    currentSelectedLeague = e.target.dataset.league;
+                    updateDisplay();
+                });
+            });
+            
+            // 팀 검색 이벤트
+            teamSearchInput.addEventListener('input', (e) => {
+                currentSearchTerm = e.target.value.trim();
+                updateDisplay();
+            });
+            
+            // 검색 초기화 버튼
+            clearTeamSearchBtn.addEventListener('click', () => {
+                teamSearchInput.value = '';
+                currentSearchTerm = '';
+                updateDisplay();
+            });
+            
+            // 초기 표시
+            updateDisplay();
         },
 
         displayUpcomingMatchesEnhanced(matches) {
