@@ -351,8 +351,55 @@ class FirebaseService {
       const homeTeamId = `${match.leagueTitle}_${homeParsed.teamName}`;
       const awayTeamId = `${match.leagueTitle}_${awayParsed.teamName}`;
       
-      // 팀 통계 초기화 및 계산 (기존 로직과 동일)
-      // ... (순위표 계산 로직은 기존과 동일하므로 생략)
+      // 팀 통계 초기화 함수
+      const initTeamStats = (teamId, teamName) => {
+        if (!standings.has(teamId)) {
+          standings.set(teamId, {
+            teamName,
+            played: 0,
+            won: 0,
+            drawn: 0,
+            lost: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalDifference: 0,
+            points: 0
+          });
+        }
+        return standings.get(teamId);
+      };
+      
+      // 홈팀과 어웨이팀 통계 초기화
+      const homeStats = initTeamStats(homeTeamId, homeParsed.teamName);
+      const awayStats = initTeamStats(awayTeamId, awayParsed.teamName);
+      
+      // 경기 결과 처리
+      homeStats.played++;
+      awayStats.played++;
+      homeStats.goalsFor += homeScore;
+      homeStats.goalsAgainst += awayScore;
+      awayStats.goalsFor += awayScore;
+      awayStats.goalsAgainst += homeScore;
+      
+      // 승부 결과 처리
+      if (homeScore > awayScore) {
+        homeStats.won++;
+        homeStats.points += 3;
+        awayStats.lost++;
+      } else if (homeScore < awayScore) {
+        awayStats.won++;
+        awayStats.points += 3;
+        homeStats.lost++;
+      } else {
+        homeStats.drawn++;
+        awayStats.drawn++;
+        homeStats.points += 1;
+        awayStats.points += 1;
+      }
+      
+      // 득실차 계산
+      homeStats.goalDifference = homeStats.goalsFor - homeStats.goalsAgainst;
+      awayStats.goalDifference = awayStats.goalsFor - awayStats.goalsAgainst;
     });
     
     return Array.from(standings.values()).sort((a, b) => {

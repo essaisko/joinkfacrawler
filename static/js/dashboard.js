@@ -107,19 +107,6 @@ const Dashboard = {
             }
         },
 
-        async loadMatches() {
-            const container = document.getElementById('matchesContainer');
-            container.innerHTML = Dashboard.ui.getLoadingSpinner('경기 데이터를 불러오는 중...');
-
-            try {
-                const response = await fetch('/api/matches');
-                Dashboard.state.allMatches = await response.json();
-                Dashboard.ui.displayMatches(Dashboard.state.allMatches);
-            } catch (error) {
-                console.error('경기 목록 로드 실패:', error);
-                container.innerHTML = Dashboard.ui.getErrorState('경기 데이터를 불러올 수 없습니다');
-            }
-        },
 
         async loadRegions() {
             try {
@@ -1363,10 +1350,15 @@ const Dashboard = {
             }
             Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
         },        renderUpcomingLeagueToggle(matches) {
-            const container = document.getElementById('upcomingMatchesSection');
-            if(!container) return;
+            const filterContainer = document.getElementById('upcomingMatchesLeagueFilter');
+            if (!filterContainer) return;
+            
+            const buttonsContainer = filterContainer.querySelector('.league-filter-buttons');
+            if (!buttonsContainer) return;
 
-            container.querySelector('.league-toggle-container')?.remove();
+            // 기존 버튼들 제거 (전체 버튼 제외)
+            const existingButtons = buttonsContainer.querySelectorAll('.league-filter-btn:not([data-league=""])');
+            existingButtons.forEach(btn => btn.remove());
 
             const uniqueLeagues = [...new Set(matches.map(m => (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그')))].filter(Boolean).sort((a,b) => {
                 const getRank = l => {
@@ -1386,38 +1378,29 @@ const Dashboard = {
 
             if (uniqueLeagues.length === 0) return;
 
-            const toggleDiv = document.createElement('div');
-            toggleDiv.className = 'league-toggle-container';
-
-            const allBtn = document.createElement('button');
-            allBtn.className = 'league-toggle-btn btn-other' + (Dashboard.state.upcomingLeagueFilter === '' ? ' active' : '');
-            allBtn.textContent = '전체';
-            allBtn.onclick = () => {
-                Dashboard.state.upcomingLeagueFilter = ''; 
-                Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches); 
-                Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
-            };
-            toggleDiv.appendChild(allBtn);
+            // 전체 버튼 상태 업데이트
+            const allBtn = buttonsContainer.querySelector('.league-filter-btn[data-league=""]');
+            if (allBtn) {
+                allBtn.className = 'league-filter-btn' + (Dashboard.state.upcomingLeagueFilter === '' ? ' active' : '');
+                allBtn.onclick = () => {
+                    Dashboard.state.upcomingLeagueFilter = '';
+                    Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches);
+                    Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
+                };
+            }
 
             uniqueLeagues.forEach(lg => {
                 const btn = document.createElement('button');
-                const colorClass = lg.includes('K5')? 'btn-k5' : lg.includes('K6')? 'btn-k6' : lg.includes('K7')? 'btn-k7' : lg.includes('K4')? 'btn-k4' : lg.includes('K3')? 'btn-k3' : lg.includes('K리그2')||lg.includes('K2')? 'btn-k2' : lg.includes('K리그1')||lg.includes('K1')? 'btn-k1' : 'btn-other';
-                btn.className = 'league-toggle-btn '+colorClass + (Dashboard.state.upcomingLeagueFilter === lg ? ' active' : '');
+                btn.className = 'league-filter-btn' + (Dashboard.state.upcomingLeagueFilter === lg ? ' active' : '');
+                btn.setAttribute('data-league', lg);
                 btn.textContent = lg;
                 btn.onclick = () => {
-                    Dashboard.state.upcomingLeagueFilter = lg; 
-                    Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches); 
+                    Dashboard.state.upcomingLeagueFilter = lg;
+                    Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches);
                     Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
                 };
-                toggleDiv.appendChild(btn);
+                buttonsContainer.appendChild(btn);
             });
-
-            const header = container.querySelector('.upcoming-header');
-            if (header) {
-                header.appendChild(toggleDiv);
-            } else {
-                container.prepend(toggleDiv);
-            }
         },
 
         toggleFullscreen() {
@@ -1836,10 +1819,6 @@ const Dashboard = {
                             console.log('순위표 탭 로딩...');
                             await Dashboard.api.loadStandings();
                             break;
-                        case '#matches':
-                            console.log('경기 탭 로딩...');
-                            await Dashboard.api.loadMatches();
-                            break;
                         case '#analytics':
                             console.log('분석 탭 로딩...');
                             await Dashboard.api.loadAnalytics();
@@ -2061,9 +2040,6 @@ Dashboard.management = {
                         break;
                     case '#standings':
                         await Dashboard.api.loadStandings();
-                        break;
-                    case '#matches':
-                        await Dashboard.api.loadMatches();
                         break;
                     case '#analytics':
                         await Dashboard.api.loadAnalytics();

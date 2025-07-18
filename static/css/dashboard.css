@@ -2250,3 +2250,159 @@ body {
     color: var(--text-muted);
     text-align: center;
 }
+
+/* === 리그 필터 스타일 === */
+.league-filter-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.filter-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.league-filter-container {
+    width: 100%;
+}
+
+.league-filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.league-filter-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    background: white;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.league-filter-btn:hover {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.league-filter-btn.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* K리그별 색상 구분 */
+.league-filter-btn[data-league*="K리그1"] {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.league-filter-btn[data-league*="K리그1"]:hover,
+.league-filter-btn[data-league*="K리그1"].active {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    color: white;
+}
+
+.league-filter-btn[data-league*="K리그2"] {
+    border-color: #f39c12;
+    color: #f39c12;
+}
+
+.league-filter-btn[data-league*="K리그2"]:hover,
+.league-filter-btn[data-league*="K리그2"].active {
+    background: #f39c12;
+    border-color: #f39c12;
+    color: white;
+}
+
+.league-filter-btn[data-league*="K3"] {
+    border-color: #27ae60;
+    color: #27ae60;
+}
+
+.league-filter-btn[data-league*="K3"]:hover,
+.league-filter-btn[data-league*="K3"].active {
+    background: #27ae60;
+    border-color: #27ae60;
+    color: white;
+}
+
+.league-filter-btn[data-league*="K4"] {
+    border-color: #9b59b6;
+    color: #9b59b6;
+}
+
+.league-filter-btn[data-league*="K4"]:hover,
+.league-filter-btn[data-league*="K4"].active {
+    background: #9b59b6;
+    border-color: #9b59b6;
+    color: white;
+}
+
+.league-filter-btn[data-league*="K5"] {
+    border-color: #34495e;
+    color: #34495e;
+}
+
+.league-filter-btn[data-league*="K5"]:hover,
+.league-filter-btn[data-league*="K5"].active {
+    background: #34495e;
+    border-color: #34495e;
+    color: white;
+}
+
+.league-filter-btn[data-league*="K6"] {
+    border-color: #1abc9c;
+    color: #1abc9c;
+}
+
+.league-filter-btn[data-league*="K6"]:hover,
+.league-filter-btn[data-league*="K6"].active {
+    background: #1abc9c;
+    border-color: #1abc9c;
+    color: white;
+}
+
+.league-filter-btn[data-league*="K7"] {
+    border-color: #e67e22;
+    color: #e67e22;
+}
+
+.league-filter-btn[data-league*="K7"]:hover,
+.league-filter-btn[data-league*="K7"].active {
+    background: #e67e22;
+    border-color: #e67e22;
+    color: white;
+}
+
+/* 리그 레벨에 따른 구분선 */
+.league-filter-btn + .league-filter-btn[data-league*="K리그2"]::before,
+.league-filter-btn + .league-filter-btn[data-league*="K3"]::before,
+.league-filter-btn + .league-filter-btn[data-league*="K4"]::before,
+.league-filter-btn + .league-filter-btn[data-league*="K5"]::before,
+.league-filter-btn + .league-filter-btn[data-league*="K6"]::before,
+.league-filter-btn + .league-filter-btn[data-league*="K7"]::before {
+    content: '';
+    width: 2px;
+    height: 20px;
+    background: var(--border-color);
+    margin-right: 0.5rem;
+    display: inline-block;
+    vertical-align: middle;
+}
