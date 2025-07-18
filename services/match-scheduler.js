@@ -9,12 +9,22 @@ const FirebaseService = require('../firebase-service');
 
 class MatchScheduler {
     constructor() {
-        this.firebaseService = new FirebaseService();
+        // Firebase 서비스를 나중에 초기화하도록 변경
+        this.firebaseService = null;
         this.scheduledJobs = new Map();
         this.isRunning = false;
         
         // 5분마다 경기 스케줄 체크
         this.scheduleChecker = null;
+    }
+
+    /**
+     * Firebase 서비스 초기화
+     */
+    initializeFirebase() {
+        if (!this.firebaseService) {
+            this.firebaseService = new FirebaseService();
+        }
     }
 
     /**
@@ -66,6 +76,9 @@ class MatchScheduler {
         try {
             console.log('🔍 경기 일정 확인 중...');
             
+            // Firebase 서비스 초기화
+            this.initializeFirebase();
+            
             // 오늘과 내일 경기 조회
             const today = new Date();
             const tomorrow = new Date(today);
@@ -92,6 +105,11 @@ class MatchScheduler {
      */
     async getUpcomingMatches(startDate, endDate) {
         try {
+            if (!this.firebaseService || !this.firebaseService.db) {
+                console.log('Firebase 서비스가 초기화되지 않았습니다.');
+                return [];
+            }
+
             const matches = await this.firebaseService.db.collection('matches')
                 .where('MATCH_DATE', '>=', startDate)
                 .where('MATCH_DATE', '<=', endDate)

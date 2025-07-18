@@ -212,7 +212,7 @@ const Dashboard = {
             const container = document.getElementById('upcomingMatchesSection');
             if (!container) return;
             
-            const { byMonth, byDate, upcoming, past, stats } = data;
+            const { byMonth, upcoming, past } = data;
             
             // 월별 필터 버튼 생성 (1월부터 12월까지 오름차순)
             const monthKeys = Object.keys(byMonth).sort();
@@ -795,7 +795,7 @@ const Dashboard = {
                 await this.invalidateMatchesCache();
                 
                 // 데이터 새로고침
-                const data = await Dashboard.api.loadGroupedMatches();
+                await Dashboard.api.loadGroupedMatches();
                 
                 // 필터 상태 복원
                 this.restoreFilters(currentFilters);
@@ -850,9 +850,8 @@ const Dashboard = {
             }
             
             // 필터 적용
-            const event = new Event('input', { bubbles: true });
             if (teamSearchInput) {
-                teamSearchInput.dispatchEvent(event);
+                teamSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         },
 
@@ -940,17 +939,7 @@ const Dashboard = {
                 return;
             }
 
-            const getLeagueRank = (league='') => {
-                const name = league.toUpperCase();
-                if (name.includes('K리그1') || name.includes('K1')) return 1;
-                if (name.includes('K리그2') || name.includes('K2')) return 2;
-                if (name.includes('K3')) return 3;
-                if (name.includes('K4')) return 4;
-                if (name.includes('K5')) return 5;
-                if (name.includes('K6')) return 6;
-                if (name.includes('K7')) return 7;
-                return 99;
-            };
+            // 사용하지 않는 함수 제거됨
 
             // 현재 선택된 월 상태 관리
             if (!Dashboard.state.selectedMonth) {
@@ -1004,21 +993,9 @@ const Dashboard = {
                 return new Date(s);
             };
 
-            const renderTeamHtml = (rawTeamName, leagueRank) => {
-                if (leagueRank < 5) {
-                    const encoded = encodeURIComponent(rawTeamName);
-                    return `<div class="team-wrapper"><a href="team.html?team=${encoded}" class="team-name-link" title="${rawTeamName}">${rawTeamName}</a></div>`;
-                } else {
-                    const parsed = Dashboard.utils.parseTeam(rawTeamName);
-                    const teamName = parsed.teamName || rawTeamName;
-                    const regionLabel = parsed.major ? `<div class="region-label">${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}</div>` : '';
-                    const encoded = encodeURIComponent(teamName);
-                    return `<div class="team-wrapper">${regionLabel}<a href="team.html?team=${encoded}" class="team-name-link" title="${teamName}">${teamName}</a></div>`;
-                }
-            };
+            // 사용하지 않는 함수 제거됨
 
             // 월별 경기 필터링
-            const now = new Date();
             const selectedMonth = Dashboard.state.selectedMonth;
             const selectedYear = Dashboard.state.selectedYear;
             
@@ -1040,12 +1017,12 @@ const Dashboard = {
                 })
                 .filter(m => {
                     if (!Dashboard.state.teamSearchFilter) return true;
-                    const searchTerm = Dashboard.state.teamSearchFilter.toLowerCase();
+                    const searchFilter = Dashboard.state.teamSearchFilter.toLowerCase();
                     const homeTeam = (m.homeTeam?.teamName || m.HOME_TEAM_NAME || m.HOME_TEAM || m.홈팀 || 
                                      m.homeTeam || m.home_team || m.HOME || m.TH_CLUB_NAME || m.TEAM_HOME || '').toLowerCase();
                     const awayTeam = (m.awayTeam?.teamName || m.AWAY_TEAM_NAME || m.AWAY_TEAM || m.원정팀 || 
                                      m.awayTeam || m.away_team || m.AWAY || m.TA_CLUB_NAME || m.TEAM_AWAY || '').toLowerCase();
-                    return homeTeam.includes(searchTerm) || awayTeam.includes(searchTerm);
+                    return homeTeam.includes(searchFilter) || awayTeam.includes(searchFilter);
                 })
                 .sort((a,b) => {
                     const dateA = safeParseDate(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
@@ -1757,7 +1734,7 @@ const Dashboard = {
             return `${year}-${month}-${day} (${weekday})`;
         },
 
-        parseMatchTime(rawTime, matchDate) {
+        parseMatchTime(rawTime) {
             if (!rawTime) return '시간미정';
             
             if (rawTime.includes('오전') || rawTime.includes('오후')) {
