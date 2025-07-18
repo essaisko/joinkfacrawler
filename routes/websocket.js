@@ -28,6 +28,7 @@ function handleWebSocketConnection(socket) {
   // 크롤링 요청 처리
   socket.on('start-crawl', async (options) => {
     console.log('🚀 크롤링 요청 받음:', socket.id, options);
+    console.log('현재 크롤링 상태:', { isCrawling, queueLength: crawlQueue.length });
     
     if (isCrawling) {
       socket.emit('log', '⚠️ 이미 크롤링이 진행 중입니다. 잠시 후 다시 시도해주세요.\\n');
@@ -39,6 +40,13 @@ function handleWebSocketConnection(socket) {
     if (crawlQueue.length === 1) {
       await processCrawlQueue();
     }
+  });
+  
+  // 크롤링 상태 강제 리셋 (디버깅용)
+  socket.on('reset-crawl-status', () => {
+    console.log('🔧 크롤링 상태 강제 리셋 요청');
+    isCrawling = false;
+    socket.emit('log', '🔧 크롤링 상태가 리셋되었습니다.\\n');
   });
 
   // 업로드 요청 처리
@@ -133,7 +141,13 @@ async function processCrawlQueue() {
       
       if (code === 0) {
         socket.emit('log', '\\n✅ 크롤링이 성공적으로 완료되었습니다!\\n');
-        socket.emit('crawl-complete', { success: true, message: '크롤링 완료' });
+        socket.emit('crawl-complete', { success: true, message: '크롤링 완료', options });
+        
+        // 크롤링 완료 시간 업데이트 이벤트 발송
+        socket.emit('crawl-timestamp-update', {
+          options,
+          timestamp: new Date().toISOString()
+        });
       } else {
         socket.emit('log', `\\n❌ 크롤링이 실패했습니다 (종료 코드: ${code})\\n`);
         socket.emit('crawl-complete', { success: false, message: `크롤링 실패 (코드: ${code})` });
@@ -152,6 +166,11 @@ async function processCrawlQueue() {
       socket.emit('log', `❌ 크롤링 프로세스 에러: ${error.message}\\n`);
       socket.emit('crawl-complete', { success: false, message: error.message });
       isCrawling = false;
+      
+      // 에러 발생 시에도 다음 크롤링 처리
+      if (crawlQueue.length > 0) {
+        setImmediate(() => processCrawlQueue());
+      }
     });
 
     // 이 크롤링이 완료될 때까지 기다림

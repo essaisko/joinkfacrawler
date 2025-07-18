@@ -235,6 +235,7 @@
                 <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
                     <button id="stopCrawlBtn" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; display:none;">🛑 크롤링 중단</button>
                     <button id="stopUploadBtn" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; display:none;">🛑 업로드 중단</button>
+                    <button id="resetCrawlStatusBtn" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px;">🔧 크롤링 상태 리셋</button>
                 </div>
         </div>
         
@@ -749,6 +750,26 @@
             }
             appendLog(message);
         });
+        
+        // 크롤링 타임스탬프 업데이트 이벤트
+        socket.on('crawl-timestamp-update', (data) => {
+            const { options, timestamp } = data;
+            if (options) {
+                const regionKey = options.region && options.region.trim() !== '' ? options.region : 'national';
+                const key = `${options.league}_${regionKey}_${options.year}_${options.matchIdx || ''}`;
+                const formattedTime = new Date(timestamp).toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).replace(/\. /g, '-').replace(/\./g, '').replace(' ', ' ');
+                
+                localStorage.setItem('crawl_' + key, formattedTime);
+                const cell = document.getElementById('crawl-' + key);
+                if (cell) cell.textContent = formattedTime;
+            }
+        });
 
         // === 프로세스 시작/종료 이벤트 ===
         socket.on('process-started', (data) => {
@@ -1079,6 +1100,14 @@
                 const [processId] = uploading;
                  socket.emit('stop-process', { processId });
                  stopUploadBtn.disabled = true;
+             }
+         });
+         
+         // 크롤링 상태 리셋 버튼
+         document.getElementById('resetCrawlStatusBtn').addEventListener('click', () => {
+             if (confirm('크롤링 상태를 강제로 리셋하시겠습니까? 실행 중인 크롤링이 있다면 문제가 발생할 수 있습니다.')) {
+                 socket.emit('reset-crawl-status');
+                 appendLog('🔧 크롤링 상태 리셋 요청을 보냈습니다.\n');
              }
          });
     </script>
