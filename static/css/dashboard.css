@@ -316,25 +316,28 @@ body {
     text-align: center;
     margin-bottom: 1rem;
     padding: 1rem;
-    background: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border: 1px solid #e3e8f0;
 }
 
 .upcoming-header h2 {
     margin: 0;
-    color: #2c3e50;
+    color: #ffffff;
     font-size: 2rem;
     font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 /* === 월별 네비게이션 === */
 .month-navigation {
-    background: white;
+    background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     margin-bottom: 1rem;
     padding: 1.5rem;
+    border: 1px solid #e3e8f0;
 }
 
 .month-nav-controls {
@@ -466,18 +469,24 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 1rem;
-    background: #f8f9fa;
+    background: #ffffff;
+    border: 1px solid #e3e8f0;
     border-radius: 8px;
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     user-select: none;
+    color: #2c3e50;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .date-header.clickable:hover {
-    background: #e9ecef;
+    background: #f8f9fc;
+    border-color: #3498db;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .expand-icon {
@@ -495,10 +504,104 @@ body {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background: #ffffff;
+    border: 1px solid #e3e8f0;
+}
+
+.date-matches-container .matches-table th {
+    background: #f8f9fc;
+    color: #2c3e50;
+    font-weight: 600;
+    border-bottom: 2px solid #e3e8f0;
+}
+
+.date-matches-container .matches-table td {
+    color: #495057;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.date-matches-container .matches-table tr:hover {
+    background: #f8f9fc;
 }
 
 .date-section {
     margin-bottom: 1.5rem;
+}
+
+/* === 팀 검색 기능 === */
+.team-search-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #e3e8f0;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #f8f9fc;
+    border: 2px solid #e3e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-input-wrapper:focus-within {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.search-icon {
+    color: #7f8c8d;
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.search-input-wrapper input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1rem;
+    color: #2c3e50;
+    padding: 0.5rem 0;
+}
+
+.search-input-wrapper input::placeholder {
+    color: #95a5a6;
+}
+
+.clear-search-btn {
+    background: none;
+    border: none;
+    color: #7f8c8d;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+}
+
+.clear-search-btn:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.clear-search-btn:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+    .search-input-wrapper input {
+        font-size: 0.9rem;
+    }
+    
+    .search-input-wrapper input::placeholder {
+        font-size: 0.85rem;
+    }
 }
 
 .fullscreen-toggle {

@@ -196,11 +196,11 @@ class FirebaseService {
     const koreaOffset = 9 * 60; // UTC+9
     const koreaTime = new Date(now.getTime() + koreaOffset * 60 * 1000);
     const today = koreaTime.toISOString().split('T')[0];
+    const currentYear = koreaTime.getFullYear();
     
-    const oneWeekAgo = new Date(koreaTime.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneWeekLater = new Date(koreaTime.getTime() + 14 * 24 * 60 * 60 * 1000); // 2주로 확장
-    const oneWeekAgoStr = oneWeekAgo.toISOString().split('T')[0];
-    const oneWeekLaterStr = oneWeekLater.toISOString().split('T')[0];
+    // 현재 연도 시작과 끝 계산
+    const yearStart = `${currentYear}-01-01`;
+    const yearEnd = `${currentYear}-12-31`;
     
     // 최근 완료된 경기 조회 (개선된 버전)
     const recentSnapshot = await this.db.collection('matches')
@@ -209,19 +209,20 @@ class FirebaseService {
       .limit(100) // 증가
       .get();
     
-    // 다가오는 경기 조회 (리미트 제거 버전)
-    console.log('🔍 다가오는 경기 조회 시작, 기준 날짜:', today);
+    // 현재 연도 모든 경기 조회
+    console.log('🔍 현재 연도 모든 경기 조회 시작, 연도:', currentYear);
     
     let upcomingSnapshot;
     try {
-      // 방법 1: 날짜 기반 쿼리 시도
+      // 방법 1: 현재 연도 모든 경기 조회
       upcomingSnapshot = await this.db.collection('matches')
-        .where('MATCH_DATE', '>=', today)
+        .where('MATCH_DATE', '>=', yearStart)
+        .where('MATCH_DATE', '<=', yearEnd)
         .orderBy('MATCH_DATE', 'asc')
         .get();
-      console.log('✅ 날짜 기반 쿼리 성공, 결과:', upcomingSnapshot.docs.length);
+      console.log('✅ 연도별 쿼리 성공, 결과:', upcomingSnapshot.docs.length);
     } catch (error) {
-      console.log('❌ 날짜 기반 쿼리 실패, 전체 조회로 대체:', error.message);
+      console.log('❌ 연도별 쿼리 실패, 전체 조회로 대체:', error.message);
       // 방법 2: 전체 조회 후 필터링
       upcomingSnapshot = await this.db.collection('matches')
         .orderBy('MATCH_DATE', 'asc')
@@ -283,35 +284,29 @@ class FirebaseService {
       TA_CLUB_NAME: m.TA_CLUB_NAME
     })));
 
-    // 먼저 모든 다가오는 경기를 보여주기 위해 필터링을 매우 관대하게 설정
+    // 현재 연도 모든 경기 필터링 (날짜 상관없이 모든 경기 포함)
     const upcomingMatches = allUpcomingMatches
       .filter(match => {
-        // MATCH_DATE가 있고 오늘 이후인 모든 경기
+        // MATCH_DATE가 있는 모든 경기 (과거, 현재, 미래 모두 포함)
         if (!match.MATCH_DATE) {
           console.log('❌ MATCH_DATE 없음:', match.id);
           return false;
         }
         
-        // 문자열 비교로 단순화 (날짜 파싱 문제 방지)
-        const matchDateStr = match.MATCH_DATE.toString();
-        const todayStr = today;
+        // 현재 연도 경기인지 확인
+        const matchYear = match.MATCH_DATE.split('-')[0];
+        const isCurrentYear = parseInt(matchYear) === currentYear;
         
-        const isUpcoming = matchDateStr >= todayStr;
-        if (!isUpcoming) {
-          console.log('❌ 과거 경기:', matchDateStr, '기준:', todayStr);
-        }
-        
-        return isUpcoming;
+        return isCurrentYear;
       })
       .sort((a, b) => {
-        // 문자열 비교로 날짜 정렬
-        const dateA = a.MATCH_DATE || '9999-12-31';
+        // 날짜 오름차순 정렬
+        const dateA = a.MATCH_DATE || '0000-00-00';
         const dateB = b.MATCH_DATE || '9999-12-31';
         return dateA.localeCompare(dateB);
-      })
-      .slice(0, 100); // 최대 100개까지 표시
+      }); // 제한 제거 - 모든 경기 포함
       
-    console.log('✅ 필터링된 다가오는 경기 수:', upcomingMatches.length);
+    console.log('✅ 필터링된 현재 연도 경기 수:', upcomingMatches.length);
     
     // 통계 계산 (캐시된 데이터 활용)
     const statsSnapshot = await this.db.collection('matches').select('matchStatus', 'leagueTitle').get();

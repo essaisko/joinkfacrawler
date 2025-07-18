@@ -207,6 +207,11 @@ const Dashboard = {
             if (!Dashboard.state.selectedYear) {
                 Dashboard.state.selectedYear = new Date().getFullYear();
             }
+            
+            // 팀 검색 필터 상태 관리
+            if (!Dashboard.state.teamSearchFilter) {
+                Dashboard.state.teamSearchFilter = '';
+            }
 
             const safeParseDate = (str) => {
                 if (!str) return new Date('2100-01-01');
@@ -280,6 +285,15 @@ const Dashboard = {
                     if (!Dashboard.state.upcomingLeagueFilter) return true;
                     const leagueTitle = (m.leagueTitle || m.league || m.LEAGUE || '').replace(/k4리그/gi,'K4리그');
                     return leagueTitle === Dashboard.state.upcomingLeagueFilter;
+                })
+                .filter(m => {
+                    if (!Dashboard.state.teamSearchFilter) return true;
+                    const searchTerm = Dashboard.state.teamSearchFilter.toLowerCase();
+                    const homeTeam = (m.homeTeam?.teamName || m.HOME_TEAM_NAME || m.HOME_TEAM || m.홈팀 || 
+                                     m.homeTeam || m.home_team || m.HOME || m.TH_CLUB_NAME || m.TEAM_HOME || '').toLowerCase();
+                    const awayTeam = (m.awayTeam?.teamName || m.AWAY_TEAM_NAME || m.AWAY_TEAM || m.원정팀 || 
+                                     m.awayTeam || m.away_team || m.AWAY || m.TA_CLUB_NAME || m.TEAM_AWAY || '').toLowerCase();
+                    return homeTeam.includes(searchTerm) || awayTeam.includes(searchTerm);
                 })
                 .sort((a,b) => {
                     const dateA = safeParseDate(a.MATCH_DATE || a.matchDate || a.date || a.DATE);
@@ -410,10 +424,10 @@ const Dashboard = {
                 return `
                     <div class="date-section">
                         <h4 class="date-header clickable" onclick="Dashboard.ui.toggleDateExpansion('${dateId}')">
-                            <i class="fas fa-chevron-right expand-icon" id="icon-${dateId}"></i>
+                            <i class="fas fa-chevron-down expand-icon" id="icon-${dateId}"></i>
                             ${dateHeader} (${matchList.length}경기)
                         </h4>
-                        <div class="date-matches-container" id="matches-${dateId}" style="display: none;">
+                        <div class="date-matches-container" id="matches-${dateId}" style="display: block;">
                             <table class="matches-table">
                                 <thead>
                                     <tr>
@@ -477,6 +491,7 @@ const Dashboard = {
             container.innerHTML = html;
             Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches);
             Dashboard.ui.renderMonthNavigation();
+            Dashboard.ui.renderTeamSearchBox();
         },
 
         renderMonthNavigation() {
@@ -558,7 +573,7 @@ const Dashboard = {
             
             if (!container || !icon) return;
             
-            const isExpanded = container.style.display !== 'none';
+            const isExpanded = container.style.display === 'block';
             
             if (isExpanded) {
                 container.style.display = 'none';
@@ -569,6 +584,55 @@ const Dashboard = {
                 icon.classList.remove('fa-chevron-right');
                 icon.classList.add('fa-chevron-down');
             }
+        },
+
+        renderTeamSearchBox() {
+            const container = document.getElementById('upcomingMatchesSection');
+            if (!container) return;
+
+            // 기존 검색창 제거
+            container.querySelector('.team-search-container')?.remove();
+
+            const searchHtml = `
+                <div class="team-search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               id="teamSearchInput" 
+                               placeholder="팀 이름으로 검색 (예: 서울, 부산, FC서울)"
+                               value="${Dashboard.state.teamSearchFilter}"
+                               onkeyup="Dashboard.ui.handleTeamSearch(this.value)"
+                               oninput="Dashboard.ui.handleTeamSearch(this.value)">
+                        <button class="clear-search-btn" onclick="Dashboard.ui.clearTeamSearch()" title="검색 초기화">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const monthNavigation = container.querySelector('.month-navigation');
+            if (monthNavigation) {
+                monthNavigation.insertAdjacentHTML('afterend', searchHtml);
+            } else {
+                const header = container.querySelector('.upcoming-header');
+                if (header) {
+                    header.insertAdjacentHTML('afterend', searchHtml);
+                }
+            }
+        },
+
+        handleTeamSearch(searchTerm) {
+            Dashboard.state.teamSearchFilter = searchTerm;
+            Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
+        },
+
+        clearTeamSearch() {
+            Dashboard.state.teamSearchFilter = '';
+            const searchInput = document.getElementById('teamSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
         },        renderUpcomingLeagueToggle(matches) {
             const container = document.getElementById('upcomingMatchesSection');
             if(!container) return;
