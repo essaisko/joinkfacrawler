@@ -492,15 +492,17 @@ const Dashboard = {
         shortenLeagueName(league) {
             if (!league) return '';
             
+            // K5-K7 리그는 simplifyLeagueName 함수 사용
+            if (league.includes('K5') || league.includes('K6') || league.includes('K7')) {
+                return Dashboard.utils.simplifyLeagueName(league);
+            }
+            
             const shortcuts = {
                 'K리그1': 'K1',
                 'K리그2': 'K2',
                 'K리그3': 'K3',
                 'K3리그': 'K3',
                 'K4리그': 'K4',
-                'K5리그': 'K5',
-                'K6리그': 'K6',
-                'K7리그': 'K7',
                 'FA컵': 'FA컵',
                 'AFC 챔피언스리그': 'AFC CL',
                 'AFC컵': 'AFC컵'
@@ -1972,16 +1974,19 @@ const Dashboard = {
         },
 
         formatMatchTime(rawTime) {
-            if (!rawTime || rawTime === '미정') return '미정';
+            if (!rawTime || rawTime === '미정' || rawTime === '' || rawTime === null || rawTime === undefined) return '미정';
+            
+            // 문자열로 변환
+            const timeStr = String(rawTime).trim();
             
             // 이미 HH:MM 형식이면 그대로 반환
-            if (/^\d{2}:\d{2}$/.test(rawTime)) {
-                return rawTime;
+            if (/^\d{2}:\d{2}$/.test(timeStr)) {
+                return timeStr;
             }
             
             // 오전/오후 형식 처리
-            if (rawTime.includes('오전') || rawTime.includes('오후')) {
-                const timeMatch = rawTime.match(/(오전|오후)\s*(\d{1,2})시\s*(\d{1,2})분/);
+            if (timeStr.includes('오전') || timeStr.includes('오후')) {
+                const timeMatch = timeStr.match(/(오전|오후)\s*(\d{1,2})시\s*(\d{1,2})분/);
                 if (timeMatch) {
                     const period = timeMatch[1];
                     let hour = parseInt(timeMatch[2]);
@@ -1995,25 +2000,48 @@ const Dashboard = {
             }
             
             // HHMM 형식 처리
-            if (/^\d{4}$/.test(rawTime)) {
-                return rawTime.slice(0,2) + ':' + rawTime.slice(2);
+            if (/^\d{4}$/.test(timeStr)) {
+                return timeStr.slice(0,2) + ':' + timeStr.slice(2);
             }
             
-            // H:MM 형식 처리
-            if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
-                const parts = rawTime.split(':');
+            // H:MM 또는 HH:MM 형식 처리
+            if (/^\d{1,2}:\d{2}$/.test(timeStr)) {
+                const parts = timeStr.split(':');
                 return `${parts[0].padStart(2, '0')}:${parts[1]}`;
             }
             
             // 시간만 있는 경우
-            if (/^\d{1,2}$/.test(rawTime)) {
-                return rawTime.padStart(2, '0') + ':00';
+            if (/^\d{1,2}$/.test(timeStr)) {
+                return timeStr.padStart(2, '0') + ':00';
             }
             
-            // 날짜 포함된 경우 시간 부분만 추출
-            const timeOnly = rawTime.match(/(\d{1,2}):(\d{2})/);
+            // 날짜와 시간이 포함된 경우 (예: "2024-01-01 14:30", "2024-01-01T14:30")
+            const dateTimeMatch = timeStr.match(/\d{4}-\d{2}-\d{2}[T\s](\d{1,2}):(\d{2})/);
+            if (dateTimeMatch) {
+                return `${dateTimeMatch[1].padStart(2, '0')}:${dateTimeMatch[2]}`;
+            }
+            
+            // 한국어 시간 표기 (예: "14시30분", "오후 2시 30분")
+            const koreanTimeMatch = timeStr.match(/(\d{1,2})시\s*(\d{1,2})분/);
+            if (koreanTimeMatch) {
+                return `${koreanTimeMatch[1].padStart(2, '0')}:${koreanTimeMatch[2]}`;
+            }
+            
+            // 일반적인 시간 패턴 추출
+            const timeOnly = timeStr.match(/(\d{1,2}):(\d{2})/);
             if (timeOnly) {
                 return `${timeOnly[1].padStart(2, '0')}:${timeOnly[2]}`;
+            }
+            
+            // 숫자만 있는 경우 (예: "1430" -> "14:30")
+            const numericMatch = timeStr.match(/^(\d{3,4})$/);
+            if (numericMatch) {
+                const num = numericMatch[1];
+                if (num.length === 3) {
+                    return `0${num.charAt(0)}:${num.slice(1)}`;
+                } else if (num.length === 4) {
+                    return `${num.slice(0,2)}:${num.slice(2)}`;
+                }
             }
             
             return '미정';
@@ -2068,6 +2096,39 @@ const Dashboard = {
                 
                 return (a.teamName || '').localeCompare(b.teamName || '', 'ko');
             });
+        },
+
+        simplifyLeagueName(leagueTitle) {
+            if (!leagueTitle) return leagueTitle;
+            
+            // K5-K7 리그명 단순화
+            if (leagueTitle.includes('K5')) {
+                // "K5리그 경남" -> "K5 경남"
+                const regionMatch = leagueTitle.match(/K5.*?([가-힣]+)/);
+                if (regionMatch) {
+                    return `K5 ${regionMatch[1]}`;
+                }
+                return 'K5';
+            }
+            
+            if (leagueTitle.includes('K6')) {
+                const regionMatch = leagueTitle.match(/K6.*?([가-힣]+)/);
+                if (regionMatch) {
+                    return `K6 ${regionMatch[1]}`;
+                }
+                return 'K6';
+            }
+            
+            if (leagueTitle.includes('K7')) {
+                const regionMatch = leagueTitle.match(/K7.*?([가-힣]+)/);
+                if (regionMatch) {
+                    return `K7 ${regionMatch[1]}`;
+                }
+                return 'K7';
+            }
+            
+            // 기타 리그는 그대로 반환
+            return leagueTitle;
         }
     },
 
