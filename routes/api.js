@@ -4,12 +4,13 @@ const express = require('express');
 const router = express.Router();
 
 // Firebase 서비스와 유틸리티 import는 각 라우터에서 처리
-let firebaseService, calculateStandings;
+let firebaseService, calculateStandings, matchScheduler;
 
 // Firebase 서비스 의존성 주입
-function initializeApiRoutes(fbService, utils) {
+function initializeApiRoutes(fbService, utils, schedulerInstance) {
   firebaseService = fbService;
   calculateStandings = utils.calculateStandings;
+  matchScheduler = schedulerInstance;
 }
 
 // 지역 목록 조회 (최적화됨 - 캐싱 적용)
@@ -225,6 +226,67 @@ router.post('/smart-upload', async (req, res) => {
     
   } catch (error) {
     console.error('❌ 스마트 업로드 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 자동 스케줄러 상태 조회
+router.get('/scheduler/status', async (req, res) => {
+  try {
+    if (!matchScheduler) {
+      return res.status(404).json({ error: '스케줄러가 초기화되지 않았습니다.' });
+    }
+    
+    const status = matchScheduler.getStatus();
+    res.json({
+      success: true,
+      ...status,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ 스케줄러 상태 조회 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 자동 스케줄러 시작
+router.post('/scheduler/start', async (req, res) => {
+  try {
+    if (!matchScheduler) {
+      return res.status(404).json({ error: '스케줄러가 초기화되지 않았습니다.' });
+    }
+    
+    matchScheduler.start();
+    console.log('✅ 자동 스케줄러 시작됨 (API 요청)');
+    
+    res.json({
+      success: true,
+      message: '자동 스케줄러가 시작되었습니다.',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ 스케줄러 시작 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 자동 스케줄러 중지
+router.post('/scheduler/stop', async (req, res) => {
+  try {
+    if (!matchScheduler) {
+      return res.status(404).json({ error: '스케줄러가 초기화되지 않았습니다.' });
+    }
+    
+    matchScheduler.stop();
+    console.log('🛑 자동 스케줄러 중지됨 (API 요청)');
+    
+    res.json({
+      success: true,
+      message: '자동 스케줄러가 중지되었습니다.',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ 스케줄러 중지 실패:', error);
     res.status(500).json({ error: error.message });
   }
 });

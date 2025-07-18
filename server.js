@@ -9,6 +9,9 @@ const fs = require('fs').promises;
 const { uploadCsvToFirebase, downloadCsvFromFirebase, syncCsvWithFirebase, db } = require('./firebase_uploader');
 const FirebaseService = require('./firebase-service');
 
+// 자동 스케줄러 import
+const MatchScheduler = require('./services/match-scheduler');
+
 // 유틸리티 imports
 const { parseTeamName, getLeagueOrder } = require('./utils/team-utils');
 const { parseFlexibleDate } = require('./utils/date-utils');
@@ -33,8 +36,14 @@ const PORT = process.env.PORT || 3000;
 // Firebase 서비스 인스턴스 생성
 const firebaseService = new FirebaseService(db);
 
+// 자동 스케줄러 인스턴스 생성
+const matchScheduler = new MatchScheduler();
+
+// 전역 io 객체 설정 (스케줄러에서 사용)
+global.io = io;
+
 // 라우터 의존성 주입
-initializeApiRoutes(firebaseService, { calculateStandings });
+initializeApiRoutes(firebaseService, { calculateStandings }, matchScheduler);
 initializeCsvRoutes({ uploadCsvToFirebase, downloadCsvFromFirebase });
 initializeWebSocketRoutes({ downloadCsvFromFirebase, uploadCsvToFirebase, syncCsvWithFirebase }, firebaseService);
 
@@ -453,6 +462,15 @@ async function initializeServer() {
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server is running on http://0.0.0.0:${PORT}`);
     console.log('🔥 Firebase 연동 준비 완료! (사용자 요청 시에만 동작)');
+    
+    // 자동 스케줄러 시작
+    try {
+      matchScheduler.start();
+      console.log('⚡ 자동 경기 업데이트 스케줄러 시작됨');
+    } catch (error) {
+      console.error('❌ 스케줄러 시작 실패:', error);
+    }
+    
     if (process.env.NODE_ENV === 'production') {
       console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');
     }

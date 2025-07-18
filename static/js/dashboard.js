@@ -244,7 +244,10 @@ const Dashboard = {
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="d-flex gap-2 justify-content-end">
+                                <div class="d-flex gap-2 justify-content-end align-items-center">
+                                    <small class="text-muted">
+                                        <span id="schedulerStatus">자동 업데이트: 확인 중...</span>
+                                    </small>
                                     <button class="btn btn-success btn-sm" id="smartRefreshBtn" type="button">
                                         <span class="spinner-border spinner-border-sm d-none" id="smartRefreshSpinner"></span>
                                         ⚡ 스마트 업데이트
@@ -651,6 +654,9 @@ const Dashboard = {
             
             // 오늘 일정으로 자동 스크롤
             this.scrollToToday();
+            
+            // 스케줄러 상태 확인
+            this.checkSchedulerStatus();
         },
 
         scrollToToday() {
@@ -891,6 +897,40 @@ const Dashboard = {
                     alert.remove();
                 }
             }, 3000);
+        },
+
+        async checkSchedulerStatus() {
+            try {
+                const response = await fetch('/api/scheduler/status');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('schedulerStatus');
+                if (statusElement) {
+                    if (data.success && data.isRunning) {
+                        statusElement.innerHTML = `
+                            <span class="text-success">
+                                ⚡ 자동 업데이트 활성 (${data.totalJobs}개 예약됨)
+                            </span>
+                        `;
+                    } else {
+                        statusElement.innerHTML = `
+                            <span class="text-warning">
+                                ⏸️ 자동 업데이트 비활성
+                            </span>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('스케줄러 상태 확인 실패:', error);
+                const statusElement = document.getElementById('schedulerStatus');
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <span class="text-muted">
+                            ❓ 자동 업데이트 상태 불명
+                        </span>
+                    `;
+                }
+            }
         },
 
         displayUpcomingMatchesEnhanced(matches) {
@@ -1938,6 +1978,9 @@ const Dashboard = {
             // 이벤트 리스너 설정
             this.events.setupEventListeners();
             
+            // 웹소켓 연결 설정
+            this.setupWebSocket();
+            
             // 초기 데이터 로드 (순서대로 로드)
             try {
                 await this.api.loadGroupedMatches();
@@ -1952,6 +1995,39 @@ const Dashboard = {
             console.log('✅ Dashboard 초기화 완료');
         } catch (error) {
             console.error('❌ Dashboard 초기화 실패:', error);
+        }
+    },
+
+    setupWebSocket() {
+        try {
+            // Socket.IO 연결
+            if (typeof io !== 'undefined') {
+                const socket = io();
+                
+                // 경기 업데이트 알림 수신
+                socket.on('match-updated', (data) => {
+                    console.log('🔔 경기 업데이트 알림:', data);
+                    Dashboard.ui.showRefreshMessage('info', 
+                        `✅ ${data.homeTeam} vs ${data.awayTeam} 경기 결과가 업데이트되었습니다!`);
+                    
+                    // 자동으로 데이터 새로고침
+                    setTimeout(() => {
+                        Dashboard.ui.refreshMatchesData();
+                    }, 2000);
+                });
+                
+                // 스케줄러 상태 변경 알림 수신
+                socket.on('scheduler-status', (data) => {
+                    console.log('📅 스케줄러 상태 변경:', data);
+                    Dashboard.ui.checkSchedulerStatus();
+                });
+                
+                console.log('🔗 웹소켓 연결 설정 완료');
+            } else {
+                console.log('⚠️ Socket.IO 라이브러리를 찾을 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('❌ 웹소켓 설정 실패:', error);
         }
     }
 };
