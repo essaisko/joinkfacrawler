@@ -1436,14 +1436,14 @@ body {
     text-overflow: ellipsis;
 }
 
-.league-badge.k1 { background: #e74c3c; }
-.league-badge.k2 { background: #d35400; }
-.league-badge.k3 { background: #8e44ad; }
-.league-badge.k4 { background: #34495e; }
-.league-badge.k5 { background: #e67e22; }
-.league-badge.k6 { background: #3498db; }
-.league-badge.k7 { background: #27ae60; }
-.league-badge.other { background: #7f8c8d; }
+.league-badge.k1 { background: #e74c3c; color: white; }
+.league-badge.k2 { background: #d35400; color: white; }
+.league-badge.k3 { background: #8e44ad; color: white; }
+.league-badge.k4 { background: #34495e; color: white; }
+.league-badge.k5 { background: #ff8c00; color: white; } /* 주황 */
+.league-badge.k6 { background: #1e90ff; color: white; } /* 파랑 */
+.league-badge.k7 { background: #32cd32; color: white; } /* 초록 */
+.league-badge.other { background: #7f8c8d; color: white; }
 
 /* === 팀 검색 및 필터 === */
 .team-search-container {
@@ -2607,9 +2607,9 @@ body {
 .matches-table .league-col.k2 { background: #d35400; color: white; }
 .matches-table .league-col.k3 { background: #8e44ad; color: white; }
 .matches-table .league-col.k4 { background: #34495e; color: white; }
-.matches-table .league-col.k5 { background: #e67e22; color: white; }
-.matches-table .league-col.k6 { background: #3498db; color: white; }
-.matches-table .league-col.k7 { background: #27ae60; color: white; }
+.matches-table .league-col.k5 { background: #ff8c00; color: white; } /* 주황 */
+.matches-table .league-col.k6 { background: #1e90ff; color: white; } /* 파랑 */
+.matches-table .league-col.k7 { background: #32cd32; color: white; } /* 초록 */
 .matches-table .league-col.other { background: #7f8c8d; color: white; }
 
 /* 반응형 테이블 */
@@ -2877,38 +2877,38 @@ body {
 }
 
 .league-filter-btn[data-league*="K5"] {
-    border-color: #34495e;
-    color: #34495e;
+    border-color: #ff8c00;
+    color: #ff8c00;
 }
 
 .league-filter-btn[data-league*="K5"]:hover,
 .league-filter-btn[data-league*="K5"].active {
-    background: #34495e;
-    border-color: #34495e;
+    background: #ff8c00;
+    border-color: #ff8c00;
     color: white;
 }
 
 .league-filter-btn[data-league*="K6"] {
-    border-color: #1abc9c;
-    color: #1abc9c;
+    border-color: #1e90ff;
+    color: #1e90ff;
 }
 
 .league-filter-btn[data-league*="K6"]:hover,
 .league-filter-btn[data-league*="K6"].active {
-    background: #1abc9c;
-    border-color: #1abc9c;
+    background: #1e90ff;
+    border-color: #1e90ff;
     color: white;
 }
 
 .league-filter-btn[data-league*="K7"] {
-    border-color: #e67e22;
-    color: #e67e22;
+    border-color: #32cd32;
+    color: #32cd32;
 }
 
 .league-filter-btn[data-league*="K7"]:hover,
 .league-filter-btn[data-league*="K7"].active {
-    background: #e67e22;
-    border-color: #e67e22;
+    background: #32cd32;
+    border-color: #32cd32;
     color: white;
 }
 

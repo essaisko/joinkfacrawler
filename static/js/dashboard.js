@@ -235,13 +235,6 @@ const Dashboard = {
                                     <small class="text-muted">
                                         <span id="schedulerStatus">자동 업데이트: 확인 중...</span>
                                     </small>
-                                    <button class="btn btn-success btn-sm" id="smartRefreshBtn" type="button">
-                                        <span class="spinner-border spinner-border-sm d-none" id="smartRefreshSpinner"></span>
-                                        ⚡ 스마트 업데이트
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm" id="cacheRefreshBtn" type="button">
-                                        🔄 캐시 새로고침
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -332,7 +325,15 @@ const Dashboard = {
                 const homeTeamRaw = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
                 const awayTeamRaw = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
                 const stadium = this.shortenStadiumName(match.STADIUM || '미정');
-                const time = Dashboard.utils.formatMatchTime(match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정');
+                const time = Dashboard.utils.formatMatchTime(
+                    match.MATCH_TIME, 
+                    match.MATCH_TIME_FORMATTED, 
+                    match.TIME, 
+                    match.time,
+                    match.formattedTime,
+                    match.경기시간,
+                    match.match_time
+                );
                 const league = this.shortenLeagueName(match.leagueTitle || '미정');
                 const status = match.matchStatus || match.MATCH_STATUS || '예정';
                 
@@ -551,7 +552,15 @@ const Dashboard = {
             const homeTeamRaw = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
             const awayTeamRaw = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
             const stadium = match.STADIUM || '미정';
-            const time = Dashboard.utils.formatMatchTime(match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정');
+            const time = Dashboard.utils.formatMatchTime(
+                match.MATCH_TIME, 
+                match.MATCH_TIME_FORMATTED, 
+                match.TIME, 
+                match.time,
+                match.formattedTime,
+                match.경기시간,
+                match.match_time
+            );
             const league = match.leagueTitle || '미정';
             const status = match.matchStatus || match.MATCH_STATUS || '예정';
             
@@ -686,17 +695,7 @@ const Dashboard = {
                 updateDisplay();
             });
             
-            // 스마트 업데이트 버튼
-            const smartRefreshBtn = document.getElementById('smartRefreshBtn');
-            const cacheRefreshBtn = document.getElementById('cacheRefreshBtn');
-            
-            smartRefreshBtn.addEventListener('click', async () => {
-                await this.smartRefreshData();
-            });
-            
-            cacheRefreshBtn.addEventListener('click', async () => {
-                await this.refreshMatchesData();
-            });
+            // 스마트 업데이트 및 캐시 새로고침 버튼 제거됨
             
             // 초기 표시
             updateDisplay();
@@ -727,49 +726,7 @@ const Dashboard = {
             }, 500);
         },
 
-        async smartRefreshData() {
-            const smartRefreshBtn = document.getElementById('smartRefreshBtn');
-            const smartRefreshSpinner = document.getElementById('smartRefreshSpinner');
-            
-            // 현재 필터 상태 저장
-            const currentFilters = this.getCurrentFilters();
-            
-            try {
-                // 버튼 상태 업데이트
-                smartRefreshBtn.disabled = true;
-                smartRefreshSpinner.classList.remove('d-none');
-                smartRefreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 크롤링 중...';
-                
-                // 1단계: 스마트 크롤링 실행
-                await this.executeSmartCrawling();
-                
-                smartRefreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 업로드 중...';
-                
-                // 2단계: 파이어스토어 업로드
-                await this.executeFirestoreUpload();
-                
-                smartRefreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 데이터 로드 중...';
-                
-                // 3단계: 캐시 무효화 및 데이터 새로고침
-                await this.invalidateMatchesCache();
-                await Dashboard.api.loadGroupedMatches();
-                
-                // 4단계: 필터 복원
-                this.restoreFilters(currentFilters);
-                
-                // 성공 메시지 표시
-                this.showRefreshMessage('success', '✅ 최신 데이터가 성공적으로 업데이트되었습니다!');
-                
-            } catch (error) {
-                console.error('스마트 업데이트 실패:', error);
-                this.showRefreshMessage('error', `❌ 업데이트 실패: ${error.message}`);
-            } finally {
-                // 버튼 복원
-                smartRefreshBtn.disabled = false;
-                smartRefreshSpinner.classList.add('d-none');
-                smartRefreshBtn.innerHTML = '⚡ 스마트 업데이트';
-            }
-        },
+        // 스마트 업데이트 기능 제거됨
 
         async executeSmartCrawling() {
             const today = new Date();
@@ -1172,7 +1129,13 @@ const Dashboard = {
                 const tableRows = sortedMatches.map(match => {
                     const matchDateObj = safeParseDate(match.MATCH_DATE || match.matchDate || match.date || match.DATE);
                     const time = Dashboard.utils.formatMatchTime(
-                        match.formattedTime || match.MATCH_TIME_FORMATTED || match.TIME || match.time || match.MATCH_TIME || '미정'
+                        match.formattedTime,
+                        match.MATCH_TIME_FORMATTED,
+                        match.TIME,
+                        match.time,
+                        match.MATCH_TIME,
+                        match.경기시간,
+                        match.match_time
                     );
 
                     let league = match.leagueTitle || match.league || match.LEAGUE || '';
@@ -1973,7 +1936,21 @@ const Dashboard = {
             return '시간미정';
         },
 
-        formatMatchTime(rawTime) {
+        formatMatchTime(...timeFields) {
+            // 다양한 시간 필드 시도
+            const validFields = timeFields.filter(t => t && t !== '미정' && t !== '' && t !== null && t !== undefined);
+            
+            for (const timeField of validFields) {
+                const result = this.parseTimeField(timeField);
+                if (result && result !== '미정') {
+                    return result;
+                }
+            }
+            
+            return '미정';
+        },
+
+        parseTimeField(rawTime) {
             if (!rawTime || rawTime === '미정' || rawTime === '' || rawTime === null || rawTime === undefined) return '미정';
             
             // 문자열로 변환
@@ -2101,28 +2078,51 @@ const Dashboard = {
         simplifyLeagueName(leagueTitle) {
             if (!leagueTitle) return leagueTitle;
             
-            // K5-K7 리그명 단순화
+            // K5-K7 리그명 단순화 및 지역명 추출
             if (leagueTitle.includes('K5')) {
-                // "K5리그 경남" -> "K5 경남"
-                const regionMatch = leagueTitle.match(/K5.*?([가-힣]+)/);
-                if (regionMatch) {
-                    return `K5 ${regionMatch[1]}`;
+                // "K5리그 경남" -> "K5 경남", "K5리그 경남창원" -> "K5 경남"
+                const regionMatches = [
+                    leagueTitle.match(/K5.*?(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)/),
+                    leagueTitle.match(/K5.*?([가-힣]+)/),
+                ];
+                
+                for (const match of regionMatches) {
+                    if (match) {
+                        return `K5 ${match[1]}`;
+                    }
                 }
                 return 'K5';
             }
             
             if (leagueTitle.includes('K6')) {
-                const regionMatch = leagueTitle.match(/K6.*?([가-힣]+)/);
-                if (regionMatch) {
-                    return `K6 ${regionMatch[1]}`;
+                const regionMatches = [
+                    leagueTitle.match(/K6.*?(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)/),
+                    leagueTitle.match(/K6.*?([가-힣]+)/),
+                ];
+                
+                for (const match of regionMatches) {
+                    if (match) {
+                        return `K6 ${match[1]}`;
+                    }
                 }
                 return 'K6';
             }
             
             if (leagueTitle.includes('K7')) {
-                const regionMatch = leagueTitle.match(/K7.*?([가-힣]+)/);
-                if (regionMatch) {
-                    return `K7 ${regionMatch[1]}`;
+                const regionMatches = [
+                    leagueTitle.match(/K7.*?(경남|부산|울산|대구|대전|광주|인천|서울|경기|강원|충북|충남|전북|전남|경북|제주)/),
+                    leagueTitle.match(/K7.*?([가-힣]+)/),
+                ];
+                
+                for (const match of regionMatches) {
+                    if (match) {
+                        // "김해A", "김해B" 등의 경우 처리
+                        let region = match[1];
+                        if (region.length > 3 && /[A-Z]$/.test(region)) {
+                            region = region.slice(0, -1) + region.slice(-1).toLowerCase();
+                        }
+                        return `K7 ${region}`;
+                    }
                 }
                 return 'K7';
             }
@@ -2301,10 +2301,10 @@ const Dashboard = {
                     Dashboard.ui.showRefreshMessage('info', 
                         `✅ ${data.homeTeam} vs ${data.awayTeam} 경기 결과가 업데이트되었습니다!`);
                     
-                    // 자동으로 데이터 새로고침
-                    setTimeout(() => {
-                        Dashboard.ui.refreshMatchesData();
-                    }, 2000);
+                    // 자동 데이터 새로고침 비활성화됨
+                    // setTimeout(() => {
+                    //     Dashboard.ui.refreshMatchesData();
+                    // }, 2000);
                 });
                 
                 // 스케줄러 상태 변경 알림 수신
