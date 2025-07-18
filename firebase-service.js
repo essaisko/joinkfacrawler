@@ -202,6 +202,9 @@ class FirebaseService {
     const yearStart = `${currentYear}-01-01`;
     const yearEnd = `${currentYear}-12-31`;
     
+    // 일주일 전 날짜 계산
+    const oneWeekAgo = new Date(koreaTime.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
     // 최근 완료된 경기 조회 (개선된 버전)
     const recentSnapshot = await this.db.collection('matches')
       .where('matchStatus', '==', '완료')
@@ -360,6 +363,106 @@ class FirebaseService {
     });
   }
 
+
+  // 모든 경기 데이터 사전 로드 및 월별/날짜별 분류
+  async getAllMatchesGrouped() {
+    const cacheKey = 'allMatchesGrouped';
+    let groupedMatches = cache.get(cacheKey);
+    
+    if (groupedMatches) {
+      console.log('🚀 캐시에서 그룹화된 경기 데이터 조회');
+      return groupedMatches;
+    }
+
+    console.log('🔥 Firebase에서 모든 경기 데이터 로드 및 분류');
+    
+    // 현재 연도 기준 모든 경기 데이터 로드
+    const currentYear = new Date().getFullYear();
+    const allMatches = [];
+    
+    // 현재 연도와 이전 연도 데이터 모두 로드
+    for (let year = currentYear - 1; year <= currentYear + 1; year++) {
+      const yearStart = `${year}-01-01`;
+      const yearEnd = `${year}-12-31`;
+      
+      try {
+        const snapshot = await this.db.collection('matches')
+          .where('MATCH_DATE', '>=', yearStart)
+          .where('MATCH_DATE', '<=', yearEnd)
+          .orderBy('MATCH_DATE', 'asc')
+          .get();
+        
+        const yearMatches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allMatches.push(...yearMatches);
+        console.log(`📊 ${year}년 경기 데이터 로드: ${yearMatches.length}개`);
+      } catch (error) {
+        console.log(`❌ ${year}년 데이터 로드 실패:`, error.message);
+      }
+    }
+    
+    // 월별/날짜별 그룹화
+    const groupedByMonth = {};
+    const groupedByDate = {};
+    const upcomingMatches = [];
+    const pastMatches = [];
+    
+    const now = new Date();
+    const koreaOffset = 9 * 60; // UTC+9
+    const koreaTime = new Date(now.getTime() + koreaOffset * 60 * 1000);
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    allMatches.forEach(match => {
+      const matchDate = match.MATCH_DATE;
+      if (!matchDate) return;
+      
+      const [year, month, day] = matchDate.split('-');
+      const monthKey = `${year}-${month}`;
+      
+      // 월별 그룹화
+      if (!groupedByMonth[monthKey]) {
+        groupedByMonth[monthKey] = [];
+      }
+      groupedByMonth[monthKey].push(match);
+      
+      // 날짜별 그룹화
+      if (!groupedByDate[matchDate]) {
+        groupedByDate[matchDate] = [];
+      }
+      groupedByDate[matchDate].push(match);
+      
+      // 다가오는 경기 vs 지난 경기 분류
+      if (matchDate >= today) {
+        upcomingMatches.push(match);
+      } else {
+        pastMatches.push(match);
+      }
+    });
+    
+    // 정렬
+    upcomingMatches.sort((a, b) => new Date(a.MATCH_DATE) - new Date(b.MATCH_DATE));
+    pastMatches.sort((a, b) => new Date(b.MATCH_DATE) - new Date(a.MATCH_DATE));
+    
+    // 통계 계산
+    const stats = {
+      totalMatches: allMatches.length,
+      upcomingMatches: upcomingMatches.length,
+      pastMatches: pastMatches.length,
+      completedMatches: allMatches.filter(m => m.matchStatus === '완료').length,
+      activeLeagues: [...new Set(allMatches.map(m => m.leagueTitle))].filter(Boolean).length,
+      monthsWithMatches: Object.keys(groupedByMonth).length
+    };
+    
+    groupedMatches = {
+      byMonth: groupedByMonth,
+      byDate: groupedByDate,
+      upcoming: upcomingMatches,
+      past: pastMatches,
+      stats
+    };
+    
+    cache.set(cacheKey, groupedMatches, 10); // 10분 캐싱
+    return groupedMatches;
+  }
 
   // 캐시 무효화 (새로운 데이터 업로드 시 호출)
   invalidateCache() {

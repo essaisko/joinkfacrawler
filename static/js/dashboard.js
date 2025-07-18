@@ -66,6 +66,33 @@ const Dashboard = {
             }
         },
 
+        async loadGroupedMatches() {
+            try {
+                const response = await fetch('/api/matches/grouped');
+                if (!response.ok) throw new Error(`grouped matches API error: ${response.status}`);
+                
+                const data = await response.json();
+                console.log('그룹화된 경기 데이터:', data);
+                
+                // 통계 업데이트
+                if (data.stats) {
+                    Dashboard.ui.updateStatCard('totalMatchesStat', data.stats.totalMatches, '⚽', 'primary');
+                    Dashboard.ui.updateStatCard('upcomingMatchesStat', data.stats.upcomingMatches, '📅', 'info');
+                    Dashboard.ui.updateStatCard('pastMatchesStat', data.stats.pastMatches, '📊', 'secondary');
+                    Dashboard.ui.updateStatCard('activeLeaguesStat', data.stats.activeLeagues, '🏆', 'warning');
+                }
+                
+                // 월별/날짜별 경기 데이터 표시
+                Dashboard.ui.displayGroupedMatches(data);
+                
+                return data;
+            } catch (error) {
+                console.error('그룹화된 경기 데이터 로드 실패:', error);
+                Dashboard.ui.showErrorMessage('upcomingMatchesSection', '그룹화된 경기 데이터 로딩 실패');
+                throw error;
+            }
+        },
+
         async loadStandings() {
             const container = document.getElementById('standingsContainer');
             container.innerHTML = Dashboard.ui.getLoadingSpinner('순위표를 불러오는 중...');
@@ -179,6 +206,176 @@ const Dashboard = {
             Dashboard.state.rawUpcomingMatches = upcomingMatches;
             Dashboard.ui.displayUpcomingMatchesEnhanced(upcomingMatches);
             Dashboard.ui.renderUpcomingLeagueToggle(upcomingMatches);
+        },
+
+        displayGroupedMatches(data) {
+            const container = document.getElementById('upcomingMatchesSection');
+            if (!container) return;
+            
+            const { byMonth, byDate, upcoming, past, stats } = data;
+            
+            // 월별 필터 생성
+            const monthKeys = Object.keys(byMonth).sort().reverse();
+            const monthFilter = monthKeys.map(month => {
+                const [year, monthNum] = month.split('-');
+                const monthName = new Date(year, monthNum - 1).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
+                return `<option value="${month}">${monthName} (${byMonth[month].length}경기)</option>`;
+            }).join('');
+            
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6>📅 경기 일정 관리</h6>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <select id="monthFilter" class="form-select form-select-sm">
+                                    <option value="">전체 월 보기</option>
+                                    ${monthFilter}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="matchTypeFilter" class="form-select form-select-sm">
+                                    <option value="upcoming">다가오는 경기</option>
+                                    <option value="past">지난 경기</option>
+                                    <option value="all">전체 경기</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="leagueFilter" class="form-select form-select-sm">
+                                    <option value="">전체 리그</option>
+                                    ${this.getLeagueOptions(upcoming.concat(past))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="matchesDisplay">
+                            ${this.renderMatchesByType(upcoming, 'upcoming')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 필터 이벤트 리스너
+            this.attachGroupedMatchesFilters(data);
+        },
+
+        getLeagueOptions(matches) {
+            const leagues = [...new Set(matches.map(m => m.leagueTitle).filter(Boolean))];
+            return leagues.map(league => `<option value="${league}">${league}</option>`).join('');
+        },
+
+        renderMatchesByType(matches, type) {
+            if (!matches || matches.length === 0) {
+                return `<div class="alert alert-info">표시할 경기가 없습니다.</div>`;
+            }
+            
+            // 날짜별 그룹화
+            const groupedByDate = {};
+            matches.forEach(match => {
+                const date = match.MATCH_DATE;
+                if (!groupedByDate[date]) {
+                    groupedByDate[date] = [];
+                }
+                groupedByDate[date].push(match);
+            });
+            
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+                return type === 'upcoming' ? a.localeCompare(b) : b.localeCompare(a);
+            });
+            
+            return sortedDates.map(date => {
+                const dateMatches = groupedByDate[date];
+                const formattedDate = new Date(date).toLocaleDateString('ko-KR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    weekday: 'short'
+                });
+                
+                return `
+                    <div class="mb-4">
+                        <h6 class="text-primary border-bottom pb-2">${formattedDate} (${dateMatches.length}경기)</h6>
+                        <div class="row">
+                            ${dateMatches.map(match => this.renderMatchCard(match)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        },
+
+        renderMatchCard(match) {
+            const homeTeam = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
+            const awayTeam = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
+            const stadium = match.STADIUM || '미정';
+            const time = match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정';
+            const league = match.leagueTitle || '미정';
+            const status = match.matchStatus || match.MATCH_STATUS || '예정';
+            
+            const isCompleted = status === '완료';
+            const homeScore = isCompleted ? (match.TH_SCORE_FINAL || '0') : '';
+            const awayScore = isCompleted ? (match.TA_SCORE_FINAL || '0') : '';
+            
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 ${isCompleted ? 'border-success' : 'border-primary'}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge ${isCompleted ? 'bg-success' : 'bg-primary'}">${status}</span>
+                                <small class="text-muted">${time}</small>
+                            </div>
+                            <div class="text-center mb-2">
+                                <div class="fw-bold">${homeTeam}</div>
+                                <div class="text-muted">vs</div>
+                                <div class="fw-bold">${awayTeam}</div>
+                                ${isCompleted ? `<div class="h5 text-success mt-2">${homeScore} - ${awayScore}</div>` : ''}
+                            </div>
+                            <div class="text-center">
+                                <small class="text-muted d-block">${stadium}</small>
+                                <small class="text-muted">${league}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        attachGroupedMatchesFilters(data) {
+            const { byMonth, upcoming, past } = data;
+            
+            const monthFilter = document.getElementById('monthFilter');
+            const typeFilter = document.getElementById('matchTypeFilter');
+            const leagueFilter = document.getElementById('leagueFilter');
+            const display = document.getElementById('matchesDisplay');
+            
+            const updateDisplay = () => {
+                const selectedMonth = monthFilter.value;
+                const selectedType = typeFilter.value;
+                const selectedLeague = leagueFilter.value;
+                
+                let matches = [];
+                
+                if (selectedMonth) {
+                    matches = byMonth[selectedMonth] || [];
+                } else if (selectedType === 'upcoming') {
+                    matches = upcoming;
+                } else if (selectedType === 'past') {
+                    matches = past;
+                } else {
+                    matches = upcoming.concat(past);
+                }
+                
+                // 리그 필터 적용
+                if (selectedLeague) {
+                    matches = matches.filter(m => m.leagueTitle === selectedLeague);
+                }
+                
+                display.innerHTML = this.renderMatchesByType(matches, selectedType);
+            };
+            
+            monthFilter.addEventListener('change', updateDisplay);
+            typeFilter.addEventListener('change', updateDisplay);
+            leagueFilter.addEventListener('change', updateDisplay);
         },
 
         displayUpcomingMatchesEnhanced(matches) {
@@ -736,7 +933,7 @@ const Dashboard = {
                     <div class="error-message text-center p-4">
                         <h5 class="text-danger">${message}</h5>
                         <p class="text-muted">경기 정보를 불러오는 중 오류가 발생했습니다.</p>
-                        <button class="btn btn-primary btn-sm" onclick="Dashboard.api.loadNewsFeed()">다시 시도</button>
+                        <button class="btn btn-primary btn-sm" onclick="Dashboard.api.loadGroupedMatches().catch(() => Dashboard.api.loadNewsFeed())">다시 시도</button>
                     </div>
                 `;
             }
@@ -1096,7 +1293,12 @@ const Dashboard = {
                     switch (targetId) {
                         case '#newsfeed':
                             console.log('뉴스피드 탭 로딩...');
-                            await Dashboard.api.loadNewsFeed();
+                            try {
+                                await Dashboard.api.loadGroupedMatches();
+                            } catch (error) {
+                                console.log('그룹화된 경기 로드 실패, 기본 뉴스피드로 폴백:', error);
+                                await Dashboard.api.loadNewsFeed();
+                            }
                             break;
                         case '#standings':
                             console.log('순위표 탭 로딩...');
@@ -1222,7 +1424,12 @@ const Dashboard = {
             this.events.setupEventListeners();
             
             // 초기 데이터 로드 (순서대로 로드)
-            await this.api.loadNewsFeed();
+            try {
+                await this.api.loadGroupedMatches();
+            } catch (error) {
+                console.log('초기 그룹화된 경기 로드 실패, 기본 뉴스피드로 폴백:', error);
+                await this.api.loadNewsFeed();
+            }
             await this.api.loadRegions();
             await this.api.loadTeams();
             await this.api.loadGitInfo();
@@ -1277,7 +1484,12 @@ Dashboard.management = {
                 const tabId = activeTab.getAttribute('data-bs-target');
                 switch (tabId) {
                     case '#newsfeed':
-                        await Dashboard.api.loadNewsFeed();
+                        try {
+                            await Dashboard.api.loadGroupedMatches();
+                        } catch (error) {
+                            console.log('그룹화된 경기 로드 실패, 기본 뉴스피드로 폴백:', error);
+                            await Dashboard.api.loadNewsFeed();
+                        }
                         break;
                     case '#standings':
                         await Dashboard.api.loadStandings();

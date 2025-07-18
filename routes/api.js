@@ -86,6 +86,17 @@ router.get('/newsfeed', async (req, res) => {
   }
 });
 
+// 모든 경기 데이터 그룹화 조회
+router.get('/matches/grouped', async (req, res) => {
+  try {
+    const groupedMatches = await firebaseService.getAllMatchesGrouped();
+    res.json(groupedMatches);
+  } catch (error) {
+    console.error('❌ 그룹화된 경기 데이터 조회 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 분석 데이터 조회
 router.get('/analytics', async (req, res) => {
   try {
