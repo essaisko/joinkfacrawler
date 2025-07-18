@@ -49,8 +49,29 @@ initializeApiRoutes(firebaseService, { calculateStandings }, matchScheduler);
 initializeCsvRoutes({ uploadCsvToFirebase, downloadCsvFromFirebase });
 initializeWebSocketRoutes({ downloadCsvFromFirebase, uploadCsvToFirebase, syncCsvWithFirebase }, firebaseService);
 
-// 강화된 CORS 및 보안 헤더 설정
+// 강화된 CORS 및 보안 헤더 설정 (디버깅 로그 추가)
 app.use((req, res, next) => {
+  // 요청 로깅 (모바일 접속 진단용)
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(userAgent);
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+  const requestInfo = {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    userAgent: userAgent,
+    origin: req.headers.origin,
+    host: req.headers.host,
+    isMobile: isMobile,
+    clientIP: clientIP,
+    referer: req.headers.referer
+  };
+  
+  // 모바일 요청 로깅
+  if (isMobile) {
+    console.log('📱 모바일 요청:', JSON.stringify(requestInfo, null, 2));
+  }
+  
   const allowedOrigins = [
     'http://ssurpass.com',
     'https://ssurpass.com',
@@ -78,12 +99,14 @@ app.use((req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   
   // 모바일 전용 헤더
-  if (req.headers['user-agent'] && /Mobile|Android|iPhone|iPad/i.test(req.headers['user-agent'])) {
+  if (isMobile) {
     res.setHeader('X-Mobile-Device', 'true');
     res.setHeader('Vary', 'User-Agent');
+    res.setHeader('X-Mobile-Debug', `IP:${clientIP}, UA:${userAgent.substring(0, 50)}`);
   }
   
   if (req.method === 'OPTIONS') {
+    console.log('🔧 OPTIONS 요청 처리:', requestInfo);
     return res.sendStatus(200);
   }
   
@@ -135,11 +158,72 @@ app.get('/dashboard', (req, res) => {
 
 // Health check 엔드포인트 (서버 활성 상태 유지용)
 app.get('/health', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(userAgent);
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+  
+  console.log(`🏥 Health check 요청: ${isMobile ? '📱 모바일' : '💻 데스크톱'} - IP: ${clientIP}`);
+  
   res.json({
     status: 'alive',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    mobile: isMobile,
+    clientIP: clientIP,
+    userAgent: userAgent,
+    port: PORT,
+    host: HOST,
+    server: 'K-League Crawler'
   });
+});
+
+// 모바일 진단 전용 엔드포인트
+app.get('/mobile-debug', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(userAgent);
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  
+  console.log('🔍 모바일 디버그 요청:', {
+    userAgent,
+    isMobile,
+    clientIP,
+    headers: req.headers
+  });
+  
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    server: {
+      port: PORT,
+      host: HOST,
+      uptime: process.uptime(),
+      nodeVersion: process.version,
+      platform: process.platform
+    },
+    client: {
+      userAgent,
+      isMobile,
+      clientIP,
+      origin: req.headers.origin,
+      host: req.headers.host,
+      referer: req.headers.referer,
+      connection: req.headers.connection,
+      acceptLanguage: req.headers['accept-language']
+    },
+    network: {}
+  };
+  
+  // 네트워크 인터페이스 정보 추가
+  Object.keys(networkInterfaces).forEach((interfaceName) => {
+    networkInterfaces[interfaceName].forEach((network) => {
+      if (network.family === 'IPv4' && !network.internal) {
+        debugInfo.network[interfaceName] = network.address;
+      }
+    });
+  });
+  
+  res.json(debugInfo);
 });
 
 // Git 커밋 정보 가져오기 엔드포인트
@@ -538,6 +622,7 @@ async function initializeServer() {
       console.log(`   - 네트워크: http://${HOST}:${PORT}`);
       console.log(`   - 실제 주소: ${address.address}:${address.port}`);
       console.log(`   - 도메인: http://ssurpass.com${PORT !== 80 ? ':' + PORT : ''}`);
+      console.log(`   - HTTPS 도메인: https://ssurpass.com`);
       
       // 네트워크 인터페이스 정보 출력
       const os = require('os');
@@ -552,6 +637,12 @@ async function initializeServer() {
         });
       });
       
+      // 모바일 접속 테스트 URL 안내
+      console.log('📱 모바일 테스트 URL:');
+      console.log(`   - Health Check: http://ssurpass.com/health`);
+      console.log(`   - Mobile Debug: http://ssurpass.com/mobile-debug`);
+      console.log(`   - Dashboard: http://ssurpass.com/dashboard`);
+      
       // 자동 스케줄러 시작
       try {
         matchScheduler.start();
@@ -563,6 +654,9 @@ async function initializeServer() {
       if (process.env.NODE_ENV === 'production') {
         console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');
       }
+      
+      // 초기 서버 상태 로그
+      console.log('🚀 서버 초기화 완료 - 모바일 접속 대기 중...');
     });
 
     server_instance.on('error', (err) => {
