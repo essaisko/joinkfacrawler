@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 3000;
 const firebaseService = new FirebaseService(db);
 
 // 자동 스케줄러 인스턴스 생성
-const matchScheduler = new MatchScheduler();
+const matchScheduler = new MatchScheduler(firebaseService);
 
 // 전역 io 객체 설정 (스케줄러에서 사용)
 global.io = io;

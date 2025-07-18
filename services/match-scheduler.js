@@ -8,9 +8,9 @@ const { spawn } = require('child_process');
 const FirebaseService = require('../firebase-service');
 
 class MatchScheduler {
-    constructor() {
-        // Firebase 서비스를 나중에 초기화하도록 변경
-        this.firebaseService = null;
+    constructor(firebaseService = null) {
+        // Firebase 서비스 인스턴스 설정
+        this.firebaseService = firebaseService;
         this.scheduledJobs = new Map();
         this.isRunning = false;
         
