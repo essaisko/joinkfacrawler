@@ -329,32 +329,59 @@ const Dashboard = {
             });
             
             return dateMatches.map((match, index) => {
-                const homeTeam = this.shortenTeamName(match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀');
-                const awayTeam = this.shortenTeamName(match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀');
+                const homeTeamRaw = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
+                const awayTeamRaw = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
                 const stadium = this.shortenStadiumName(match.STADIUM || '미정');
                 const time = match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정';
                 const league = this.shortenLeagueName(match.leagueTitle || '미정');
                 const status = match.matchStatus || match.MATCH_STATUS || '예정';
+                
+                // 리그 등급 판단
+                const getLeagueRank = (leagueTitle) => {
+                    if (leagueTitle.includes('K5')) return 5;
+                    if (leagueTitle.includes('K6')) return 6;
+                    if (leagueTitle.includes('K7')) return 7;
+                    return 0;
+                };
+                
+                const leagueRank = getLeagueRank(match.leagueTitle || '');
+                
+                // 팀명 처리 함수
+                const buildTeamHtml = (raw, leagueRank) => {
+                    if (leagueRank >= 5 && leagueRank <= 7) {
+                        const parsed = Dashboard.utils.parseTeam(raw);
+                        const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
+                        const teamName = parsed.teamName || raw;
+                        const shortenedTeamName = this.shortenTeamName(teamName);
+                        const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
+                        return `${regionLabel}${shortenedTeamName}`;
+                    } else {
+                        return this.shortenTeamName(raw);
+                    }
+                };
+                
+                const homeTeam = buildTeamHtml(homeTeamRaw, leagueRank);
+                const awayTeam = buildTeamHtml(awayTeamRaw, leagueRank);
                 
                 const isCompleted = status === '완료';
                 const homeScore = isCompleted ? (match.TH_SCORE_FINAL || '0') : '';
                 const awayScore = isCompleted ? (match.TA_SCORE_FINAL || '0') : '';
                 
                 const resultDisplay = isCompleted ? 
-                    `<span class="fw-bold text-success">${homeScore} - ${awayScore}</span>` : 
+                    `<span class="fw-bold text-secondary">${homeScore} - ${awayScore}</span>` : 
                     '<span class="text-muted">vs</span>';
                 
                 const statusBadge = isCompleted ? 
-                    '<span class="badge bg-success">완료</span>' : 
+                    '<span class="badge bg-secondary">완료</span>' : 
                     '<span class="badge bg-primary">예정</span>';
                 
                 return `
-                    <tr class="match-row ${isCompleted ? 'table-success' : ''}" data-date="${date}">
+                    <tr class="match-row ${isCompleted ? '' : ''}" data-date="${date}">
                         <td>${index === 0 ? formattedDate : ''}</td>
                         <td class="text-muted">${time}</td>
-                        <td class="fw-bold" title="${match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀'}">${homeTeam}</td>
+                        <td class="fw-bold" title="${homeTeamRaw}">${homeTeam}</td>
                         <td class="text-center">${resultDisplay}</td>
-                        <td class="fw-bold" title="${match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀'}">${awayTeam}</td>
+                        <td class="fw-bold" title="${awayTeamRaw}">${awayTeam}</td>
                         <td class="text-muted" title="${match.STADIUM || '미정'}">${stadium}</td>
                         <td><small class="text-muted" title="${match.leagueTitle || '미정'}">${league}</small></td>
                         <td>${statusBadge}</td>
@@ -514,12 +541,38 @@ const Dashboard = {
         },
 
         renderMatchCard(match) {
-            const homeTeam = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
-            const awayTeam = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
+            const homeTeamRaw = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
+            const awayTeamRaw = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
             const stadium = match.STADIUM || '미정';
             const time = match.MATCH_TIME || match.MATCH_TIME_FORMATTED || '미정';
             const league = match.leagueTitle || '미정';
             const status = match.matchStatus || match.MATCH_STATUS || '예정';
+            
+            // 리그 등급 판단
+            const getLeagueRank = (leagueTitle) => {
+                if (leagueTitle.includes('K5')) return 5;
+                if (leagueTitle.includes('K6')) return 6;
+                if (leagueTitle.includes('K7')) return 7;
+                return 0;
+            };
+            
+            const leagueRank = getLeagueRank(league);
+            
+            // 팀명 처리 함수
+            const buildTeamHtml = (raw, leagueRank) => {
+                if (leagueRank >= 5 && leagueRank <= 7) {
+                    const parsed = Dashboard.utils.parseTeam(raw);
+                    const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
+                    const teamName = parsed.teamName || raw;
+                    const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
+                    return `${regionLabel}${teamName}`;
+                } else {
+                    return raw;
+                }
+            };
+            
+            const homeTeam = buildTeamHtml(homeTeamRaw, leagueRank);
+            const awayTeam = buildTeamHtml(awayTeamRaw, leagueRank);
             
             const isCompleted = status === '완료';
             const homeScore = isCompleted ? (match.TH_SCORE_FINAL || '0') : '';
@@ -527,17 +580,17 @@ const Dashboard = {
             
             return `
                 <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card h-100 ${isCompleted ? 'border-success' : 'border-primary'}">
+                    <div class="card h-100 ${isCompleted ? '' : 'border-primary'}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge ${isCompleted ? 'bg-success' : 'bg-primary'}">${status}</span>
+                                <span class="badge ${isCompleted ? 'bg-secondary' : 'bg-primary'}">${status}</span>
                                 <small class="text-muted">${time}</small>
                             </div>
                             <div class="text-center mb-2">
                                 <div class="fw-bold">${homeTeam}</div>
                                 <div class="text-muted">vs</div>
                                 <div class="fw-bold">${awayTeam}</div>
-                                ${isCompleted ? `<div class="h5 text-success mt-2">${homeScore} - ${awayScore}</div>` : ''}
+                                ${isCompleted ? `<div class="h5 text-secondary mt-2">${homeScore} - ${awayScore}</div>` : ''}
                             </div>
                             <div class="text-center">
                                 <small class="text-muted d-block">${stadium}</small>
@@ -1508,48 +1561,100 @@ const Dashboard = {
                     return a.teamName.localeCompare(b.teamName, 'ko-KR');
                 });
 
+                // 리그 등급 결정
+                const getLeagueClass = (league) => {
+                    if (league.includes('K리그1')) return 'k1';
+                    if (league.includes('K리그2')) return 'k2';
+                    if (league.includes('K3')) return 'k3';
+                    if (league.includes('K4')) return 'k4';
+                    if (league.includes('K5')) return 'k5';
+                    if (league.includes('K6')) return 'k6';
+                    if (league.includes('K7')) return 'k7';
+                    return 'other';
+                };
+
+                const leagueClass = getLeagueClass(leagueName);
+
                 html += `
-                    <div class="league-section">
-                        <h3 class="league-title">${displayName}</h3>
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>순위</th>
-                                        <th>구단명</th>
-                                        <th>경기수</th>
-                                        <th>승점</th>
-                                        <th>승</th>
-                                        <th>무</th>
-                                        <th>패</th>
-                                        <th>득점</th>
-                                        <th>실점</th>
-                                        <th>득실차</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                    <div class="standings-card-modern ${leagueClass}">
+                        <div class="standings-header-modern">
+                            <div class="league-badge-modern ${leagueClass}">
+                                <i class="fas fa-trophy"></i>
+                                <span>${displayName}</span>
+                            </div>
+                            <div class="team-count">
+                                <i class="fas fa-users"></i>
+                                <span>${teams.length}개 팀</span>
+                            </div>
+                        </div>
+                        <div class="standings-list-modern">
                 `;
 
                 teams.forEach((t, idx) => {
+                    const position = idx + 1;
+                    const isChampion = position === 1;
+                    const isRelegation = position === teams.length;
+                    const isTop3 = position <= 3;
+                    
+                    let positionClass = '';
+                    if (isChampion) positionClass = 'champion';
+                    else if (isTop3) positionClass = 'top3';
+                    else if (isRelegation) positionClass = 'relegation';
+
+                    const teamLogo = t.teamName.charAt(0).toUpperCase();
+                    const goalDiff = t.goalDifference >= 0 ? `+${t.goalDifference}` : t.goalDifference;
+
                     html += `
-                        <tr>
-                            <td>${idx + 1}</td>
-                            <td><a href="team.html?team=${encodeURIComponent(t.teamName)}">${t.teamName}</a></td>
-                            <td>${t.played}</td>
-                            <td><strong>${t.points}</strong></td>
-                            <td>${t.won}</td>
-                            <td>${t.drawn}</td>
-                            <td>${t.lost}</td>
-                            <td>${t.goalsFor}</td>
-                            <td>${t.goalsAgainst}</td>
-                            <td>${t.goalDifference}</td>
-                        </tr>
+                        <div class="team-card-modern ${positionClass}">
+                            <div class="position-section">
+                                <div class="position-number ${positionClass}">
+                                    ${position}
+                                </div>
+                                ${isChampion ? '<i class="fas fa-crown champion-icon"></i>' : ''}
+                            </div>
+                            
+                            <div class="team-info-section">
+                                <div class="team-logo-modern">
+                                    ${teamLogo}
+                                </div>
+                                <div class="team-details">
+                                    <h4 class="team-name-modern">
+                                        <a href="team.html?team=${encodeURIComponent(t.teamName)}">${t.teamName}</a>
+                                    </h4>
+                                    <div class="team-stats-quick">
+                                        <span class="stat-item">경기 ${t.played}</span>
+                                        <span class="stat-item">${t.won}승 ${t.drawn}무 ${t.lost}패</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="stats-section">
+                                <div class="main-stats">
+                                    <div class="points-display">
+                                        <span class="points-value">${t.points}</span>
+                                        <span class="points-label">승점</span>
+                                    </div>
+                                    <div class="goal-diff-display">
+                                        <span class="goal-diff-value ${t.goalDifference >= 0 ? 'positive' : 'negative'}">${goalDiff}</span>
+                                        <span class="goal-diff-label">득실차</span>
+                                    </div>
+                                </div>
+                                <div class="detailed-stats">
+                                    <div class="stat-group">
+                                        <span class="stat-label">득점</span>
+                                        <span class="stat-value">${t.goalsFor}</span>
+                                    </div>
+                                    <div class="stat-group">
+                                        <span class="stat-label">실점</span>
+                                        <span class="stat-value">${t.goalsAgainst}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     `;
                 });
 
                 html += `
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 `;
@@ -1580,6 +1685,26 @@ const Dashboard = {
                 };
                 return getRank(a) - getRank(b);
             });
+
+            // 초기 "모든 지역" 버튼에 클릭 핸들러 추가
+            const allRegionBtn = regionContainer.querySelector('.filter-btn[data-value=""]');
+            if (allRegionBtn && !allRegionBtn.onclick) {
+                allRegionBtn.onclick = () => {
+                    document.querySelectorAll('#standingRegionFilterButtons .filter-btn').forEach(b => b.classList.remove('active'));
+                    allRegionBtn.classList.add('active');
+                    Dashboard.ui.displayStandings(Dashboard.state.allStandings);
+                };
+            }
+
+            // 초기 "모든 리그" 버튼에 클릭 핸들러 추가
+            const allLeagueBtn = leagueContainer.querySelector('.filter-btn[data-value=""]');
+            if (allLeagueBtn && !allLeagueBtn.onclick) {
+                allLeagueBtn.onclick = () => {
+                    document.querySelectorAll('#standingLeagueFilterButtons .filter-btn').forEach(b => b.classList.remove('active'));
+                    allLeagueBtn.classList.add('active');
+                    Dashboard.ui.displayStandings(Dashboard.state.allStandings);
+                };
+            }
 
             // 지역 필터 버튼 생성
             if (regionContainer.children.length === 1) { // 전체 버튼만 있을 때

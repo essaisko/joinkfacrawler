@@ -1033,6 +1033,333 @@ body {
     color: #495057;
 }
 
+/* === 현대적 순위표 스타일 === */
+.standings-card-modern {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    border: 1px solid #f1f3f4;
+    transition: all 0.3s ease;
+}
+
+.standings-card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 48px rgba(0,0,0,0.18);
+}
+
+.standings-header-modern {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+}
+
+.league-badge-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.league-badge-modern i {
+    font-size: 1.4rem;
+}
+
+.team-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.standings-list-modern {
+    padding: 1rem;
+}
+
+.team-card-modern {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #f1f3f4;
+}
+
+.team-card-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.team-card-modern:last-child {
+    margin-bottom: 0;
+}
+
+.team-card-modern.champion {
+    background: linear-gradient(135deg, #fff9c4, #ffeaa7);
+    border-left: 4px solid #f39c12;
+}
+
+.team-card-modern.top3 {
+    background: linear-gradient(135deg, #e8f5e8, #d4edda);
+    border-left: 4px solid #28a745;
+}
+
+.team-card-modern.relegation {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    border-left: 4px solid #dc3545;
+}
+
+.position-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 80px;
+}
+
+.position-number {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #495057;
+    min-width: 40px;
+    text-align: center;
+}
+
+.position-number.champion {
+    color: #f39c12;
+}
+
+.position-number.top3 {
+    color: #28a745;
+}
+
+.position-number.relegation {
+    color: #dc3545;
+}
+
+.champion-icon {
+    color: #f39c12;
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.team-info-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.team-logo-modern {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.team-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.team-name-modern {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.team-name-modern a {
+    color: #2c3e50;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.team-name-modern a:hover {
+    color: #3498db;
+}
+
+.team-stats-quick {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.stat-item {
+    white-space: nowrap;
+}
+
+.stats-section {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.main-stats {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.points-display, .goal-diff-display {
+    text-align: center;
+}
+
+.points-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.points-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.goal-diff-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.goal-diff-value.positive {
+    color: #28a745;
+}
+
+.goal-diff-value.negative {
+    color: #dc3545;
+}
+
+.goal-diff-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detailed-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-group {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* 리그별 헤더 색상 */
+.standings-card-modern.k1 .standings-header-modern {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.standings-card-modern.k2 .standings-header-modern {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.standings-card-modern.k3 .standings-header-modern {
+    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+}
+
+.standings-card-modern.k4 .standings-header-modern {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+}
+
+.standings-card-modern.k5 .standings-header-modern {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+.standings-card-modern.k6 .standings-header-modern {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.standings-card-modern.k7 .standings-header-modern {
+    background: linear-gradient(135deg, #27ae60, #229954);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .standings-card-modern {
+        margin-bottom: 1.5rem;
+    }
+    
+    .standings-header-modern {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .team-card-modern {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .team-info-section {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .stats-section {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .main-stats {
+        justify-content: center;
+    }
+    
+    .detailed-stats {
+        justify-content: center;
+    }
+}
+
 /* === 필터 섹션 === */
 .filter-section {
     background: white;
