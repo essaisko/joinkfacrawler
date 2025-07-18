@@ -506,6 +506,11 @@ const Dashboard = {
                 return shortcuts[league];
             }
             
+            // K7 리그는 지역명까지 표시하므로 길이 제한을 늘림
+            if (league.includes('K7')) {
+                return league.length > 15 ? league.substring(0, 12) + '...' : league;
+            }
+            
             if (league.length > 10) {
                 return league.substring(0, 8) + '...';
             }

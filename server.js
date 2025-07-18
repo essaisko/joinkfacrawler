@@ -31,7 +31,9 @@ const io = new Server(server);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
+const HOST = process.env.HOST || '0.0.0.0';
+const FALLBACK_PORT = 3000;
 
 // Firebase 서비스 인스턴스 생성
 const firebaseService = new FirebaseService(db);
@@ -47,7 +49,7 @@ initializeApiRoutes(firebaseService, { calculateStandings }, matchScheduler);
 initializeCsvRoutes({ uploadCsvToFirebase, downloadCsvFromFirebase });
 initializeWebSocketRoutes({ downloadCsvFromFirebase, uploadCsvToFirebase, syncCsvWithFirebase }, firebaseService);
 
-// CORS 설정
+// 강화된 CORS 및 보안 헤더 설정
 app.use((req, res, next) => {
   const allowedOrigins = [
     'http://ssurpass.com',
@@ -55,17 +57,31 @@ app.use((req, res, next) => {
     'http://www.ssurpass.com',
     'https://www.ssurpass.com',
     'http://localhost:3000',
-    'http://localhost:' + PORT
+    'http://localhost:' + PORT,
+    'http://127.0.0.1:' + PORT,
+    `http://${HOST}:${PORT}`
   ];
   
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
   }
   
+  // 모바일 최적화 헤더
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Deploy-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Deploy-Token, User-Agent');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // 보안 헤더
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // 모바일 전용 헤더
+  if (req.headers['user-agent'] && /Mobile|Android|iPhone|iPad/i.test(req.headers['user-agent'])) {
+    res.setHeader('X-Mobile-Device', 'true');
+    res.setHeader('Vary', 'User-Agent');
+  }
   
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
@@ -508,29 +524,83 @@ async function initializeServer() {
     keepAlive();
   }
 
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server is running on http://0.0.0.0:${PORT}`);
-    console.log('🔥 Firebase 연동 준비 완료! (사용자 요청 시에만 동작)');
-    console.log('📱 모바일 최적화 미들웨어 활성화됨');
-    
-    // 서버 설정 정보 출력
-    console.log('🌐 서버 접속 정보:');
-    console.log(`   - 로컬: http://localhost:${PORT}`);
-    console.log(`   - 네트워크: http://0.0.0.0:${PORT}`);
-    console.log(`   - 도메인: http://ssurpass.com:${PORT}`);
-    
-    // 자동 스케줄러 시작
-    try {
-      matchScheduler.start();
-      console.log('⚡ 자동 경기 업데이트 스케줄러 시작됨');
-    } catch (error) {
-      console.error('❌ 스케줄러 시작 실패:', error);
-    }
-    
-    if (process.env.NODE_ENV === 'production') {
-      console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');
-    }
-  });
+  // 서버 시작 시 더 안정적인 방식 사용
+  const startServer = () => {
+    const server_instance = server.listen(PORT, HOST, () => {
+      const address = server_instance.address();
+      console.log(`✅ Server is running on http://${HOST}:${PORT}`);
+      console.log('🔥 Firebase 연동 준비 완료! (사용자 요청 시에만 동작)');
+      console.log('📱 모바일 최적화 미들웨어 활성화됨');
+      
+      // 서버 설정 정보 출력
+      console.log('🌐 서버 접속 정보:');
+      console.log(`   - 로컬: http://localhost:${PORT}`);
+      console.log(`   - 네트워크: http://${HOST}:${PORT}`);
+      console.log(`   - 실제 주소: ${address.address}:${address.port}`);
+      console.log(`   - 도메인: http://ssurpass.com${PORT !== 80 ? ':' + PORT : ''}`);
+      
+      // 네트워크 인터페이스 정보 출력
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      console.log('📡 사용 가능한 네트워크 주소:');
+      
+      Object.keys(networkInterfaces).forEach((interfaceName) => {
+        networkInterfaces[interfaceName].forEach((network) => {
+          if (network.family === 'IPv4' && !network.internal) {
+            console.log(`   - ${interfaceName}: http://${network.address}:${PORT}`);
+          }
+        });
+      });
+      
+      // 자동 스케줄러 시작
+      try {
+        matchScheduler.start();
+        console.log('⚡ 자동 경기 업데이트 스케줄러 시작됨');
+      } catch (error) {
+        console.error('❌ 스케줄러 시작 실패:', error);
+      }
+      
+      if (process.env.NODE_ENV === 'production') {
+        console.log('🛡️ 서버 자동 종료 방지 시스템이 활성화되었습니다!');
+      }
+    });
+
+    server_instance.on('error', (err) => {
+      console.error('❌ 서버 시작 실패:', err);
+      if (err.code === 'EADDRINUSE') {
+        if (PORT === 80) {
+          console.log(`포트 80이 사용 중입니다. 포트 ${FALLBACK_PORT}으로 재시도합니다...`);
+          server.listen(FALLBACK_PORT, HOST, () => {
+            console.log(`✅ Server is running on http://${HOST}:${FALLBACK_PORT} (fallback port)`);
+            console.log('📱 모바일 최적화 미들웨어 활성화됨');
+            console.log(`🌐 접속 주소: http://ssurpass.com:${FALLBACK_PORT}`);
+          });
+        } else {
+          console.log(`포트 ${PORT}가 이미 사용 중입니다. 5초 후 재시도합니다...`);
+          setTimeout(startServer, 5000);
+        }
+      } else if (err.code === 'EACCES') {
+        if (PORT === 80) {
+          console.log(`포트 80에 접근 권한이 없습니다. 포트 ${FALLBACK_PORT}으로 재시도합니다...`);
+          server.listen(FALLBACK_PORT, HOST, () => {
+            console.log(`✅ Server is running on http://${HOST}:${FALLBACK_PORT} (fallback port)`);
+            console.log('📱 모바일 최적화 미들웨어 활성화됨');
+            console.log(`🌐 접속 주소: http://ssurpass.com:${FALLBACK_PORT}`);
+          });
+        } else {
+          console.log(`포트 ${PORT}에 접근 권한이 없습니다.`);
+          process.exit(1);
+        }
+      } else {
+        console.log('예기치 못한 오류가 발생했습니다:', err.message);
+        process.exit(1);
+      }
+    });
+
+    return server_instance;
+  };
+
+  startServer();
 }
 
 
