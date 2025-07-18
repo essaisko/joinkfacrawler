@@ -214,17 +214,18 @@ const Dashboard = {
             
             const { byMonth, byDate, upcoming, past, stats } = data;
             
-            // 월별 필터 버튼 생성
-            const monthKeys = Object.keys(byMonth).sort().reverse();
+            // 월별 필터 버튼 생성 (1월부터 12월까지 오름차순)
+            const monthKeys = Object.keys(byMonth).sort();
             const monthButtons = monthKeys.map(month => {
                 const [year, monthNum] = month.split('-');
                 const monthName = new Date(year, monthNum - 1).toLocaleDateString('ko-KR', { month: 'short' });
                 return `<button class="btn btn-outline-primary btn-sm me-1 mb-1 month-filter-btn" data-month="${month}">${monthName} (${byMonth[month].length})</button>`;
             }).join('');
             
-            // 리그 필터 버튼 생성
+            // 리그 필터 버튼 생성 (K1부터 K7까지 내림차순)
             const leagues = [...new Set(upcoming.concat(past).map(m => m.leagueTitle).filter(Boolean))];
-            const leagueButtons = leagues.map(league => 
+            const sortedLeagues = this.sortLeagues(leagues);
+            const leagueButtons = sortedLeagues.map(league => 
                 `<button class="btn btn-outline-secondary btn-sm me-1 mb-1 league-filter-btn" data-league="${league}">${league}</button>`
             ).join('');
             
@@ -233,13 +234,21 @@ const Dashboard = {
                     <div class="card-header">
                         <h6>📅 경기 일정 관리</h6>
                         
-                        <!-- 팀 검색 필드 -->
+                        <!-- 팀 검색 필드 및 새로고침 버튼 -->
                         <div class="row mt-2">
                             <div class="col-md-6">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">🔍</span>
                                     <input type="text" id="teamSearchInput" class="form-control" placeholder="팀명으로 검색...">
                                     <button class="btn btn-outline-secondary" type="button" id="clearTeamSearch">초기화</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button class="btn btn-warning btn-sm" id="refreshMatchesBtn" type="button">
+                                        <span class="spinner-border spinner-border-sm d-none" id="refreshSpinner"></span>
+                                        🔄 데이터 새로고침
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -483,6 +492,34 @@ const Dashboard = {
             return league;
         },
 
+        sortLeagues(leagues) {
+            // 리그 우선순위 정의 (K1부터 K7까지 내림차순)
+            const leaguePriority = {
+                'K리그1': 1,
+                'K리그2': 2,
+                'K리그3': 3,
+                'K3리그': 3,
+                'K4리그': 4,
+                'K5리그': 5,
+                'K6리그': 6,
+                'K7리그': 7,
+                'FA컵': 8,
+                'AFC 챔피언스리그': 9,
+                'AFC컵': 10
+            };
+            
+            return leagues.sort((a, b) => {
+                const priorityA = leaguePriority[a] || 999;
+                const priorityB = leaguePriority[b] || 999;
+                
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB; // 낮은 숫자가 우선순위 높음
+                }
+                
+                return a.localeCompare(b); // 우선순위가 같으면 알파벳순
+            });
+        },
+
         renderMatchCard(match) {
             const homeTeam = match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀';
             const awayTeam = match.AWAY_TEAM_NAME || match.TA_CLUB_NAME || '원정팀';
@@ -594,8 +631,87 @@ const Dashboard = {
                 updateDisplay();
             });
             
+            // 새로고침 버튼
+            const refreshBtn = document.getElementById('refreshMatchesBtn');
+            const refreshSpinner = document.getElementById('refreshSpinner');
+            
+            refreshBtn.addEventListener('click', async () => {
+                await this.refreshMatchesData();
+            });
+            
             // 초기 표시
             updateDisplay();
+        },
+
+        async refreshMatchesData() {
+            const refreshBtn = document.getElementById('refreshMatchesBtn');
+            const refreshSpinner = document.getElementById('refreshSpinner');
+            
+            try {
+                // 버튼 비활성화 및 스피너 표시
+                refreshBtn.disabled = true;
+                refreshSpinner.classList.remove('d-none');
+                
+                // 캐시 무효화
+                await this.invalidateMatchesCache();
+                
+                // 데이터 새로고침
+                await Dashboard.api.loadGroupedMatches();
+                
+                // 성공 메시지 표시
+                this.showRefreshMessage('success', '데이터가 성공적으로 새로고침되었습니다.');
+                
+            } catch (error) {
+                console.error('데이터 새로고침 실패:', error);
+                this.showRefreshMessage('error', '데이터 새로고침에 실패했습니다.');
+            } finally {
+                // 버튼 복원
+                refreshBtn.disabled = false;
+                refreshSpinner.classList.add('d-none');
+            }
+        },
+
+        async invalidateMatchesCache() {
+            try {
+                // 서버 캐시 무효화 요청
+                await fetch('/api/cache/invalidate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (error) {
+                console.warn('캐시 무효화 실패:', error);
+            }
+        },
+
+        showRefreshMessage(type, message) {
+            const container = document.getElementById('upcomingMatchesSection');
+            const existingAlert = container.querySelector('.refresh-alert');
+            
+            // 기존 메시지 제거
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            // 새 메시지 추가
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show refresh-alert" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                const alert = container.querySelector('.refresh-alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 3000);
         },
 
         displayUpcomingMatchesEnhanced(matches) {

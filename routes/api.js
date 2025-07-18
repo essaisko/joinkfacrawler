@@ -108,4 +108,22 @@ router.get('/analytics', async (req, res) => {
   }
 });
 
+// 캐시 무효화
+router.post('/cache/invalidate', async (req, res) => {
+  try {
+    // Firebase 서비스 캐시 무효화
+    firebaseService.invalidateCache();
+    
+    console.log('✅ 캐시가 무효화되었습니다.');
+    res.json({ 
+      success: true, 
+      message: '캐시가 성공적으로 무효화되었습니다.',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ 캐시 무효화 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = { router, initializeApiRoutes };
