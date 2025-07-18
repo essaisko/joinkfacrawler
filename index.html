@@ -119,27 +119,88 @@
         }
         /* 월 선택 버튼 그룹 */
         .month-buttons { display:flex; gap:2px; overflow-x:auto; }
-        .month-btn { font-size:12px; padding:2px 6px; border:none; border-radius:3px; cursor:pointer; background:#e9ecef; }
+        .month-btn { 
+            font-size: 8px; 
+            padding: 0; 
+            border: 1px solid #dee2e6; 
+            border-radius: 2px; 
+            cursor: pointer; 
+            background: #f8f9fa;
+            width: 18px;
+            height: 17px;
+            line-height: 15px;
+            margin: 0 1px;
+            text-align: center;
+        }
         .month-btn.active { background:#007bff; color:#fff; }
         /* 전역 월 작업 버튼 */
         .crawl-global-btn{ background:#28a745; color:#fff; border:none; }
         .upload-global-btn{ background:#ff9800; color:#fff; border:none; }
         .crawl-global-btn:disabled,.upload-global-btn:disabled{ opacity:0.6; }
+        #leagueTable {
+            width: 100%;
+            table-layout: fixed;
+            font-size: 13px;
+        }
         #leagueTable th, #leagueTable td {
             border: 1px solid #dee2e6;
-            padding: 8px;
+            padding: 6px 4px;
             text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #leagueTable th {
             background-color: #f8f9fa;
+            font-weight: 600;
+            font-size: 12px;
         }
-        .action-btn {
-            padding: 4px 10px;
-            font-size: 13px;
-            border: none;
+        /* 각 컬럼별 너비 설정 */
+        #leagueTable th:nth-child(1), #leagueTable td:nth-child(1) { width: 30px; } /* 체크박스 */
+        #leagueTable th:nth-child(2), #leagueTable td:nth-child(2) { width: 45px; } /* 태그 */
+        #leagueTable th:nth-child(3), #leagueTable td:nth-child(3) { width: 45px; } /* 지역 */
+        #leagueTable th:nth-child(4), #leagueTable td:nth-child(4) { width: 45px; } /* 년도 */
+        #leagueTable th:nth-child(5), #leagueTable td:nth-child(5) { width: 240px; } /* 월 */
+        #leagueTable th:nth-child(6), #leagueTable td:nth-child(6) { 
+            width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: help;
+            font-size: 11px;
+        } /* matchIdx */
+        #leagueTable td:nth-child(6) {
+            position: relative;
+        }
+        #leagueTable td:nth-child(6):hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: #333;
+            color: white;
+            padding: 4px 8px;
             border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 2px;
+        }
+        #leagueTable th:nth-child(7), #leagueTable td:nth-child(7) { min-width: 120px; text-align: left; } /* 리그 이름 */
+        #leagueTable th:nth-child(8), #leagueTable td:nth-child(8) { width: 50px; } /* 크롤링 */
+        #leagueTable th:nth-child(9), #leagueTable td:nth-child(9) { width: 55px; } /* 업로드 */
+        #leagueTable th:nth-child(10), #leagueTable td:nth-child(10) { width: 90px; font-size: 10px; } /* 최근 크롤링 */
+        #leagueTable th:nth-child(11), #leagueTable td:nth-child(11) { width: 90px; font-size: 10px; } /* 최근 업로드 */
+        .action-btn {
+            padding: 2px 6px;
+            font-size: 9px;
+            border: none;
+            border-radius: 2px;
             cursor: pointer;
             color: #fff;
+            white-space: nowrap;
+            height: 19px;
+            line-height: 1;
         }
         .crawl-row-btn { background-color: #42b72a; }
         .crawl-row-btn:hover { background-color: #36a420; }
@@ -310,6 +371,7 @@
                                     <th>지역</th>
                                     <th>년도</th>
                                     <th>월</th>
+                                    <th>매치ID</th>
                                     <th style="text-align:left;">리그 이름</th>
                                     <th>크롤링</th>
                                     <th>업로드</th>
@@ -859,6 +921,7 @@
                     <td>${regionDisplay}</td>
                     <td>${l.year}</td>
                     <td><div class="month-buttons">${monthButtonsHtml}</div></td>
+                    <td title="${l.matchIdx}">${l.matchIdx.length > 10 ? l.matchIdx.substring(0, 10) + '...' : l.matchIdx}</td>
                     <td style="text-align:left;">${l.leagueTitle}</td>
                     <td><button class="action-btn crawl-row-btn" data-key="${key}">크롤</button></td>
                     <td><button class="action-btn upload-row-btn" data-key="${key}">업로드</button></td>

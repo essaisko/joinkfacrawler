@@ -54,7 +54,7 @@ function handleWebSocketConnection(socket) {
     console.log('📤 업로드 요청 받음:', socket.id, options);
     
     if (isUploading) {
-      socket.emit('upload-log', '⚠️ 이미 업로드가 진행 중입니다. 잠시 후 다시 시도해주세요.\\n');
+      socket.emit('log', '⚠️ 이미 업로드가 진행 중입니다. 잠시 후 다시 시도해주세요.\\n');
       return;
     }
     
@@ -193,7 +193,7 @@ async function processUploadQueue() {
     
     isUploading = true;
 
-    socket.emit('upload-log', `📤 Firebase 업로드를 시작합니다... (옵션: ${JSON.stringify(options)})\\n`);
+    socket.emit('log', `📤 Firebase 업로드를 시작합니다... (옵션: ${JSON.stringify(options)})\\n`);
 
     try {
       await syncCsvWithFirebase();
@@ -217,13 +217,13 @@ async function processUploadQueue() {
       uploadProcess.stdout.on('data', (data) => {
         const output = data.toString();
         console.log('[UPLOAD STDOUT]', output);
-        socket.emit('upload-log', output);
+        socket.emit('log', output);
       });
 
       uploadProcess.stderr.on('data', (data) => {
         const output = data.toString();
         console.error('[UPLOAD STDERR]', output);
-        socket.emit('upload-log', `❌ ${output}`);
+        socket.emit('log', `❌ ${output}`);
       });
 
       await new Promise((resolve) => {
@@ -231,14 +231,14 @@ async function processUploadQueue() {
           console.log(`업로드 프로세스 종료, 코드: ${code}`);
           
           if (code === 0) {
-            socket.emit('upload-log', '\\n✅ 업로드가 성공적으로 완료되었습니다!\\n');
+            socket.emit('log', '\\n✅ 업로드가 성공적으로 완료되었습니다!\\n');
             socket.emit('upload-complete', { success: true, message: '업로드 완료' });
             
             // 업로드 완료 후 캐시 무효화
             firebaseService.invalidateCache();
-            socket.emit('upload-log', '🧹 캐시 무효화 완료\\n');
+            socket.emit('log', '🧹 캐시 무효화 완료\\n');
           } else {
-            socket.emit('upload-log', `\\n❌ 업로드가 실패했습니다 (종료 코드: ${code})\\n`);
+            socket.emit('log', `\\n❌ 업로드가 실패했습니다 (종료 코드: ${code})\\n`);
             socket.emit('upload-complete', { success: false, message: `업로드 실패 (코드: ${code})` });
           }
           
