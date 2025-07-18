@@ -200,6 +200,14 @@ const Dashboard = {
                 return 99;
             };
 
+            // 현재 선택된 월 상태 관리
+            if (!Dashboard.state.selectedMonth) {
+                Dashboard.state.selectedMonth = new Date().getMonth();
+            }
+            if (!Dashboard.state.selectedYear) {
+                Dashboard.state.selectedYear = new Date().getFullYear();
+            }
+
             const safeParseDate = (str) => {
                 if (!str) return new Date('2100-01-01');
 
@@ -252,20 +260,21 @@ const Dashboard = {
                 }
             };
 
-            // 이번주 경기만 필터링
+            // 월별 경기 필터링
             const now = new Date();
-            const thisWeekEnd = new Date(now);
-            const daysToSunday = 7 - now.getDay(); // 이번주 일요일까지
-            thisWeekEnd.setDate(now.getDate() + daysToSunday);
+            const selectedMonth = Dashboard.state.selectedMonth;
+            const selectedYear = Dashboard.state.selectedYear;
+            
+            // 선택된 월의 시작일과 마지막일 계산
+            const monthStart = new Date(selectedYear, selectedMonth, 1);
+            const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
 
             let filteredMatches = matches
                 .filter(m => {
                     const matchDate = m.MATCH_DATE || m.matchDate || m.date || m.DATE;
                     if (!matchDate) return false;
                     const d = safeParseDate(matchDate);
-                    const thisWeekStart = new Date(now);
-                    thisWeekStart.setDate(now.getDate() - now.getDay());
-                    return d >= thisWeekStart && d <= thisWeekEnd;
+                    return d >= monthStart && d <= monthEnd;
                 })
                 .filter(m => {
                     if (!Dashboard.state.upcomingLeagueFilter) return true;
@@ -397,36 +406,44 @@ const Dashboard = {
                     `;
                 }).join('');
 
+                const dateId = dateHeader.replace(/[^0-9]/g, '');
                 return `
                     <div class="date-section">
-                        <h4 class="date-header">${dateHeader} (${matchList.length}경기)</h4>
-                        <table class="matches-table">
-                            <thead>
-                                <tr>
-                                    <th>시간</th>
-                                    <th>홈팀</th>
-                                    <th></th>
-                                    <th>원정팀</th>
-                                    <th>경기장</th>
-                                    <th>리그</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tableRows}
-                            </tbody>
-                        </table>
+                        <h4 class="date-header clickable" onclick="Dashboard.ui.toggleDateExpansion('${dateId}')">
+                            <i class="fas fa-chevron-right expand-icon" id="icon-${dateId}"></i>
+                            ${dateHeader} (${matchList.length}경기)
+                        </h4>
+                        <div class="date-matches-container" id="matches-${dateId}" style="display: none;">
+                            <table class="matches-table">
+                                <thead>
+                                    <tr>
+                                        <th>시간</th>
+                                        <th>홈팀</th>
+                                        <th></th>
+                                        <th>원정팀</th>
+                                        <th>경기장</th>
+                                        <th>리그</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 `;
             };
 
             if (filteredMatches.length === 0) {
+                const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
                 container.innerHTML = `
                     <div class="upcoming-header">
-                        <h2>⚽ 이번주 경기</h2>
+                        <h2>⚽ ${selectedYear}년 ${monthNames[selectedMonth]} 경기</h2>
                     </div>
-                    <div class="empty-message">이번주 예정된 경기가 없습니다</div>
+                    <div class="empty-message">해당 월에 예정된 경기가 없습니다</div>
                 `;
                 Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches);
+                Dashboard.ui.renderMonthNavigation();
                 return;
             }
 
@@ -443,12 +460,13 @@ const Dashboard = {
                 .map(([dateKey, matches]) => renderCompactMatchTable(matches, dateKey))
                 .join('');
 
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
             const html = `
                 <button class="fullscreen-toggle" onclick="Dashboard.ui.toggleFullscreen()" title="전체화면 토글">
                     <i class="fas fa-expand"></i>
                 </button>
                 <div class="upcoming-header">
-                    <h2>⚽ 이번주 경기 (${filteredMatches.length}경기)</h2>
+                    <h2>⚽ ${selectedYear}년 ${monthNames[selectedMonth]} 경기 (${filteredMatches.length}경기)</h2>
                 </div>
                 
                 <div class="matches-container compact">
@@ -458,6 +476,99 @@ const Dashboard = {
 
             container.innerHTML = html;
             Dashboard.ui.renderUpcomingLeagueToggle(Dashboard.state.rawUpcomingMatches);
+            Dashboard.ui.renderMonthNavigation();
+        },
+
+        renderMonthNavigation() {
+            const container = document.getElementById('upcomingMatchesSection');
+            if (!container) return;
+
+            // 기존 네비게이션 제거
+            container.querySelector('.month-navigation')?.remove();
+
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            const currentMonth = Dashboard.state.selectedMonth;
+            const currentYear = Dashboard.state.selectedYear;
+            
+            const navHtml = `
+                <div class="month-navigation">
+                    <div class="month-nav-controls">
+                        <button class="nav-btn prev-year" onclick="Dashboard.ui.changeYear(-1)" title="이전 연도">
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>
+                        <button class="nav-btn prev-month" onclick="Dashboard.ui.changeMonth(-1)" title="이전 달">
+                            <i class="fas fa-angle-left"></i>
+                        </button>
+                        <div class="current-month-year">
+                            <span class="year">${currentYear}년</span>
+                            <span class="month">${monthNames[currentMonth]}</span>
+                        </div>
+                        <button class="nav-btn next-month" onclick="Dashboard.ui.changeMonth(1)" title="다음 달">
+                            <i class="fas fa-angle-right"></i>
+                        </button>
+                        <button class="nav-btn next-year" onclick="Dashboard.ui.changeYear(1)" title="다음 연도">
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>
+                    </div>
+                    <div class="month-grid">
+                        ${monthNames.map((month, index) => 
+                            `<button class="month-btn ${index === currentMonth ? 'active' : ''}" 
+                                    onclick="Dashboard.ui.selectMonth(${index})" 
+                                    title="${currentYear}년 ${month}">
+                                ${month}
+                            </button>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+
+            const header = container.querySelector('.upcoming-header');
+            if (header) {
+                header.insertAdjacentHTML('afterend', navHtml);
+            }
+        },
+
+        changeMonth(direction) {
+            const newMonth = Dashboard.state.selectedMonth + direction;
+            if (newMonth < 0) {
+                Dashboard.state.selectedMonth = 11;
+                Dashboard.state.selectedYear--;
+            } else if (newMonth > 11) {
+                Dashboard.state.selectedMonth = 0;
+                Dashboard.state.selectedYear++;
+            } else {
+                Dashboard.state.selectedMonth = newMonth;
+            }
+            Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
+        },
+
+        changeYear(direction) {
+            Dashboard.state.selectedYear += direction;
+            Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
+        },
+
+        selectMonth(monthIndex) {
+            Dashboard.state.selectedMonth = monthIndex;
+            Dashboard.ui.displayUpcomingMatchesEnhanced(Dashboard.state.rawUpcomingMatches);
+        },
+
+        toggleDateExpansion(dateId) {
+            const container = document.getElementById(`matches-${dateId}`);
+            const icon = document.getElementById(`icon-${dateId}`);
+            
+            if (!container || !icon) return;
+            
+            const isExpanded = container.style.display !== 'none';
+            
+            if (isExpanded) {
+                container.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                container.style.display = 'block';
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            }
         },        renderUpcomingLeagueToggle(matches) {
             const container = document.getElementById('upcomingMatchesSection');
             if(!container) return;

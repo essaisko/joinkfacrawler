@@ -328,6 +328,179 @@ body {
     font-weight: 700;
 }
 
+/* === 월별 네비게이션 === */
+.month-navigation {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    padding: 1.5rem;
+}
+
+.month-nav-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.nav-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-btn:hover {
+    background: #2980b9;
+    transform: scale(1.1);
+}
+
+.current-month-year {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.current-month-year .year {
+    color: #7f8c8d;
+}
+
+.current-month-year .month {
+    color: #3498db;
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.month-btn {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.8rem 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #495057;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.month-btn:hover {
+    background: #e9ecef;
+    border-color: #3498db;
+    transform: translateY(-2px);
+}
+
+.month-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+    font-weight: 700;
+}
+
+.month-btn.active:hover {
+    background: #2980b9;
+    border-color: #2980b9;
+}
+
+@media (max-width: 768px) {
+    .month-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .month-nav-controls {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .current-month-year {
+        font-size: 1.5rem;
+        min-width: 150px;
+    }
+    
+    .nav-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .month-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .month-navigation {
+        padding: 1rem;
+    }
+    
+    .current-month-year {
+        font-size: 1.3rem;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+}
+
+/* === 날짜별 경기 확장/축소 === */
+.date-header.clickable {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+}
+
+.date-header.clickable:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.expand-icon {
+    transition: transform 0.3s ease;
+    color: #3498db;
+    font-size: 0.9rem;
+}
+
+.date-matches-container {
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.date-matches-container .matches-table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.date-section {
+    margin-bottom: 1.5rem;
+}
+
 .fullscreen-toggle {
     position: absolute;
     top: 1rem;
