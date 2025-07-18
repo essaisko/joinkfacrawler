@@ -880,7 +880,7 @@
             disableButtons();
             appendLog(`🚀 모든 리그 ${monthParam||'전체'}월 크롤링을 시작합니다...`);
             // 단일 요청으로 모든 리그 처리 – 서버/스크립트에서 month, year만 필터링
-            socket.emit('start-crawling',{ year, month: monthParam });
+            socket.emit('start-crawl',{ year, month: monthParam });
         });
 
         document.getElementById('uploadMonthAllBtn')?.addEventListener('click',()=>{
@@ -893,7 +893,7 @@
             disableButtons();
             appendLog(`☁️ 모든 리그 ${monthParam2||'전체'}월 업로드를 시작합니다...`);
             // 업로드도 단일 요청으로 처리
-            socket.emit('start-uploading',{ year, month: monthParam2 });
+            socket.emit('start-upload',{ year, month: monthParam2 });
         });
 
         // === 선택 작업 버튼 ===
@@ -912,7 +912,7 @@
                 const month = months.join(',');
                 const [tag, region, year, matchIdx] = k.split('_'); 
                 const leagueTitle = row.dataset.leaguetitle;
-                socket.emit('start-crawling', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
+                socket.emit('start-crawl', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
             });
         });
 
@@ -927,7 +927,7 @@
                 const month = months.join(',');
                 const [tag, region, year, matchIdx] = k.split('_'); 
                 const leagueTitle = row.dataset.leaguetitle;
-                socket.emit('start-uploading', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
+                socket.emit('start-upload', { year, month: month, league: tag, region: region, matchIdx: matchIdx, leagueTitle }); 
             });
         });
 
@@ -1021,7 +1021,7 @@
                 disableButtons();
                 appendLog(`🚀 [${leagueTag} ${year} ${month||'전체'}월] 개별 크롤링을 시작합니다...`);
                 const leagueTitle = e.target.closest('tr').dataset.leaguetitle;
-                socket.emit('start-crawling', { year, month: month, league: leagueTag, region: regionTag, matchIdx: matchIdx, leagueTitle });
+                socket.emit('start-crawl', { year, month: month, league: leagueTag, region: regionTag, matchIdx: matchIdx, leagueTitle });
                 e.target.disabled = true;
             }
             if (e.target.classList.contains('upload-row-btn')) {
@@ -1032,7 +1032,7 @@
                 disableButtons();
                 appendLog(`☁️ [${leagueTag} ${year} ${month||'전체'}월] 개별 업로드를 시작합니다...`);
                 const leagueTitle = e.target.closest('tr').dataset.leaguetitle;
-                socket.emit('start-uploading', { year, month: month, league: leagueTag, region: regionTag, matchIdx: matchIdx, leagueTitle });
+                socket.emit('start-upload', { year, month: month, league: leagueTag, region: regionTag, matchIdx: matchIdx, leagueTitle });
                 e.target.disabled = true;
             }
         });
