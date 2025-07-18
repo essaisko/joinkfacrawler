@@ -78,8 +78,26 @@ function parseArgs() {
   return args;
 }
 
+// 환경변수로 전달된 옵션도 확인
+let crawlOptions = {};
+if (process.env.CRAWL_OPTIONS) {
+  try {
+    crawlOptions = JSON.parse(process.env.CRAWL_OPTIONS);
+    console.log('📋 웹소켓에서 전달받은 옵션:', crawlOptions);
+  } catch (e) {
+    console.error('CRAWL_OPTIONS 파싱 실패:', e);
+  }
+}
+
 const cliArgs = parseArgs();
-const { year: filterYear, month: filterMonth, league: filterLeague, region: filterRegion, matchIdx: filterMatchIdx } = cliArgs;
+// CLI 인자가 우선, 없으면 환경변수 옵션 사용
+const { 
+  year: filterYear = crawlOptions.year, 
+  month: filterMonth = crawlOptions.month, 
+  league: filterLeague = crawlOptions.league, 
+  region: filterRegion = crawlOptions.region, 
+  matchIdx: filterMatchIdx = crawlOptions.matchIdx 
+} = cliArgs;
 
 // CSV 내용은 실행 시점(아래 IIFE 내부)에서 로드되므로 초기값은 빈 배열
 let LEAGUE_LIST = []; // 실행 시에 채워집니다.
@@ -157,8 +175,16 @@ async function fetchMatchData(league, ym, retryCount = 0) {
     };
     
     // Chrome 설정이 있으면 적용
-    if (chromeConfig && chromeConfig.executablePath) {
-      launchOptions.executablePath = chromeConfig.executablePath;
+    if (chromeConfig) {
+      if (chromeConfig.executablePath) {
+        launchOptions.executablePath = chromeConfig.executablePath;
+      }
+      if (chromeConfig.headless !== undefined) {
+        launchOptions.headless = chromeConfig.headless;
+      }
+      if (chromeConfig.args) {
+        launchOptions.args = [...launchOptions.args, ...chromeConfig.args];
+      }
     }
     
     browser = await puppeteer.launch(launchOptions);
