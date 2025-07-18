@@ -245,9 +245,12 @@ const Dashboard = {
                             </div>
                             <div class="col-md-6">
                                 <div class="d-flex gap-2 justify-content-end">
-                                    <button class="btn btn-warning btn-sm" id="refreshMatchesBtn" type="button">
-                                        <span class="spinner-border spinner-border-sm d-none" id="refreshSpinner"></span>
-                                        🔄 데이터 새로고침
+                                    <button class="btn btn-success btn-sm" id="smartRefreshBtn" type="button">
+                                        <span class="spinner-border spinner-border-sm d-none" id="smartRefreshSpinner"></span>
+                                        ⚡ 스마트 업데이트
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" id="cacheRefreshBtn" type="button">
+                                        🔄 캐시 새로고침
                                     </button>
                                 </div>
                             </div>
@@ -356,7 +359,7 @@ const Dashboard = {
                     '<span class="badge bg-primary">예정</span>';
                 
                 return `
-                    <tr class="match-row ${isCompleted ? 'table-success' : ''}">
+                    <tr class="match-row ${isCompleted ? 'table-success' : ''}" data-date="${date}">
                         <td>${index === 0 ? formattedDate : ''}</td>
                         <td class="text-muted">${time}</td>
                         <td class="fw-bold" title="${match.HOME_TEAM_NAME || match.TH_CLUB_NAME || '홈팀'}">${homeTeam}</td>
@@ -631,32 +634,165 @@ const Dashboard = {
                 updateDisplay();
             });
             
-            // 새로고침 버튼
-            const refreshBtn = document.getElementById('refreshMatchesBtn');
-            const refreshSpinner = document.getElementById('refreshSpinner');
+            // 스마트 업데이트 버튼
+            const smartRefreshBtn = document.getElementById('smartRefreshBtn');
+            const cacheRefreshBtn = document.getElementById('cacheRefreshBtn');
             
-            refreshBtn.addEventListener('click', async () => {
+            smartRefreshBtn.addEventListener('click', async () => {
+                await this.smartRefreshData();
+            });
+            
+            cacheRefreshBtn.addEventListener('click', async () => {
                 await this.refreshMatchesData();
             });
             
             // 초기 표시
             updateDisplay();
+            
+            // 오늘 일정으로 자동 스크롤
+            this.scrollToToday();
+        },
+
+        scrollToToday() {
+            setTimeout(() => {
+                const today = new Date().toISOString().split('T')[0];
+                const todayRow = document.querySelector(`tr[data-date="${today}"]`);
+                
+                if (todayRow) {
+                    todayRow.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    // 오늘 경기 하이라이트
+                    todayRow.classList.add('table-warning');
+                    setTimeout(() => {
+                        todayRow.classList.remove('table-warning');
+                    }, 3000);
+                }
+            }, 500);
+        },
+
+        async smartRefreshData() {
+            const smartRefreshBtn = document.getElementById('smartRefreshBtn');
+            const smartRefreshSpinner = document.getElementById('smartRefreshSpinner');
+            
+            // 현재 필터 상태 저장
+            const currentFilters = this.getCurrentFilters();
+            
+            try {
+                // 버튼 상태 업데이트
+                smartRefreshBtn.disabled = true;
+                smartRefreshSpinner.classList.remove('d-none');
+                smartRefreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 크롤링 중...';
+                
+                // 1단계: 스마트 크롤링 실행
+                await this.executeSmartCrawling();
+                
+                smartRefreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 업로드 중...';
+                
+                // 2단계: 파이어스토어 업로드
+                await this.executeFirestoreUpload();
+                
+                smartRefreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 데이터 로드 중...';
+                
+                // 3단계: 캐시 무효화 및 데이터 새로고침
+                await this.invalidateMatchesCache();
+                await Dashboard.api.loadGroupedMatches();
+                
+                // 4단계: 필터 복원
+                this.restoreFilters(currentFilters);
+                
+                // 성공 메시지 표시
+                this.showRefreshMessage('success', '✅ 최신 데이터가 성공적으로 업데이트되었습니다!');
+                
+            } catch (error) {
+                console.error('스마트 업데이트 실패:', error);
+                this.showRefreshMessage('error', `❌ 업데이트 실패: ${error.message}`);
+            } finally {
+                // 버튼 복원
+                smartRefreshBtn.disabled = false;
+                smartRefreshSpinner.classList.add('d-none');
+                smartRefreshBtn.innerHTML = '⚡ 스마트 업데이트';
+            }
+        },
+
+        async executeSmartCrawling() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
+            
+            // 현재 월과 다음 월 크롤링 (경기 결과 업데이트를 위해)
+            const months = [currentMonth];
+            if (currentMonth === '12') {
+                months.push('01'); // 다음 년도 1월
+            } else {
+                months.push(String(today.getMonth() + 2).padStart(2, '0'));
+            }
+            
+            for (const month of months) {
+                const crawlYear = month === '01' && currentMonth === '12' ? currentYear + 1 : currentYear;
+                
+                const response = await fetch('/api/smart-crawl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        year: crawlYear,
+                        month: month,
+                        mode: 'update' // 업데이트 모드로 크롤링
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`크롤링 실패: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log(`${crawlYear}-${month} 크롤링 완료:`, result);
+            }
+        },
+
+        async executeFirestoreUpload() {
+            const response = await fetch('/api/smart-upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    mode: 'recent' // 최근 데이터만 업로드
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`업로드 실패: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('파이어스토어 업로드 완료:', result);
         },
 
         async refreshMatchesData() {
             const refreshBtn = document.getElementById('refreshMatchesBtn');
             const refreshSpinner = document.getElementById('refreshSpinner');
             
+            // 현재 필터 상태 저장
+            const currentFilters = this.getCurrentFilters();
+            
             try {
                 // 버튼 비활성화 및 스피너 표시
                 refreshBtn.disabled = true;
                 refreshSpinner.classList.remove('d-none');
+                refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 새로고침 중...';
                 
                 // 캐시 무효화
                 await this.invalidateMatchesCache();
                 
                 // 데이터 새로고침
-                await Dashboard.api.loadGroupedMatches();
+                const data = await Dashboard.api.loadGroupedMatches();
+                
+                // 필터 상태 복원
+                this.restoreFilters(currentFilters);
                 
                 // 성공 메시지 표시
                 this.showRefreshMessage('success', '데이터가 성공적으로 새로고침되었습니다.');
@@ -668,6 +804,49 @@ const Dashboard = {
                 // 버튼 복원
                 refreshBtn.disabled = false;
                 refreshSpinner.classList.add('d-none');
+                refreshBtn.innerHTML = '🔄 데이터 새로고침';
+            }
+        },
+
+        getCurrentFilters() {
+            const activeMonthBtn = document.querySelector('.month-filter-btn.active');
+            const activeLeagueBtn = document.querySelector('.league-filter-btn.active');
+            const teamSearchInput = document.getElementById('teamSearchInput');
+            
+            return {
+                month: activeMonthBtn ? activeMonthBtn.dataset.month : '',
+                league: activeLeagueBtn ? activeLeagueBtn.dataset.league : '',
+                searchTerm: teamSearchInput ? teamSearchInput.value : ''
+            };
+        },
+
+        restoreFilters(filters) {
+            // 월별 필터 복원
+            document.querySelectorAll('.month-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.month === filters.month) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 리그 필터 복원
+            document.querySelectorAll('.league-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.league === filters.league) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 검색어 복원
+            const teamSearchInput = document.getElementById('teamSearchInput');
+            if (teamSearchInput) {
+                teamSearchInput.value = filters.searchTerm;
+            }
+            
+            // 필터 적용
+            const event = new Event('input', { bubbles: true });
+            if (teamSearchInput) {
+                teamSearchInput.dispatchEvent(event);
             }
         },
 

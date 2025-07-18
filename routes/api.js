@@ -126,4 +126,107 @@ router.post('/cache/invalidate', async (req, res) => {
   }
 });
 
+// 스마트 크롤링 (현재 월 + 다음 월)
+router.post('/smart-crawl', async (req, res) => {
+  try {
+    const { year, month, mode } = req.body;
+    
+    console.log(`🕷️ 스마트 크롤링 시작: ${year}-${month} (모드: ${mode})`);
+    
+    // 실제 크롤링 로직은 기존 meat.js 활용
+    const { spawn } = require('child_process');
+    const crawlProcess = spawn('node', ['meat.js', `--year=${year}`, `--month=${month}`, `--mode=${mode}`], {
+      cwd: process.cwd(),
+      stdio: 'pipe'
+    });
+    
+    let output = '';
+    let errorOutput = '';
+    
+    crawlProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    crawlProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    // 프로세스 완료 대기
+    await new Promise((resolve, reject) => {
+      crawlProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`크롤링 프로세스 실패: ${code}`));
+        }
+      });
+    });
+    
+    console.log(`✅ 스마트 크롤링 완료: ${year}-${month}`);
+    res.json({
+      success: true,
+      message: `${year}-${month} 크롤링 완료`,
+      output: output.slice(-1000), // 마지막 1000자만 반환
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 스마트 크롤링 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 스마트 업로드 (최근 데이터만)
+router.post('/smart-upload', async (req, res) => {
+  try {
+    const { mode } = req.body;
+    
+    console.log(`📤 스마트 업로드 시작 (모드: ${mode})`);
+    
+    // 실제 업로드 로직은 기존 firebase_uploader.js 활용
+    const { spawn } = require('child_process');
+    const uploadProcess = spawn('node', ['firebase_uploader.js', `--mode=${mode}`], {
+      cwd: process.cwd(),
+      stdio: 'pipe'
+    });
+    
+    let output = '';
+    let errorOutput = '';
+    
+    uploadProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    uploadProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    // 프로세스 완료 대기
+    await new Promise((resolve, reject) => {
+      uploadProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`업로드 프로세스 실패: ${code}`));
+        }
+      });
+    });
+    
+    // 업로드 완료 후 Firebase 캐시 무효화
+    firebaseService.invalidateCache();
+    
+    console.log(`✅ 스마트 업로드 완료`);
+    res.json({
+      success: true,
+      message: '파이어스토어 업로드 완료',
+      output: output.slice(-1000),
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 스마트 업로드 실패:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = { router, initializeApiRoutes };
