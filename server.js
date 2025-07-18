@@ -47,6 +47,33 @@ initializeApiRoutes(firebaseService, { calculateStandings }, matchScheduler);
 initializeCsvRoutes({ uploadCsvToFirebase, downloadCsvFromFirebase });
 initializeWebSocketRoutes({ downloadCsvFromFirebase, uploadCsvToFirebase, syncCsvWithFirebase }, firebaseService);
 
+// CORS 설정
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'http://ssurpass.com',
+    'https://ssurpass.com',
+    'http://www.ssurpass.com',
+    'https://www.ssurpass.com',
+    'http://localhost:3000',
+    'http://localhost:' + PORT
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Deploy-Token');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
 // JSON 요청 본문을 파싱하기 위한 미들웨어
 app.use(express.json());
 // 정적 파일 제공
