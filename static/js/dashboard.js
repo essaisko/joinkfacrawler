@@ -1092,14 +1092,19 @@ const Dashboard = {
                 });
 
                 const buildTeamHtml = (raw, leagueRank) => {
-                    const parsed = Dashboard.utils.parseTeam(raw);
-                    const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
-                    const teamName  = parsed.teamName || raw;
-                    const encoded   = encodeURIComponent(teamName);
-                    const linkHtml  = `<a href=\"team.html?team=${encoded}\" class=\"team-name-link\">${teamName}</a>`;
-                    if (leagueRank <= 4) return `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${raw}</a>`;
-                    const regionLabel = regionText ? `<span class=\"region-label\">${regionText}</span><br/>` : '';
-                    return `${regionLabel}${linkHtml}`;
+                    // K5~K7 리그에서만 지역 라벨 표시
+                    if (leagueRank >= 5 && leagueRank <= 7) {
+                        const parsed = Dashboard.utils.parseTeam(raw);
+                        const regionText = parsed.major ? `${parsed.major}${parsed.minor ? ' ' + parsed.minor : ''}` : '';
+                        const teamName = parsed.teamName || raw;
+                        const encoded = encodeURIComponent(teamName);
+                        const linkHtml = `<a href="team.html?team=${encoded}" class="team-name-link">${teamName}</a>`;
+                        const regionLabel = regionText ? `<span class="region-label">${regionText}</span> ` : '';
+                        return `${regionLabel}${linkHtml}`;
+                    } else {
+                        // K1~K4 리그는 원본 그대로 표시
+                        return `<a href="team.html?team=${encodeURIComponent(raw)}" class="team-name-link">${raw}</a>`;
+                    }
                 };
 
                 const tableRows = sortedMatches.map(match => {
@@ -1469,10 +1474,31 @@ const Dashboard = {
                 return;
             }
 
+            // 필터 버튼 업데이트
+            this.updateStandingFilters(data);
+
+            // 현재 필터 상태 가져오기
+            const activeRegion = document.querySelector('#standingRegionFilterButtons .filter-btn.active')?.dataset.value || '';
+            const activeLeague = document.querySelector('#standingLeagueFilterButtons .filter-btn.active')?.dataset.value || '';
+
+            // 필터링된 데이터
+            const filteredData = data.filter(group => {
+                const matchesRegion = !activeRegion || group.region === activeRegion;
+                const matchesLeague = !activeLeague || group.league === activeLeague;
+                return matchesRegion && matchesLeague;
+            });
+
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="empty-message">선택한 조건에 맞는 순위표가 없습니다</div>';
+                return;
+            }
+
             let html = '';
 
-            data.forEach(group => {
+            filteredData.forEach(group => {
                 const leagueName = group.league || group.leagueTitle || '리그';
+                const regionName = group.region || '';
+                const displayName = regionName ? `${leagueName} (${regionName})` : leagueName;
                 const teams = Array.isArray(group.standings) ? [...group.standings] : [];
 
                 teams.sort((a, b) => {
@@ -1484,7 +1510,7 @@ const Dashboard = {
 
                 html += `
                     <div class="league-section">
-                        <h3 class="league-title">${leagueName}</h3>
+                        <h3 class="league-title">${displayName}</h3>
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead>
@@ -1530,6 +1556,62 @@ const Dashboard = {
             });
 
             container.innerHTML = html;
+        },
+
+        updateStandingFilters(data) {
+            // 지역 필터 업데이트
+            const regionContainer = document.getElementById('standingRegionFilterButtons');
+            const leagueContainer = document.getElementById('standingLeagueFilterButtons');
+            
+            if (!regionContainer || !leagueContainer) return;
+
+            // 고유 지역과 리그 추출
+            const regions = [...new Set(data.map(g => g.region || ''))].filter(Boolean).sort();
+            const leagues = [...new Set(data.map(g => g.league || ''))].sort((a, b) => {
+                const getRank = (l) => {
+                    if (l.includes('K리그1')) return 1;
+                    if (l.includes('K리그2')) return 2;
+                    if (l.includes('K3')) return 3;
+                    if (l.includes('K4')) return 4;
+                    if (l.includes('K5')) return 5;
+                    if (l.includes('K6')) return 6;
+                    if (l.includes('K7')) return 7;
+                    return 99;
+                };
+                return getRank(a) - getRank(b);
+            });
+
+            // 지역 필터 버튼 생성
+            if (regionContainer.children.length === 1) { // 전체 버튼만 있을 때
+                regions.forEach(region => {
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.dataset.value = region;
+                    btn.textContent = region || '전국';
+                    btn.onclick = () => {
+                        document.querySelectorAll('#standingRegionFilterButtons .filter-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        Dashboard.ui.displayStandings(Dashboard.state.allStandings);
+                    };
+                    regionContainer.appendChild(btn);
+                });
+            }
+
+            // 리그 필터 버튼 생성
+            if (leagueContainer.children.length === 1) { // 전체 버튼만 있을 때
+                leagues.forEach(league => {
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.dataset.value = league;
+                    btn.textContent = league;
+                    btn.onclick = () => {
+                        document.querySelectorAll('#standingLeagueFilterButtons .filter-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        Dashboard.ui.displayStandings(Dashboard.state.allStandings);
+                    };
+                    leagueContainer.appendChild(btn);
+                });
+            }
         },
 
         displayMatches(allMatches) {

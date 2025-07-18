@@ -853,9 +853,18 @@ body {
 
 /* === 팀 정보 스타일 === */
 .region-label {
-    font-size: 0.7rem;
-    color: #555;
-    line-height: 1;
+    display: inline-block;
+    font-size: 0.65rem;
+    color: #7f8c8d;
+    background: #ecf0f1;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .team-wrapper {
